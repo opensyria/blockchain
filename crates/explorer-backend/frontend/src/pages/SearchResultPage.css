@@ -1,0 +1,10 @@
+.search-result-page {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.error-hint {
+  margin-top: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}

@@ -1,0 +1,85 @@
+{
+  "app": {
+    "title": "مستكشف بلوكتشين سوريا المفتوحة",
+    "subtitle": "بلوكتشين الليرة الرقمية"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "blocks": "الكتل",
+    "transactions": "المعاملات",
+    "addresses": "العناوين",
+    "mempool": "مجمع المعاملات",
+    "network": "الشبكة",
+    "analytics": "التحليلات",
+    "identity": "التراث",
+    "governance": "الحوكمة",
+    "language": "English"
+  },
+  "search": {
+    "placeholder": "البحث برقم الكتلة أو التجزئة أو المعاملة أو العنوان...",
+    "button": "بحث",
+    "noResults": "لم يتم العثور على نتائج",
+    "error": "فشل البحث"
+  },
+  "stats": {
+    "height": "ارتفاع الكتلة",
+    "blocks": "إجمالي الكتل",
+    "transactions": "المعاملات",
+    "difficulty": "الصعوبة",
+    "hashRate": "معدل التجزئة",
+    "blockTime": "متوسط وقت الكتلة",
+    "supply": "العرض المتداول"
+  },
+  "block": {
+    "height": "الارتفاع",
+    "hash": "التجزئة",
+    "timestamp": "الطابع الزمني",
+    "transactions": "المعاملات",
+    "miner": "المُعدِّن",
+    "difficulty": "الصعوبة",
+    "nonce": "النونس",
+    "previousHash": "التجزئة السابقة",
+    "merkleRoot": "جذر ميركل",
+    "size": "الحجم",
+    "confirmations": "التأكيدات"
+  },
+  "transaction": {
+    "hash": "تجزئة المعاملة",
+    "from": "من",
+    "to": "إلى",
+    "amount": "المبلغ",
+    "fee": "الرسوم",
+    "timestamp": "الوقت",
+    "signature": "التوقيع",
+    "status": "الحالة",
+    "confirmed": "مؤكد",
+    "pending": "قيد الانتظار"
+  },
+  "address": {
+    "address": "العنوان",
+    "balance": "الرصيد",
+    "sent": "إجمالي المُرسل",
+    "received": "إجمالي المُستلم",
+    "txCount": "عدد المعاملات",
+    "history": "سجل المعاملات"
+  },
+  "units": {
+    "lira": "ل.س.ر",
+    "hashes": "ت/ث",
+    "seconds": "ثانية",
+    "bytes": "بايت"
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "notFound": "غير موجود",
+    "viewAll": "عرض الكل",
+    "recent": "الأحدث",
+    "copy": "نسخ",
+    "copied": "تم النسخ!",
+    "page": "صفحة",
+    "of": "من",
+    "previous": "السابق",
+    "next": "التالي"
+  }
+}

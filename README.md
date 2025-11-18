@@ -50,7 +50,12 @@ opensyria/
 - [x] **Network CLI:** P2P node management commands (`network start`, peer discovery)
 - [x] **Transaction Pool (Mempool):** Priority-based pending transaction management (5 tests)
 - [x] **Integration Tests:** Multi-node blockchain testing
-- [x] **Block Explorer:** REST API + Web UI for blockchain visualization
+- [x] **Block Explorer:** REST API + React/TypeScript UI (bilingual, 5 core pages, real-time)
+  - 📊 Home dashboard with live stats (auto-refresh)
+  - 🔍 Block detail viewer (height or hash lookup)
+  - 💸 Transaction flow visualization
+  - 💰 Address balance & history
+  - 🔎 Universal search (auto-routing)
 - [x] **Governance Framework:** On-chain proposals and voting system (23 tests)
 - [x] **Governance Node Integration:** Proposal/voting via node CLI, automatic execution
 - [x] **Wallet REST API:** HTTP endpoints for transactions, balance queries, blockchain info
@@ -148,6 +153,34 @@ cargo build --release
 
 # Link existing IPFS content to token
 ./target/release/identity link --token-id damascus-steel-001 --cid QmXyz...
+```
+
+### Launch Block Explorer
+
+```bash
+# Quick start (builds frontend + starts server)
+./scripts/run-explorer.sh
+
+# Or manually:
+# 1. Build frontend
+cd crates/explorer-backend/frontend
+npm install
+npm run build
+
+# 2. Start backend server
+cd ../../..
+cargo run --bin explorer -- data 8080
+
+# 3. Open browser
+# http://localhost:8080
+
+# Development mode (hot reload)
+# Terminal 1: Start backend
+cargo run --bin explorer
+
+# Terminal 2: Start frontend dev server
+./scripts/dev-explorer-frontend.sh
+# Frontend: http://localhost:3000 (proxies API to :8080)
 ```
 
 **Requirements:** IPFS daemon running (`ipfs daemon`)

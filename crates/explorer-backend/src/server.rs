@@ -2,7 +2,7 @@
 
 use crate::api::create_router;
 use crate::handlers::AppState;
-use axum::Router;
+use axum::routing::Router;
 use opensyria_storage::{BlockchainStorage, StateStorage};
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -50,12 +50,16 @@ impl ExplorerServer {
             state: self.state.clone(),
         };
 
-        let mut app = create_router(app_state);
+        let api_router = create_router(app_state);
 
-        // Serve static files if directory provided
+        let mut app = Router::new().merge(api_router);
+
+        // Serve static files if directory provided (SPA mode)
         if let Some(static_dir) = self.static_dir {
+            let serve_dir = ServeDir::new(static_dir.join("dist"));
+            
             app = Router::new()
-                .nest_service("/", ServeDir::new(static_dir))
+                .nest_service("/", serve_dir)
                 .merge(app);
         }
 

@@ -1,0 +1,85 @@
+{
+  "app": {
+    "title": "Open Syria Block Explorer",
+    "subtitle": "Digital Lira Blockchain"
+  },
+  "nav": {
+    "home": "Home",
+    "blocks": "Blocks",
+    "transactions": "Transactions",
+    "addresses": "Addresses",
+    "mempool": "Mempool",
+    "network": "Network",
+    "analytics": "Analytics",
+    "identity": "Heritage",
+    "governance": "Governance",
+    "language": "العربية"
+  },
+  "search": {
+    "placeholder": "Search by block height, hash, transaction, or address...",
+    "button": "Search",
+    "noResults": "No results found",
+    "error": "Search failed"
+  },
+  "stats": {
+    "height": "Block Height",
+    "blocks": "Total Blocks",
+    "transactions": "Transactions",
+    "difficulty": "Difficulty",
+    "hashRate": "Hash Rate",
+    "blockTime": "Avg Block Time",
+    "supply": "Circulating Supply"
+  },
+  "block": {
+    "height": "Height",
+    "hash": "Hash",
+    "timestamp": "Timestamp",
+    "transactions": "Transactions",
+    "miner": "Mined By",
+    "difficulty": "Difficulty",
+    "nonce": "Nonce",
+    "previousHash": "Previous Hash",
+    "merkleRoot": "Merkle Root",
+    "size": "Size",
+    "confirmations": "Confirmations"
+  },
+  "transaction": {
+    "hash": "Transaction Hash",
+    "from": "From",
+    "to": "To",
+    "amount": "Amount",
+    "fee": "Fee",
+    "timestamp": "Time",
+    "signature": "Signature",
+    "status": "Status",
+    "confirmed": "Confirmed",
+    "pending": "Pending"
+  },
+  "address": {
+    "address": "Address",
+    "balance": "Balance",
+    "sent": "Total Sent",
+    "received": "Total Received",
+    "txCount": "Transaction Count",
+    "history": "Transaction History"
+  },
+  "units": {
+    "lira": "SYL",
+    "hashes": "H/s",
+    "seconds": "seconds",
+    "bytes": "bytes"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "notFound": "Not Found",
+    "viewAll": "View All",
+    "recent": "Recent",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "page": "Page",
+    "of": "of",
+    "previous": "Previous",
+    "next": "Next"
+  }
+}

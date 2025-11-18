@@ -1,11 +1,20 @@
 //! API route definitions
 
 use crate::handlers::*;
+use crate::websocket::{ws_handler, WsState};
 use axum::{routing::get, Router};
 
 /// Create API router with all routes
 pub fn create_router(state: AppState) -> Router {
+    // Create WebSocket state from AppState
+    let ws_state = WsState {
+        blockchain: state.blockchain.clone(),
+        state: state.state.clone(),
+    };
+
     Router::new()
+        // WebSocket for real-time updates (separate state)
+        .route("/ws", get(ws_handler).with_state(ws_state))
         // Chain statistics
         .route("/api/stats", get(get_chain_stats))
         // Blocks

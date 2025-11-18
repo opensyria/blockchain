@@ -1,0 +1,298 @@
+/* Cultural UI Patterns - Syrian Heritage */
+
+:root {
+  /* Syrian Color Palette */
+  --color-damascus-rose: #E63946;
+  --color-damascus-rose-light: #F78B94;
+  --color-damascus-rose-dark: #B52E39;
+  
+  --color-olive-green: #6A994E;
+  --color-olive-green-light: #A7C957;
+  --color-olive-green-dark: #4A6B35;
+  
+  --color-desert-sand: #F4A261;
+  --color-desert-sand-light: #F9C792;
+  --color-desert-sand-dark: #E08E44;
+  
+  --color-mediterranean-blue: #457B9D;
+  --color-mediterranean-blue-light: #7BA3BD;
+  --color-mediterranean-blue-dark: #2F5570;
+  
+  --color-ancient-stone: #D4A574;
+  --color-ancient-stone-light: #E6C9A0;
+  --color-ancient-stone-dark: #B38854;
+  
+  /* Islamic geometric pattern colors */
+  --color-gold: #D4AF37;
+  --color-gold-light: #F4D984;
+  --color-gold-dark: #B8941F;
+  
+  --color-turquoise: #1ABC9C;
+  --color-turquoise-light: #5ED4C0;
+  --color-turquoise-dark: #148F77;
+}
+
+/* Cultural theme toggle */
+body.cultural-theme {
+  --color-primary: var(--color-damascus-rose);
+  --color-secondary: var(--color-olive-green);
+  --color-accent: var(--color-desert-sand);
+}
+
+/* Islamic Geometric Pattern Backgrounds */
+.pattern-islamic {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23667eea' fill-opacity='0.05'%3E%3Cpath d='M30 30l15-15v30l-15-15zm-15 0l-15 15h30l-15-15z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.pattern-damascene {
+  background-image: url("data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 16c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm0-2c3.314 0 6-2.686 6-6s-2.686-6-6-6-6 2.686-6 6 2.686 6 6 6zm33.414-6l5.95-5.95L45.95.636 40 6.586 34.05.636 32.636 2.05 38.586 8l-5.95 5.95 1.414 1.414L40 9.414l5.95 5.95 1.414-1.414L41.414 8zM40 48c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm0-2c3.314 0 6-2.686 6-6s-2.686-6-6-6-6 2.686-6 6 2.686 6 6 6z' fill='%23764ba2' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+.pattern-arabesque {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='%23d4af37' fill-opacity='0.08'%3E%3Cpath d='M0 0h40v40H0V0zm40 40h40v40H40V40zm0-40h2l-2 2V0zm0 4l4-4h2l-6 6V4zm0 4l8-8h2L40 10V8zm0 4L52 0h2L40 14v-2zm0 4L56 0h2L40 18v-2zm0 4L60 0h2L40 22v-2zm0 4L64 0h2L40 26v-2zm0 4L68 0h2L40 30v-2zm0 4L72 0h2L40 34v-2zm0 4L76 0h2L40 38v-2zm0 4L80 0v2L42 40h-2zm4 0L80 4v2L46 40h-2zm4 0L80 8v2L50 40h-2zm4 0l28-28v2L54 40h-2zm4 0l24-24v2L58 40h-2zm4 0l20-20v2L62 40h-2zm4 0l16-16v2L66 40h-2zm4 0l12-12v2L70 40h-2zm4 0l8-8v2l-6 6h-2zm4 0l4-4v2l-2 2h-2z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Decorative borders */
+.border-damascus {
+  border: 2px solid transparent;
+  border-image: linear-gradient(135deg, 
+    var(--color-damascus-rose) 0%, 
+    var(--color-olive-green) 50%, 
+    var(--color-desert-sand) 100%) 1;
+  border-image-slice: 1;
+}
+
+.border-islamic {
+  position: relative;
+}
+
+.border-islamic::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 3px solid;
+  border-image: repeating-linear-gradient(
+    45deg,
+    var(--color-gold) 0,
+    var(--color-gold) 10px,
+    transparent 10px,
+    transparent 20px
+  ) 1;
+  pointer-events: none;
+}
+
+/* Corner decorations */
+.corner-ornament {
+  position: relative;
+}
+
+.corner-ornament::before,
+.corner-ornament::after {
+  content: '✦';
+  position: absolute;
+  color: var(--color-gold);
+  font-size: 1.5rem;
+  opacity: 0.3;
+}
+
+.corner-ornament::before {
+  top: var(--space-sm);
+  left: var(--space-sm);
+}
+
+.corner-ornament::after {
+  bottom: var(--space-sm);
+  right: var(--space-sm);
+}
+
+[dir="rtl"] .corner-ornament::before {
+  left: auto;
+  right: var(--space-sm);
+}
+
+[dir="rtl"] .corner-ornament::after {
+  right: auto;
+  left: var(--space-sm);
+}
+
+/* Cultural gradient backgrounds */
+.gradient-damascus {
+  background: linear-gradient(135deg, 
+    var(--color-damascus-rose) 0%, 
+    var(--color-damascus-rose-dark) 100%);
+}
+
+.gradient-olive {
+  background: linear-gradient(135deg,
+    var(--color-olive-green-light) 0%,
+    var(--color-olive-green-dark) 100%);
+}
+
+.gradient-desert {
+  background: linear-gradient(135deg,
+    var(--color-desert-sand-light) 0%,
+    var(--color-desert-sand-dark) 100%);
+}
+
+.gradient-mediterranean {
+  background: linear-gradient(135deg,
+    var(--color-mediterranean-blue-light) 0%,
+    var(--color-mediterranean-blue-dark) 100%);
+}
+
+.gradient-heritage {
+  background: linear-gradient(135deg,
+    var(--color-damascus-rose) 0%,
+    var(--color-olive-green) 33%,
+    var(--color-desert-sand) 66%,
+    var(--color-mediterranean-blue) 100%);
+}
+
+/* Syrian flag colors */
+.gradient-syrian-flag {
+  background: linear-gradient(to bottom,
+    #CE1126 0%,
+    #CE1126 33.33%,
+    #FFFFFF 33.33%,
+    #FFFFFF 66.66%,
+    #000000 66.66%,
+    #000000 100%);
+}
+
+/* Card decorations */
+.card-cultural {
+  position: relative;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.card-cultural::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg,
+    var(--color-damascus-rose) 0%,
+    var(--color-olive-green) 50%,
+    var(--color-desert-sand) 100%);
+}
+
+[dir="rtl"] .card-cultural::before {
+  background: linear-gradient(270deg,
+    var(--color-damascus-rose) 0%,
+    var(--color-olive-green) 50%,
+    var(--color-desert-sand) 100%);
+}
+
+/* Islamic star decoration */
+.star-islamic {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d4af37'%3E%3Cpath d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+/* Calligraphic divider */
+.divider-calligraphic {
+  position: relative;
+  text-align: center;
+  margin: var(--space-2xl) 0;
+}
+
+.divider-calligraphic::before,
+.divider-calligraphic::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--color-gold), transparent);
+}
+
+.divider-calligraphic::before {
+  left: 0;
+}
+
+.divider-calligraphic::after {
+  right: 0;
+}
+
+.divider-calligraphic span {
+  display: inline-block;
+  padding: 0 var(--space-lg);
+  background: var(--color-bg);
+  color: var(--color-gold);
+  font-size: 1.5rem;
+}
+
+/* Heritage badge */
+.badge-heritage {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  background: linear-gradient(135deg, var(--color-gold-light), var(--color-gold-dark));
+  color: white;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+
+/* Mosque silhouette decoration */
+.decoration-mosque {
+  position: relative;
+  overflow: hidden;
+}
+
+.decoration-mosque::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 60px;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Cpath d='M100 0c-5 0-10 5-10 10v10h-20v-5c0-2.8-2.2-5-5-5s-5 2.2-5 5v5H40c-2.8 0-5 2.2-5 5v25c0 2.8 2.2 5 5 5h120c2.8 0 5-2.2 5-5V30c0-2.8-2.2-5-5-5h-20v-5c0-2.8-2.2-5-5-5s-5 2.2-5 5v5h-20V10c0-5-5-10-10-10z' fill='%23667eea'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+}
+
+/* Damascus steel texture */
+.texture-damascus {
+  position: relative;
+}
+
+.texture-damascus::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(45deg, transparent 30%, rgba(100, 100, 100, 0.1) 30%, rgba(100, 100, 100, 0.1) 70%, transparent 70%),
+    linear-gradient(-45deg, transparent 30%, rgba(100, 100, 100, 0.1) 30%, rgba(100, 100, 100, 0.1) 70%, transparent 70%);
+  background-size: 20px 20px;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Responsive cultural elements */
+@media (max-width: 768px) {
+  .corner-ornament::before,
+  .corner-ornament::after {
+    font-size: 1rem;
+  }
+  
+  .divider-calligraphic span {
+    font-size: 1.25rem;
+  }
+}

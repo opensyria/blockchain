@@ -1,11 +1,10 @@
-//! Block Explorer Backend API
-//!
-//! REST API for querying blockchain state, blocks, and transactions.
+//! Open Syria Block Explorer Backend
 
 pub mod api;
 pub mod handlers;
 pub mod server;
 pub mod types;
+pub mod websocket;
 
 #[cfg(test)]
 mod tests;

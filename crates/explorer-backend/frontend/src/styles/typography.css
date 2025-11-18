@@ -1,0 +1,182 @@
+/* Enhanced Arabic Typography System */
+
+/* Import Arabic fonts */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
+
+/* Font families */
+:root {
+  /* English fonts */
+  --font-en-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-en-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-en-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  
+  /* Arabic fonts */
+  --font-ar-body: 'Noto Kufi Arabic', 'Tajawal', 'Cairo', 'Segoe UI', system-ui, sans-serif;
+  --font-ar-heading: 'Amiri', 'Noto Kufi Arabic', 'Tajawal', serif;
+  --font-ar-mono: 'Courier New', monospace;
+  
+  /* Line heights optimized for Arabic */
+  --line-height-ar-tight: 1.8;
+  --line-height-ar-normal: 2.0;
+  --line-height-ar-relaxed: 2.2;
+  
+  /* Letter spacing for Arabic (minimal) */
+  --letter-spacing-ar: -0.01em;
+  
+  /* Word spacing for Arabic */
+  --word-spacing-ar: 0.1em;
+}
+
+/* Base typography */
+body {
+  font-family: var(--font-en-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Arabic body text */
+[dir="rtl"] body {
+  font-family: var(--font-ar-body);
+  line-height: var(--line-height-ar-normal);
+  letter-spacing: var(--letter-spacing-ar);
+  word-spacing: var(--word-spacing-ar);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-en-heading);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6 {
+  font-family: var(--font-ar-heading);
+  line-height: var(--line-height-ar-tight);
+  font-weight: 700;
+}
+
+/* Heading sizes */
+h1 {
+  font-size: 2.5rem;
+}
+
+[dir="rtl"] h1 {
+  font-size: 2.75rem; /* Slightly larger for Arabic */
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+[dir="rtl"] h2 {
+  font-size: 2.25rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+[dir="rtl"] h3 {
+  font-size: 1.75rem;
+}
+
+/* Monospace (for addresses, hashes) */
+.monospace,
+code,
+pre {
+  font-family: var(--font-en-mono);
+  letter-spacing: -0.02em;
+}
+
+[dir="rtl"] .monospace,
+[dir="rtl"] code,
+[dir="rtl"] pre {
+  font-family: var(--font-ar-mono);
+  letter-spacing: normal;
+}
+
+/* Paragraph spacing */
+p {
+  margin-bottom: 1rem;
+}
+
+[dir="rtl"] p {
+  text-align: justify;
+  text-align-last: right;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+}
+
+/* Arabic numerals (keep English numerals for consistency) */
+[dir="rtl"] .numbers,
+[dir="rtl"] .amount,
+[dir="rtl"] .stat-value {
+  font-family: var(--font-en-body);
+  direction: ltr;
+  display: inline-block;
+}
+
+/* Kashida justification support */
+[dir="rtl"] .justified {
+  text-align: justify;
+  text-justify: kashida;
+}
+
+/* Diacritical marks support */
+[dir="rtl"] .diacritics {
+  font-variant-ligatures: common-ligatures;
+  font-feature-settings: "liga" 1, "calt" 1, "kern" 1;
+}
+
+/* Optimize for readability */
+[dir="rtl"] {
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1;
+}
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+  }
+  
+  [dir="rtl"] h1 {
+    font-size: 2.25rem;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+  }
+  
+  [dir="rtl"] h2 {
+    font-size: 2rem;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+  }
+  
+  [dir="rtl"] h3 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Text selection */
+::selection {
+  background: var(--color-primary);
+  color: white;
+}
+
+[dir="rtl"]::selection {
+  background: var(--color-secondary);
+  color: white;
+}
+
+/* Fonts loaded via Google Fonts CDN with font-display: swap */
