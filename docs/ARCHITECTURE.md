@@ -701,7 +701,7 @@ opensyria-node-cli export --output chain.json --start 1 --end 100
 
 - **Repository:** https://github.com/OpenSyria/blockchain (placeholder)
 - **Community:** TBD
-- **Security:** security@opensyria.org (placeholder)
+- **Security:** opensyria.net@gmail.com
 
 ---
 

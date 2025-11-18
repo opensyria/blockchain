@@ -1147,9 +1147,9 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for:
 ## Contact & Resources
 
 ### Official Channels
-- **Website**: [opensyria.io](https://opensyria.io) (planned)
-- **GitHub**: [OpenSyria/blockchain](https://github.com/OpenSyria) (planned)
-- **Email**: heritage@opensyria.io (planned)
+- **Website**: [opensyria.net](https://opensyria.net)
+- **GitHub**: [OpenSyria/blockchain](https://github.com/OpenSyria)
+- **Email**: opensyria.net@gmail.com
 
 ### Community
 - **Discord**: Syrian Heritage Preservation (planned)

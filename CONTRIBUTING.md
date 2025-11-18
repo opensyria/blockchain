@@ -481,7 +481,7 @@ Relates to #456
 
 **For security issues:**
 - **DO NOT** open public issues
-- Email: security@opensyria.org (placeholder)
+- Email: opensyria.net@gmail.com
 - Use GPG encryption if possible
 
 ---

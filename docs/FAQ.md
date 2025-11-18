@@ -779,8 +779,8 @@ sudo ufw allow 9000/tcp
 - Telegram: Coming soon
 
 **Contact:**
-- Email: info@opensyria.org (placeholder)
-- Security: security@opensyria.org (placeholder)
+- Email: opensyria.net@gmail.com
+- Security: opensyria.net@gmail.com
 
 ---
 

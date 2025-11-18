@@ -614,7 +614,7 @@ MIT OR Apache-2.0
 - **Repository:** https://github.com/opensyria/blockchain
 - **Issues:** https://github.com/opensyria/blockchain/issues
 - **Discussions:** https://github.com/opensyria/blockchain/discussions
-- **Security:** security@opensyria.org (for security issues only)
+- **Security:** opensyria.net@gmail.com
 
 ---
 

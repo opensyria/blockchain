@@ -16,7 +16,7 @@ If you discover a security vulnerability in the Open Syria blockchain, please re
 
 ### 1. Email Report (Preferred)
 
-Send details to: **security@opensyria.org**
+Send details to: **opensyria.net@gmail.com**
 
 Include:
 - Description of the vulnerability
@@ -162,7 +162,7 @@ For contributors:
 
 ## Contact
 
-- **Security Email:** security@opensyria.org
+- **Security Email:** opensyria.net@gmail.com
 - **GPG Key:** (Coming soon)
 - **Security Advisories:** https://github.com/opensyria/blockchain/security/advisories
 
