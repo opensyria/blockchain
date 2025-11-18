@@ -4,10 +4,14 @@ mod tests {
     use opensyria_consensus::ProofOfWork;
     use opensyria_storage::{BlockchainStorage, StateStorage};
     use std::path::PathBuf;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     fn setup_test_blockchain() -> PathBuf {
+        let test_id = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
         let test_dir = std::env::temp_dir()
-            .join(format!("explorer_test_{}", std::process::id()));
+            .join(format!("explorer_test_{}_{}", std::process::id(), test_id));
         
         let _ = std::fs::remove_dir_all(&test_dir);
         
