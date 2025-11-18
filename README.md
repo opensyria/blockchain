@@ -50,12 +50,16 @@ opensyria/
 - [x] **Network CLI:** P2P node management commands (`network start`, peer discovery)
 - [x] **Transaction Pool (Mempool):** Priority-based pending transaction management (5 tests)
 - [x] **Integration Tests:** Multi-node blockchain testing
-- [x] **Block Explorer:** REST API + React/TypeScript UI (bilingual, 5 core pages, real-time)
-  - 📊 Home dashboard with live stats (auto-refresh)
-  - 🔍 Block detail viewer (height or hash lookup)
-  - 💸 Transaction flow visualization
-  - 💰 Address balance & history
-  - 🔎 Universal search (auto-routing)
+- [x] **Block Explorer:** Production-ready web interface with real-time monitoring (Module 5 Complete)
+  - 📊 **Core Pages (5A-5B):** Home dashboard, blocks list, block details, transactions, addresses, search
+  - 🔴 **Real-time Features (5C):** WebSocket live updates, mempool viewer, network topology visualization
+  - 🎨 **Cultural Design (5D):** Advanced Arabic typography, Syrian heritage UI (24 colors, 3 patterns, 30+ animations)
+  - 📈 **Analytics Dashboard (5E):** Block time trends, hash rate charts, transaction volume, difficulty graphs
+  - 🏛️ **Heritage Gallery (5E):** Syrian NFT showcase with IPFS integration, type/period filtering
+  - 🗳️ **Governance Viewer (5E):** On-chain proposals, voting interface, execution tracking
+  - 📱 **PWA Support (5E):** Offline mode, installable app, service worker caching
+  - 🌐 **Bilingual:** Full English/Arabic support with RTL layout
+  - 📊 **Tech Stack:** React 18, TypeScript, Vite, Recharts, WebSocket, PWA
 - [x] **Governance Framework:** On-chain proposals and voting system (23 tests)
 - [x] **Governance Node Integration:** Proposal/voting via node CLI, automatic execution
 - [x] **Wallet REST API:** HTTP endpoints for transactions, balance queries, blockchain info
@@ -63,7 +67,9 @@ opensyria/
 - [x] **Multi-signature Accounts:** M-of-N signature requirements for enhanced security (8 tests)
 - [x] **Mining Pool Support:** Coordinated mining with proportional/PPS/PPLNS reward distribution (5 tests)
 - [x] **IPFS Integration:** Decentralized storage for cultural heritage multimedia content
-- [x] **Documentation:** Comprehensive docs organized in docs/ (15 files: architecture, deployment, identity, IPFS, network, governance, API, testing)
+- [x] **Documentation:** Comprehensive docs organized in docs/ (15+ system docs + 9 explorer docs)
+  - System: Architecture, deployment, identity, IPFS, network, governance, API, testing
+  - Explorer: Foundation, core pages, real-time, UX design, analytics, visual guide, project tracker
 
 ### 🚧 Future Enhancements (Optional)
 
@@ -162,31 +168,52 @@ cargo build --release
 ./scripts/run-explorer.sh
 
 # Or manually:
-# 1. Build frontend
+# 1. Build frontend (production)
 cd crates/explorer-backend/frontend
 npm install
 npm run build
 
-# 2. Start backend server
+# 2. Start backend server (serves static + API + WebSocket)
 cd ../../..
 cargo run --bin explorer -- data 8080
 
-# 3. Open browser
-# http://localhost:8080
+# 3. Open browser → http://localhost:8080
+
+# Available Pages:
+# / - Home dashboard with live stats
+# /blocks - Block explorer with pagination
+# /block/:height - Block details
+# /tx/:hash - Transaction viewer
+# /address/:addr - Address balance & history
+# /mempool - Live pending transactions (WebSocket)
+# /network - Network topology visualization
+# /analytics - Charts dashboard (4 chart types)
+# /identity - Heritage NFT gallery (IPFS)
+# /governance - Proposal voting interface
 
 # Development mode (hot reload)
-# Terminal 1: Start backend
-cargo run --bin explorer
+# Terminal 1: Backend + WebSocket
+cargo run --bin explorer -- data 8080
 
-# Terminal 2: Start frontend dev server
+# Terminal 2: Frontend dev server
 ./scripts/dev-explorer-frontend.sh
-# Frontend: http://localhost:3000 (proxies API to :8080)
+# Frontend: http://localhost:3000 (proxies to :8080)
+# WebSocket: ws://localhost:8080/ws
 ```
 
-**Requirements:** IPFS daemon running (`ipfs daemon`)
+**Explorer Features:**
+- ✅ Real-time updates via WebSocket
+- ✅ Bilingual (English/Arabic) with RTL support
+- ✅ Cultural design system (Syrian heritage theme)
+- ✅ PWA support (installable, works offline)
+- ✅ Analytics with Recharts (4 chart types)
+- ✅ Heritage NFT gallery with IPFS integration
+- ✅ Governance voting interface
+- ✅ Mobile responsive design
 
-# List all tokens
-./target/release/identity list
+**Requirements:** 
+- Node.js 18+ (for frontend build)
+- IPFS daemon (`ipfs daemon`) for heritage content
 ```
 
 ### Start P2P Network Node
