@@ -35,7 +35,7 @@ opensyria/
 **Phase:** Production Ready ✅  
 **Consensus:** Proof-of-Work (SHA-256)  
 **Languages:** Rust, Arabic/English  
-**Test Coverage:** 72 passing tests (Core: 19, Storage: 7, Identity: 11, Network: 2, Mempool: 5, Mining Pool: 5, Governance: 23)
+**Test Coverage:** 72 passing tests (Core: 19, Storage: 7, Identity: 11, Network: 2, Mempool: 5, Mining Pool: 5, Governance: 23, Explorer: 3)
 
 ### ✅ Completed Features
 
