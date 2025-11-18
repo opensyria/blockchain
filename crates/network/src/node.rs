@@ -7,8 +7,7 @@ use futures::StreamExt;
 use libp2p::{
     core::upgrade,
     gossipsub::{self},
-    identity,
-    noise, tcp, yamux, Multiaddr, PeerId, Swarm, Transport,
+    identity, noise, tcp, yamux, Multiaddr, PeerId, Swarm, Transport,
 };
 use opensyria_core::{Block, Transaction};
 use opensyria_mempool::{Mempool, MempoolConfig};
@@ -542,7 +541,10 @@ impl NetworkNode {
                 info!("Added {} blocks to chain", added);
             }
 
-            NetworkResponse::ChainTip { height, block_hash: _ } => {
+            NetworkResponse::ChainTip {
+                height,
+                block_hash: _,
+            } => {
                 info!("Peer {} has chain height {}", peer, height);
 
                 let local_height = self.get_chain_height().await?;

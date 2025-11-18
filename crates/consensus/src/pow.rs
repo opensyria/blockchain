@@ -95,7 +95,7 @@ impl ProofOfWork {
                 return (block, stats);
             }
 
-                        // Progress update every 50k hashes
+            // Progress update every 50k hashes
             if hashes.is_multiple_of(50_000) {
                 let elapsed = start.elapsed().as_secs_f64();
                 if elapsed > 0.0 {

@@ -127,10 +127,7 @@ fn main() -> Result<()> {
             );
             println!("{}: {}", "Created | تاريخ الإنشاء".cyan(), created);
             println!();
-            println!(
-                "Balance | الرصيد: {} (coming soon)",
-                "0.00 SYL".bold()
-            );
+            println!("Balance | الرصيد: {} (coming soon)", "0.00 SYL".bold());
         }
 
         Commands::Send {
