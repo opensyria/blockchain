@@ -1,0 +1,23 @@
+[package]
+name = "opensyria-mining-pool"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+opensyria-core = { path = "../core" }
+opensyria-consensus = { path = "../consensus" }
+opensyria-storage = { path = "../storage" }
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+bincode.workspace = true
+thiserror = "2.0"
+tracing.workspace = true
+anyhow = "1.0"
+sha2.workspace = true
+hex = "0.4"
+
+[dev-dependencies]
+tempfile = "3.14"

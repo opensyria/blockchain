@@ -1,0 +1,15 @@
+[package]
+name = "opensyria-storage"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+opensyria-core = { path = "../core" }
+rocksdb.workspace = true
+serde.workspace = true
+bincode.workspace = true
+
+[dev-dependencies]
+tempfile = "3.14"

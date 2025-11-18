@@ -1,0 +1,21 @@
+[package]
+name = "opensyria-wallet"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "wallet"
+path = "src/main.rs"
+
+[dependencies]
+opensyria-core = { path = "../core" }
+clap.workspace = true
+colored.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow = "1.0"
+dirs = "5.0"
+hex = "0.4"
+chrono = "0.4"

@@ -1,0 +1,18 @@
+[package]
+name = "opensyria-governance"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "governance-cli"
+path = "src/bin/governance-cli.rs"
+
+[dependencies]
+opensyria-core = { path = "../core" }
+serde.workspace = true
+bincode.workspace = true
+rocksdb.workspace = true
+clap.workspace = true
+colored.workspace = true

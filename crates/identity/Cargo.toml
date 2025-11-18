@@ -1,0 +1,22 @@
+[package]
+name = "opensyria-identity"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "identity"
+path = "src/bin/identity.rs"
+
+[dependencies]
+opensyria-core = { path = "../core" }
+serde.workspace = true
+serde_json.workspace = true
+clap.workspace = true
+colored.workspace = true
+hex = "0.4"
+anyhow = "1.0"
+tokio = { workspace = true, features = ["full"] }
+reqwest = { version = "0.11", features = ["json", "multipart"] }
+sha2.workspace = true

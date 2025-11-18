@@ -1,0 +1,26 @@
+[package]
+name = "opensyria-node-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+opensyria-core = { path = "../core" }
+opensyria-consensus = { path = "../consensus" }
+opensyria-storage = { path = "../storage" }
+opensyria-network = { path = "../network" }
+opensyria-governance = { path = "../governance" }
+opensyria-mempool = { path = "../mempool" }
+opensyria-mining-pool = { path = "../mining-pool" }
+clap.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+colored.workspace = true
+anyhow = "1.0"
+dirs = "5.0"
+hex = "0.4"
+serde_json.workspace = true
+shellexpand = "3.1"
+ed25519-dalek.workspace = true

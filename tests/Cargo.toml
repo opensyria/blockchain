@@ -1,0 +1,16 @@
+[package]
+name = "opensyria-integration-tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+opensyria-core = { path = "../crates/core" }
+opensyria-consensus = { path = "../crates/consensus" }
+opensyria-network = { path = "../crates/network" }
+opensyria-storage = { path = "../crates/storage" }
+opensyria-mempool = { path = "../crates/mempool" }
+tokio = { version = "1.40", features = ["full"] }
+
+[[test]]
+name = "integration_tests"
+path = "integration_tests.rs"

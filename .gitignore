@@ -1,0 +1,35 @@
+# Rust
+/target
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Chain data
+/data
+/chaindata
+*.db
+
+# Logs
+*.log
+
+# Node data
+.opensyria/
+node/
+
+# Test artifacts
+/tmp/
+test-*.txt
+
+# IPFS
+.ipfs/

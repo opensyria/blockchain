@@ -1,0 +1,18 @@
+[package]
+name = "opensyria-mempool"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+opensyria-core = { path = "../core" }
+opensyria-storage = { path = "../storage" }
+thiserror = "2.0"
+tracing.workspace = true
+serde.workspace = true
+tokio.workspace = true
+hex = "0.4"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
