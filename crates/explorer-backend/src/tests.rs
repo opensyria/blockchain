@@ -7,136 +7,136 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-    fn setup_test_blockchain() -> PathBuf {
-        let test_id = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
-        let test_dir =
-            std::env::temp_dir().join(format!("explorer_test_{}_{}", std::process::id(), test_id));
+fn setup_test_blockchain() -> PathBuf {
+    let test_id = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
+    let test_dir =
+        std::env::temp_dir().join(format!("explorer_test_{}_{}", std::process::id(), test_id));
 
-        let _ = std::fs::remove_dir_all(&test_dir);
+    let _ = std::fs::remove_dir_all(&test_dir);
 
-        // Create blockchain with a few blocks
-        let blocks_dir = test_dir.join("blocks");
-        let state_dir = test_dir.join("state");
+    // Create blockchain with a few blocks
+    let blocks_dir = test_dir.join("blocks");
+    let state_dir = test_dir.join("state");
 
-        let blockchain = BlockchainStorage::open(blocks_dir).unwrap();
-        let _state = StateStorage::open(state_dir).unwrap();
+    let blockchain = BlockchainStorage::open(blocks_dir).unwrap();
+    let _state = StateStorage::open(state_dir).unwrap();
 
-        let pow = ProofOfWork::new(16);
+    let pow = ProofOfWork::new(16);
 
-        // Mine genesis
-        let genesis = Block::genesis(16);
-        let (mined_genesis, _) = pow.mine(genesis);
-        blockchain.append_block(&mined_genesis).unwrap();
+    // Mine genesis
+    let genesis = Block::genesis(16);
+    let (mined_genesis, _) = pow.mine(genesis);
+    blockchain.append_block(&mined_genesis).unwrap();
 
-        // Mine a few more blocks
-        for _ in 0..3 {
-            let tip_hash = blockchain.get_chain_tip().unwrap().unwrap();
-            let prev_block = blockchain.get_block(&tip_hash).unwrap().unwrap();
-            let new_block = Block::new(prev_block.hash(), vec![], 16);
-            let (mined_block, _) = pow.mine(new_block);
-            blockchain.append_block(&mined_block).unwrap();
-        }
-
-        drop(blockchain);
-        test_dir
+    // Mine a few more blocks
+    for _ in 0..3 {
+        let tip_hash = blockchain.get_chain_tip().unwrap().unwrap();
+        let prev_block = blockchain.get_block(&tip_hash).unwrap().unwrap();
+        let new_block = Block::new(prev_block.hash(), vec![], 16);
+        let (mined_block, _) = pow.mine(new_block);
+        blockchain.append_block(&mined_block).unwrap();
     }
 
-    #[tokio::test]
-    async fn test_explorer_stats() {
-        use crate::handlers::get_chain_stats;
-        use crate::handlers::AppState;
-        use axum::extract::State;
-        use std::sync::Arc;
-        use tokio::sync::RwLock;
+    drop(blockchain);
+    test_dir
+}
 
-        let test_dir = setup_test_blockchain();
+#[tokio::test]
+async fn test_explorer_stats() {
+    use crate::handlers::get_chain_stats;
+    use crate::handlers::AppState;
+    use axum::extract::State;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
 
-        let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
-        let state = StateStorage::open(test_dir.join("state")).unwrap();
+    let test_dir = setup_test_blockchain();
 
-        let app_state = AppState {
-            blockchain: Arc::new(RwLock::new(blockchain)),
-            state: Arc::new(RwLock::new(state)),
-        };
+    let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
+    let state = StateStorage::open(test_dir.join("state")).unwrap();
 
-        let result = get_chain_stats(State(app_state)).await;
-        assert!(result.is_ok());
+    let app_state = AppState {
+        blockchain: Arc::new(RwLock::new(blockchain)),
+        state: Arc::new(RwLock::new(state)),
+    };
 
-        let stats = result.unwrap().0;
-        assert_eq!(stats.height, 4); // Genesis + 3 blocks
-        assert_eq!(stats.total_blocks, 5); // height + 1
-        assert_eq!(stats.difficulty, 16);
+    let result = get_chain_stats(State(app_state)).await;
+    assert!(result.is_ok());
 
-        std::fs::remove_dir_all(&test_dir).ok();
+    let stats = result.unwrap().0;
+    assert_eq!(stats.height, 4); // Genesis + 3 blocks
+    assert_eq!(stats.total_blocks, 5); // height + 1
+    assert_eq!(stats.difficulty, 16);
+
+    std::fs::remove_dir_all(&test_dir).ok();
+}
+
+#[tokio::test]
+async fn test_get_block_by_height() {
+    use crate::handlers::{get_block_by_height, AppState};
+    use axum::extract::{Path, State};
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+
+    let test_dir = setup_test_blockchain();
+
+    let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
+    let state = StateStorage::open(test_dir.join("state")).unwrap();
+
+    let app_state = AppState {
+        blockchain: Arc::new(RwLock::new(blockchain)),
+        state: Arc::new(RwLock::new(state)),
+    };
+
+    // Test genesis block (height 1)
+    let result = get_block_by_height(Path(1), State(app_state.clone())).await;
+    assert!(result.is_ok());
+
+    let block_info = result.unwrap().0;
+    assert_eq!(block_info.height, 1);
+    assert_eq!(block_info.difficulty, 16);
+    assert_eq!(block_info.transaction_count, 0);
+
+    // Test non-existent block
+    let result = get_block_by_height(Path(100), State(app_state)).await;
+    assert!(result.is_err());
+
+    std::fs::remove_dir_all(&test_dir).ok();
+}
+
+#[tokio::test]
+async fn test_get_recent_blocks() {
+    use crate::handlers::{get_recent_blocks, AppState, Pagination};
+    use axum::extract::{Query, State};
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+
+    let test_dir = setup_test_blockchain();
+
+    let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
+    let state = StateStorage::open(test_dir.join("state")).unwrap();
+
+    let app_state = AppState {
+        blockchain: Arc::new(RwLock::new(blockchain)),
+        state: Arc::new(RwLock::new(state)),
+    };
+
+    let pagination = Pagination {
+        page: 1,
+        per_page: 10,
+    };
+    let result = get_recent_blocks(Query(pagination), State(app_state)).await;
+
+    assert!(result.is_ok());
+
+    let paginated = result.unwrap().0;
+    assert_eq!(paginated.total, 5); // Total blocks
+    assert_eq!(paginated.page, 1);
+    assert!(paginated.items.len() <= 5);
+
+    // Most recent block should be first
+    if !paginated.items.is_empty() {
+        assert_eq!(paginated.items[0].height, 4);
     }
 
-    #[tokio::test]
-    async fn test_get_block_by_height() {
-        use crate::handlers::{get_block_by_height, AppState};
-        use axum::extract::{Path, State};
-        use std::sync::Arc;
-        use tokio::sync::RwLock;
-
-        let test_dir = setup_test_blockchain();
-
-        let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
-        let state = StateStorage::open(test_dir.join("state")).unwrap();
-
-        let app_state = AppState {
-            blockchain: Arc::new(RwLock::new(blockchain)),
-            state: Arc::new(RwLock::new(state)),
-        };
-
-        // Test genesis block (height 1)
-        let result = get_block_by_height(Path(1), State(app_state.clone())).await;
-        assert!(result.is_ok());
-
-        let block_info = result.unwrap().0;
-        assert_eq!(block_info.height, 1);
-        assert_eq!(block_info.difficulty, 16);
-        assert_eq!(block_info.transaction_count, 0);
-
-        // Test non-existent block
-        let result = get_block_by_height(Path(100), State(app_state)).await;
-        assert!(result.is_err());
-
-        std::fs::remove_dir_all(&test_dir).ok();
-    }
-
-    #[tokio::test]
-    async fn test_get_recent_blocks() {
-        use crate::handlers::{get_recent_blocks, AppState, Pagination};
-        use axum::extract::{Query, State};
-        use std::sync::Arc;
-        use tokio::sync::RwLock;
-
-        let test_dir = setup_test_blockchain();
-
-        let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
-        let state = StateStorage::open(test_dir.join("state")).unwrap();
-
-        let app_state = AppState {
-            blockchain: Arc::new(RwLock::new(blockchain)),
-            state: Arc::new(RwLock::new(state)),
-        };
-
-        let pagination = Pagination {
-            page: 1,
-            per_page: 10,
-        };
-        let result = get_recent_blocks(Query(pagination), State(app_state)).await;
-
-        assert!(result.is_ok());
-
-        let paginated = result.unwrap().0;
-        assert_eq!(paginated.total, 5); // Total blocks
-        assert_eq!(paginated.page, 1);
-        assert!(paginated.items.len() <= 5);
-
-        // Most recent block should be first
-        if !paginated.items.is_empty() {
-            assert_eq!(paginated.items[0].height, 4);
-        }
-
-        std::fs::remove_dir_all(&test_dir).ok();
-    }
+    std::fs::remove_dir_all(&test_dir).ok();
+}
