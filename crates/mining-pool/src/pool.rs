@@ -333,9 +333,11 @@ mod tests {
 
     #[test]
     fn test_proportional_rewards() {
-        let mut config = PoolConfig::default();
-        config.reward_method = RewardMethod::Proportional;
-        config.fee_percent = 2;
+        let config = PoolConfig {
+            reward_method: RewardMethod::Proportional,
+            fee_percent: 2,
+            ..Default::default()
+        };
 
         let mut pool = MiningPool::new(config);
 
@@ -380,8 +382,10 @@ mod tests {
 
     #[test]
     fn test_payout_threshold() {
-        let mut config = PoolConfig::default();
-        config.min_payout = 1_000_000; // 1 Lira minimum
+        let config = PoolConfig {
+            min_payout: 1_000_000, // 1 Lira minimum
+            ..Default::default()
+        };
 
         let mut pool = MiningPool::new(config);
         let miner = KeyPair::generate().public_key();

@@ -1,12 +1,11 @@
 #[cfg(test)]
-mod tests {
-    use opensyria_consensus::ProofOfWork;
-    use opensyria_core::Block;
-    use opensyria_storage::{BlockchainStorage, StateStorage};
-    use std::path::PathBuf;
-    use std::sync::atomic::{AtomicUsize, Ordering};
+use opensyria_consensus::ProofOfWork;
+use opensyria_core::Block;
+use opensyria_storage::{BlockchainStorage, StateStorage};
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
-    static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
+static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     fn setup_test_blockchain() -> PathBuf {
         let test_id = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
@@ -141,4 +140,3 @@ mod tests {
 
         std::fs::remove_dir_all(&test_dir).ok();
     }
-}

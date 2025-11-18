@@ -93,7 +93,7 @@ impl NetworkMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use opensyria_core::{crypto::KeyPair, BlockHeader};
+    use opensyria_core::crypto::KeyPair;
 
     #[test]
     fn test_serialize_get_blocks() {

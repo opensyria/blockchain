@@ -79,7 +79,7 @@ async fn submit_transaction(
     // Get node and current state
     let node = state.node.read().await;
     let state_storage = node.get_state();
-    let balance = state_storage.get_balance(&from).unwrap_or(0);
+    let _balance = state_storage.get_balance(&from).unwrap_or(0);
     let nonce = state_storage.get_nonce(&from).unwrap_or(0);
 
     // Create transaction with signature

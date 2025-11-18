@@ -78,14 +78,13 @@ impl TransactionValidator {
 mod tests {
     use super::*;
     use opensyria_core::crypto::KeyPair;
-    use std::path::PathBuf;
 
     #[tokio::test]
     async fn test_validate_valid_transaction() {
         let temp_dir = std::env::temp_dir().join("mempool_validator_test");
         let _ = std::fs::remove_dir_all(&temp_dir);
 
-        let mut state = StateStorage::open(temp_dir.clone()).unwrap();
+        let state = StateStorage::open(temp_dir.clone()).unwrap();
 
         // Create sender and receiver
         let sender = KeyPair::generate();
@@ -110,11 +109,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_validate_insufficient_balance() {
-        let temp_dir = std::env::temp_dir().join("mempool_validator_balance_test");
+    async fn test_reject_insufficient_balance() {
+        let temp_dir = std::env::temp_dir().join("mempool_validator_insufficient");
         let _ = std::fs::remove_dir_all(&temp_dir);
 
-        let mut state = StateStorage::open(temp_dir.clone()).unwrap();
+        let state = StateStorage::open(temp_dir.clone()).unwrap();
 
         let sender = KeyPair::generate();
         let receiver = KeyPair::generate();

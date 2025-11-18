@@ -45,12 +45,13 @@ async fn create_test_node(
 }
 
 /// Initialize node with genesis block
+#[allow(dead_code)]
 async fn initialize_node_storage(data_dir: &std::path::Path, difficulty: u32) {
     let blockchain_dir = data_dir.join("blockchain");
     let state_dir = data_dir.join("state");
 
     {
-        let mut blockchain = BlockchainStorage::open(blockchain_dir).unwrap();
+        let blockchain = BlockchainStorage::open(blockchain_dir).unwrap();
         let _state = StateStorage::open(state_dir).unwrap();
 
         // Create and mine genesis block
@@ -216,7 +217,7 @@ async fn test_mempool_priority() {
     ));
     let _ = std::fs::remove_dir_all(&node1_dir);
 
-    let mut state = StateStorage::open(node1_dir.join("state")).unwrap();
+    let state = StateStorage::open(node1_dir.join("state")).unwrap();
     let sender = KeyPair::generate();
     let receiver = KeyPair::generate();
 

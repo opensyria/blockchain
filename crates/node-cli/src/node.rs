@@ -15,6 +15,7 @@ pub struct Node {
     storage: Storage,
     governance_storage: GovernanceStorage,
     pending_transactions: HashMap<[u8; 32], Transaction>,
+    #[allow(dead_code)]
     data_dir: PathBuf,
 }
 
@@ -458,6 +459,7 @@ impl Node {
     }
 
     /// Add transaction to pending pool
+    #[allow(dead_code)]
     pub fn add_transaction_to_mempool(&mut self, transaction: Transaction) -> Result<()> {
         // Verify transaction
         transaction

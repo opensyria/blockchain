@@ -425,7 +425,7 @@ async fn main() -> Result<()> {
 
             if let Some(block) = block {
                 println!("{}", "═".repeat(60).cyan());
-                println!("{}", format!("  Block Details  ").cyan().bold());
+                println!("{}", "  Block Details  ".cyan().bold());
                 println!("{}", "═".repeat(60).cyan());
                 println!();
                 println!("{}: {}", "Hash".yellow(), hex::encode(block.hash()));
@@ -526,8 +526,6 @@ async fn main() -> Result<()> {
 
 async fn handle_network_command(command: NetworkCommands, data_dir: PathBuf) -> Result<()> {
     use opensyria_network::{NetworkEvent, NetworkNode, NodeConfig};
-    use std::sync::Arc;
-    use tokio::sync::RwLock;
 
     match command {
         NetworkCommands::Start {
@@ -602,9 +600,8 @@ async fn handle_network_command(command: NetworkCommands, data_dir: PathBuf) -> 
                         }
                         NetworkEvent::NewBlock(block) => {
                             println!(
-                                "{} {} (hash: {}...)",
+                                "{} block (hash: {}...)",
                                 "📦 New block received:".cyan(),
-                                "block",
                                 hex::encode(&block.hash()[..8])
                             );
                         }
@@ -656,7 +653,7 @@ async fn handle_network_command(command: NetworkCommands, data_dir: PathBuf) -> 
             println!("{}", "Use 'network start' to run a network node".dimmed());
         }
 
-        NetworkCommands::Dial { address } => {
+        NetworkCommands::Dial { address: _ } => {
             println!("{}", "═".repeat(60).cyan());
             println!("{}", "  Connecting to Peer  ".cyan().bold());
             println!("{}", "═".repeat(60).cyan());
@@ -1195,7 +1192,7 @@ async fn handle_governance(data_dir: PathBuf, command: GovernanceCommands) -> Re
 }
 
 fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Result<()> {
-    use opensyria_core::crypto::{KeyPair, PublicKey};
+    use opensyria_core::crypto::PublicKey;
     use opensyria_core::multisig::{MultisigAccount, MultisigTransaction};
     use std::fs;
 
@@ -1444,9 +1441,8 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
 
 fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
     use opensyria_core::crypto::PublicKey;
-    use opensyria_mining_pool::{MiningPool, PoolConfig, RewardMethod, Share};
+    use opensyria_mining_pool::{MiningPool, PoolConfig, RewardMethod};
     use std::fs;
-    use std::time::{SystemTime, UNIX_EPOCH};
 
     let pool_file = data_dir.join("mining_pool.json");
 
@@ -1480,7 +1476,7 @@ fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
                 server_address: "0.0.0.0:3333".to_string(),
             };
 
-            let pool = MiningPool::new(config.clone());
+            let _pool = MiningPool::new(config.clone());
 
             // Save pool configuration
             let json = serde_json::to_string_pretty(&config)?;

@@ -250,34 +250,12 @@ mod tests {
     use super::*;
     use opensyria_core::crypto::KeyPair;
 
-    async fn create_test_mempool() -> Mempool {
-        let temp_dir = std::env::temp_dir().join("mempool_test");
-        let _ = std::fs::remove_dir_all(&temp_dir);
-
-        let mut state = StateStorage::open(temp_dir.clone()).unwrap();
-
-        // Create test accounts with balances
-        for _ in 0..5 {
-            let keypair = KeyPair::generate();
-            state
-                .set_balance(&keypair.public_key(), 10_000_000)
-                .unwrap();
-            state.set_nonce(&keypair.public_key(), 0).unwrap();
-        }
-
-        let state = Arc::new(RwLock::new(state));
-        let config = MempoolConfig::default();
-
-        Mempool::new(config, state)
-    }
-
     #[tokio::test]
     async fn test_add_transaction() {
-        let temp_dir =
-            std::env::temp_dir().join(format!("mempool_add_test_{}", std::process::id()));
+        let temp_dir = std::env::temp_dir().join("mempool_add_test");
         let _ = std::fs::remove_dir_all(&temp_dir);
 
-        let mut state = StateStorage::open(temp_dir.clone()).unwrap();
+        let state = StateStorage::open(temp_dir.clone()).unwrap();
         let sender = KeyPair::generate();
         let receiver = KeyPair::generate();
 
@@ -312,7 +290,7 @@ mod tests {
             std::env::temp_dir().join(format!("mempool_priority_test_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&temp_dir);
 
-        let mut state = StateStorage::open(temp_dir.clone()).unwrap();
+        let state = StateStorage::open(temp_dir.clone()).unwrap();
         let sender = KeyPair::generate();
         let receiver = KeyPair::generate();
 
@@ -362,7 +340,7 @@ mod tests {
             std::env::temp_dir().join(format!("mempool_remove_test_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&temp_dir);
 
-        let mut state = StateStorage::open(temp_dir.clone()).unwrap();
+        let state = StateStorage::open(temp_dir.clone()).unwrap();
         let sender = KeyPair::generate();
         let receiver = KeyPair::generate();
 
