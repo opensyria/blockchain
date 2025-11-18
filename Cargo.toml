@@ -22,7 +22,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Open Syria Contributors"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/OpenSyria/blockchain"
+repository = "https://github.com/opensyria/blockchain"
 
 [workspace.dependencies]
 # Cryptography

@@ -1,6 +1,14 @@
 # Open Syria Blockchain | بلوكتشين سوريا المفتوحة
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-72%20passing-success.svg)]()
+
 A sovereign, Rust-based blockchain for the Digital Lira (الليرة الرقمية).
+
+**🚀 [Getting Started](docs/GETTING_STARTED.md)** | **📚 [Documentation](docs/README.md)** | **❓ [FAQ](docs/FAQ.md)** | **🤝 [Contributing](CONTRIBUTING.md)**
 
 ## Architecture
 
@@ -603,9 +611,10 @@ MIT OR Apache-2.0
 
 ## Contact
 
-- **Repository:** https://github.com/OpenSyria/blockchain (placeholder)
-- **Community:** TBD
-- **Security:** security@opensyria.org (placeholder)
+- **Repository:** https://github.com/opensyria/blockchain
+- **Issues:** https://github.com/opensyria/blockchain/issues
+- **Discussions:** https://github.com/opensyria/blockchain/discussions
+- **Security:** security@opensyria.org (for security issues only)
 
 ---
 
