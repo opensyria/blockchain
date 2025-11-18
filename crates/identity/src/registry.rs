@@ -6,10 +6,10 @@ use std::collections::HashMap;
 pub struct IdentityRegistry {
     /// All tokens by ID
     tokens: HashMap<String, IdentityToken>,
-    
+
     /// Tokens owned by each address
     owners: HashMap<PublicKey, Vec<String>>,
-    
+
     /// Verified authorities (can mint verified tokens)
     authorities: Vec<PublicKey>,
 }
@@ -39,7 +39,7 @@ impl IdentityRegistry {
     /// Mint a new identity token
     pub fn mint(&mut self, token: IdentityToken) -> Result<(), RegistryError> {
         let token_id = token.id.clone();
-        
+
         // Check if token ID already exists
         if self.tokens.contains_key(&token_id) {
             return Err(RegistryError::TokenExists);
@@ -66,7 +66,8 @@ impl IdentityRegistry {
         block_height: u64,
     ) -> Result<(), RegistryError> {
         // Get token
-        let token = self.tokens
+        let token = self
+            .tokens
             .get_mut(token_id)
             .ok_or(RegistryError::TokenNotFound)?;
 
@@ -136,7 +137,10 @@ impl IdentityRegistry {
     }
 
     /// Get tokens by category
-    pub fn get_by_category(&self, category: &crate::token::CulturalCategory) -> Vec<&IdentityToken> {
+    pub fn get_by_category(
+        &self,
+        category: &crate::token::CulturalCategory,
+    ) -> Vec<&IdentityToken> {
         self.tokens
             .values()
             .filter(|token| &token.category == category)
@@ -182,11 +186,7 @@ mod tests {
     fn test_mint_token() {
         let mut registry = IdentityRegistry::new();
         let owner = KeyPair::generate().public_key();
-        let metadata = HeritageMetadata::new(
-            "Test".to_string(),
-            "Description".to_string(),
-            None,
-        );
+        let metadata = HeritageMetadata::new("Test".to_string(), "Description".to_string(), None);
 
         let token = IdentityToken::new(
             "token-001".to_string(),
@@ -206,11 +206,7 @@ mod tests {
         let mut registry = IdentityRegistry::new();
         let owner1 = KeyPair::generate().public_key();
         let owner2 = KeyPair::generate().public_key();
-        let metadata = HeritageMetadata::new(
-            "Test".to_string(),
-            "Description".to_string(),
-            None,
-        );
+        let metadata = HeritageMetadata::new("Test".to_string(), "Description".to_string(), None);
 
         let token = IdentityToken::new(
             "token-001".to_string(),
@@ -223,7 +219,9 @@ mod tests {
         registry.mint(token).unwrap();
 
         // Transfer
-        assert!(registry.transfer("token-001", &owner1, &owner2, 100).is_ok());
+        assert!(registry
+            .transfer("token-001", &owner1, &owner2, 100)
+            .is_ok());
 
         // Verify new owner
         let token = registry.get_token("token-001").unwrap();
@@ -251,12 +249,8 @@ mod tests {
         let mut registry = IdentityRegistry::new();
         let owner = KeyPair::generate().public_key();
 
-        let metadata = HeritageMetadata::new(
-            "Site 1".to_string(),
-            "Description".to_string(),
-            None,
-        )
-        .with_tags(vec!["ancient".to_string(), "monument".to_string()]);
+        let metadata = HeritageMetadata::new("Site 1".to_string(), "Description".to_string(), None)
+            .with_tags(vec!["ancient".to_string(), "monument".to_string()]);
 
         let token = IdentityToken::new(
             "token-001".to_string(),

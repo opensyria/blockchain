@@ -91,8 +91,7 @@ impl WalletStorage {
         let filename = format!("{}.json", account.name);
         let path = self.wallet_dir.join(filename);
 
-        let json = serde_json::to_string_pretty(account)
-            .context("Failed to serialize account")?;
+        let json = serde_json::to_string_pretty(account).context("Failed to serialize account")?;
 
         fs::write(&path, json).context("Failed to write account file")?;
 
@@ -104,11 +103,10 @@ impl WalletStorage {
         let filename = format!("{}.json", name);
         let path = self.wallet_dir.join(filename);
 
-        let json = fs::read_to_string(&path)
-            .context(format!("Account '{}' not found", name))?;
+        let json = fs::read_to_string(&path).context(format!("Account '{}' not found", name))?;
 
-        let account: Account = serde_json::from_str(&json)
-            .context("Failed to deserialize account")?;
+        let account: Account =
+            serde_json::from_str(&json).context("Failed to deserialize account")?;
 
         Ok(account)
     }
@@ -136,8 +134,7 @@ impl WalletStorage {
         let filename = format!("{}.json", name);
         let path = self.wallet_dir.join(filename);
 
-        fs::remove_file(&path)
-            .context(format!("Failed to delete account '{}'", name))?;
+        fs::remove_file(&path).context(format!("Failed to delete account '{}'", name))?;
 
         Ok(())
     }

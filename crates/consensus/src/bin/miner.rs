@@ -27,17 +27,15 @@ fn main() {
     println!("{}", "═".repeat(60).cyan());
     println!(
         "{}",
-        "  Open Syria Proof-of-Work Miner | منقّب البرهان على العمل  ".cyan().bold()
+        "  Open Syria Proof-of-Work Miner | منقّب البرهان على العمل  "
+            .cyan()
+            .bold()
     );
     println!("{}", "═".repeat(60).cyan());
     println!();
 
     println!("{}: {}", "Difficulty | الصعوبة".yellow(), cli.difficulty);
-    println!(
-        "{}: {}",
-        "Target Blocks | عدد الكتل".yellow(),
-        cli.blocks
-    );
+    println!("{}: {}", "Target Blocks | عدد الكتل".yellow(), cli.blocks);
     println!();
 
     let pow = ProofOfWork::new(cli.difficulty);

@@ -1,6 +1,6 @@
 use crate::StorageError;
 use opensyria_core::Block;
-use rocksdb::{DB, Options};
+use rocksdb::{Options, DB};
 use std::path::PathBuf;
 
 /// Blockchain storage using RocksDB
@@ -14,9 +14,9 @@ impl BlockchainStorage {
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
-        
+
         let db = DB::open(&opts, path)?;
-        
+
         Ok(Self { db })
     }
 
@@ -24,12 +24,12 @@ impl BlockchainStorage {
     pub fn put_block(&self, block: &Block) -> Result<(), StorageError> {
         let hash = block.hash();
         let data = bincode::serialize(block)?;
-        
+
         self.db.put(&hash, &data)?;
-        
+
         // Also store by height if we know it
         // For now, just store by hash
-        
+
         Ok(())
     }
 
@@ -92,8 +92,7 @@ impl BlockchainStorage {
     pub fn get_chain_height(&self) -> Result<u64, StorageError> {
         match self.db.get(b"chain_height")? {
             Some(data) => {
-                let bytes: [u8; 8] = data.try_into()
-                    .map_err(|_| StorageError::InvalidChain)?;
+                let bytes: [u8; 8] = data.try_into().map_err(|_| StorageError::InvalidChain)?;
                 Ok(u64::from_le_bytes(bytes))
             }
             None => Ok(0),
@@ -142,7 +141,7 @@ impl BlockchainStorage {
     /// Get blocks in range [start_height, end_height]
     pub fn get_block_range(&self, start: u64, end: u64) -> Result<Vec<Block>, StorageError> {
         let mut blocks = Vec::new();
-        
+
         for height in start..=end {
             if let Some(block) = self.get_block_by_height(height)? {
                 blocks.push(block);
@@ -150,7 +149,7 @@ impl BlockchainStorage {
                 break;
             }
         }
-        
+
         Ok(blocks)
     }
 }
@@ -169,7 +168,7 @@ mod tests {
         storage.append_block(&genesis).unwrap();
 
         assert_eq!(storage.get_chain_height().unwrap(), 1);
-        
+
         let retrieved = storage.get_block_by_height(1).unwrap().unwrap();
         assert_eq!(retrieved.hash(), genesis.hash());
     }

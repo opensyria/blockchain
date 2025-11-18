@@ -11,36 +11,25 @@ pub enum NetworkMessage {
     },
 
     /// Response with requested blocks
-    Blocks {
-        blocks: Vec<Block>,
-    },
+    Blocks { blocks: Vec<Block> },
 
     /// Request the current chain tip height
     GetChainTip,
 
     /// Response with chain tip height and hash
-    ChainTip {
-        height: u64,
-        block_hash: [u8; 32],
-    },
+    ChainTip { height: u64, block_hash: [u8; 32] },
 
     /// Broadcast a new block
-    NewBlock {
-        block: Block,
-    },
+    NewBlock { block: Block },
 
     /// Broadcast a new transaction
-    NewTransaction {
-        transaction: Transaction,
-    },
+    NewTransaction { transaction: Transaction },
 
     /// Request peer list
     GetPeers,
 
     /// Response with peer list
-    Peers {
-        peers: Vec<String>,
-    },
+    Peers { peers: Vec<String> },
 }
 
 /// Protocol configuration
@@ -104,7 +93,7 @@ impl NetworkMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use opensyria_core::{BlockHeader, crypto::KeyPair};
+    use opensyria_core::{crypto::KeyPair, BlockHeader};
 
     #[test]
     fn test_serialize_get_blocks() {
@@ -117,7 +106,10 @@ mod tests {
         let decoded = NetworkMessage::from_bytes(&bytes).unwrap();
 
         match decoded {
-            NetworkMessage::GetBlocks { start_height, max_blocks } => {
+            NetworkMessage::GetBlocks {
+                start_height,
+                max_blocks,
+            } => {
                 assert_eq!(start_height, 100);
                 assert_eq!(max_blocks, 50);
             }
@@ -128,15 +120,11 @@ mod tests {
     #[test]
     fn test_serialize_new_transaction() {
         let keypair = KeyPair::generate();
-        let tx = Transaction::new(
-            keypair.public_key(),
-            keypair.public_key(),
-            100,
-            1,
-            0,
-        );
+        let tx = Transaction::new(keypair.public_key(), keypair.public_key(), 100, 1, 0);
 
-        let msg = NetworkMessage::NewTransaction { transaction: tx.clone() };
+        let msg = NetworkMessage::NewTransaction {
+            transaction: tx.clone(),
+        };
         let bytes = msg.to_bytes().unwrap();
         let decoded = NetworkMessage::from_bytes(&bytes).unwrap();
 

@@ -67,11 +67,7 @@ pub struct Block {
 
 impl Block {
     /// Create new block
-    pub fn new(
-        previous_hash: [u8; 32],
-        transactions: Vec<Transaction>,
-        difficulty: u32,
-    ) -> Self {
+    pub fn new(previous_hash: [u8; 32], transactions: Vec<Transaction>, difficulty: u32) -> Self {
         let merkle_root = Self::calculate_merkle_root(&transactions);
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -193,10 +189,10 @@ mod tests {
             difficulty: 8, // 1 leading zero byte
             nonce: 0,
         };
-        
+
         // Hash won't meet difficulty initially
         assert!(!header.meets_difficulty());
-        
+
         // Simulate finding valid nonce
         for nonce in 0..100000 {
             header.nonce = nonce;
@@ -209,10 +205,10 @@ mod tests {
     #[test]
     fn test_merkle_root_changes_with_transactions() {
         use crate::{crypto::KeyPair, transaction::Transaction};
-        
+
         let sender = KeyPair::generate();
         let receiver = KeyPair::generate();
-        
+
         let mut tx = Transaction::new(
             sender.public_key(),
             receiver.public_key(),
@@ -222,20 +218,20 @@ mod tests {
         );
         let sig_hash = tx.signing_hash();
         tx = tx.with_signature(sender.sign(&sig_hash));
-        
+
         let block1 = Block::new([0u8; 32], vec![], 16);
         let block2 = Block::new([0u8; 32], vec![tx], 16);
-        
+
         assert_ne!(block1.header.merkle_root, block2.header.merkle_root);
     }
 
     #[test]
     fn test_merkle_root_verification() {
         use crate::{crypto::KeyPair, transaction::Transaction};
-        
+
         let sender = KeyPair::generate();
         let receiver = KeyPair::generate();
-        
+
         let mut tx = Transaction::new(
             sender.public_key(),
             receiver.public_key(),
@@ -245,7 +241,7 @@ mod tests {
         );
         let sig_hash = tx.signing_hash();
         tx = tx.with_signature(sender.sign(&sig_hash));
-        
+
         let block = Block::new([0u8; 32], vec![tx], 16);
         assert!(block.verify_merkle_root());
     }

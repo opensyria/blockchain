@@ -1,7 +1,7 @@
 use clap::Parser;
-use std::path::PathBuf;
 use opensyria_node_cli::Node;
-use opensyria_wallet_api::{AppState, start_server};
+use opensyria_wallet_api::{start_server, AppState};
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "opensyria-wallet-api")]
@@ -35,7 +35,9 @@ async fn main() -> anyhow::Result<()> {
     // Open node
     println!("📂 Opening node at: {}", data_dir.display());
     let node = Node::open(data_dir)?;
-    let chain_height = node.get_blockchain().get_chain_height()
+    let chain_height = node
+        .get_blockchain()
+        .get_chain_height()
         .map_err(|e| anyhow::anyhow!("Failed to get chain height: {}", e))?;
     println!("✅ Node opened successfully");
     println!("   Chain height: {}", chain_height);

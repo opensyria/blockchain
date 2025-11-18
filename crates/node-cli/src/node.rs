@@ -6,9 +6,9 @@ use opensyria_governance::{
     GovernanceConfig, GovernanceManager, GovernanceStorage, ProposalType, Vote,
 };
 use opensyria_storage::Storage;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Instant;
-use std::collections::HashMap;
 
 /// Blockchain node with mining and transaction processing
 pub struct Node {
@@ -21,16 +21,14 @@ pub struct Node {
 impl Node {
     /// Initialize a new blockchain with genesis block
     pub fn init(data_dir: PathBuf, difficulty: u32) -> Result<Self> {
-        std::fs::create_dir_all(&data_dir)
-            .context("Failed to create data directory")?;
+        std::fs::create_dir_all(&data_dir).context("Failed to create data directory")?;
 
-        let storage = Storage::open(data_dir.clone())
-            .context("Failed to open storage")?;
+        let storage = Storage::open(data_dir.clone()).context("Failed to open storage")?;
 
         // Initialize governance
         let gov_dir = data_dir.join("governance");
-        let governance_storage = GovernanceStorage::open(&gov_dir)
-            .context("Failed to open governance storage")?;
+        let governance_storage =
+            GovernanceStorage::open(&gov_dir).context("Failed to open governance storage")?;
 
         if !governance_storage.has_snapshot()? {
             let config = GovernanceConfig::default();
@@ -42,10 +40,15 @@ impl Node {
 
         // Create and store genesis block
         let genesis = Block::genesis(difficulty);
-        storage.blockchain.append_block(&genesis)
+        storage
+            .blockchain
+            .append_block(&genesis)
             .context("Failed to append genesis block")?;
 
-        tracing::info!("Genesis block created with hash: {}", hex::encode(genesis.hash()));
+        tracing::info!(
+            "Genesis block created with hash: {}",
+            hex::encode(genesis.hash())
+        );
 
         Ok(Self {
             storage,
@@ -57,14 +60,15 @@ impl Node {
 
     /// Open existing blockchain node
     pub fn open(data_dir: PathBuf) -> Result<Self> {
-        let storage = Storage::open(data_dir.clone())
-            .context("Failed to open storage")?;
+        let storage = Storage::open(data_dir.clone()).context("Failed to open storage")?;
 
         let gov_dir = data_dir.join("governance");
-        let governance_storage = GovernanceStorage::open(&gov_dir)
-            .context("Failed to open governance storage")?;
+        let governance_storage =
+            GovernanceStorage::open(&gov_dir).context("Failed to open governance storage")?;
 
-        let height = storage.blockchain.get_chain_height()
+        let height = storage
+            .blockchain
+            .get_chain_height()
             .context("Failed to get chain height")?;
 
         if height == 0 {
@@ -83,16 +87,20 @@ impl Node {
 
     /// Get current blockchain height
     pub fn get_height(&self) -> Result<u64> {
-        self.storage.blockchain.get_chain_height()
+        self.storage
+            .blockchain
+            .get_chain_height()
             .context("Failed to get chain height")
     }
 
     /// Get chain tip (latest block)
     pub fn get_tip(&self) -> Result<Option<Block>> {
         let tip_hash = self.storage.blockchain.get_chain_tip()?;
-        
+
         if let Some(hash) = tip_hash {
-            self.storage.blockchain.get_block(&hash)
+            self.storage
+                .blockchain
+                .get_block(&hash)
                 .context("Failed to get tip block")
         } else {
             Ok(None)
@@ -101,19 +109,25 @@ impl Node {
 
     /// Get block by height
     pub fn get_block_by_height(&self, height: u64) -> Result<Option<Block>> {
-        self.storage.blockchain.get_block_by_height(height)
+        self.storage
+            .blockchain
+            .get_block_by_height(height)
             .context("Failed to get block")
     }
 
     /// Get block range
     pub fn get_block_range(&self, start: u64, end: u64) -> Result<Vec<Block>> {
-        self.storage.blockchain.get_block_range(start, end)
+        self.storage
+            .blockchain
+            .get_block_range(start, end)
             .context("Failed to get block range")
     }
 
     /// Get account balance
     pub fn get_balance(&self, address: &PublicKey) -> Result<u64> {
-        self.storage.state.get_balance(address)
+        self.storage
+            .state
+            .get_balance(address)
             .context("Failed to get balance")
     }
 
@@ -125,12 +139,18 @@ impl Node {
         // Check nonce
         let expected_nonce = self.storage.state.get_nonce(&tx.from)?;
         if tx.nonce != expected_nonce {
-            anyhow::bail!("Invalid nonce: expected {}, got {}", expected_nonce, tx.nonce);
+            anyhow::bail!(
+                "Invalid nonce: expected {}, got {}",
+                expected_nonce,
+                tx.nonce
+            );
         }
 
         // Process transfer
         let total = tx.amount + tx.fee;
-        self.storage.state.transfer(&tx.from, &tx.to, total)
+        self.storage
+            .state
+            .transfer(&tx.from, &tx.to, total)
             .context("Transfer failed")?;
 
         // Increment nonce
@@ -161,7 +181,11 @@ impl Node {
         println!(
             "{}: {}",
             "Target blocks".yellow(),
-            if block_count == 0 { "continuous".to_string() } else { block_count.to_string() }
+            if block_count == 0 {
+                "continuous".to_string()
+            } else {
+                block_count.to_string()
+            }
         );
         println!();
 
@@ -177,7 +201,11 @@ impl Node {
             let block = Block::new(previous_hash, vec![], difficulty);
 
             if verbose {
-                println!("{} {}", "▶ Mining Block".green().bold(), current_height + mined_count as u64 + 1);
+                println!(
+                    "{} {}",
+                    "▶ Mining Block".green().bold(),
+                    current_height + mined_count as u64 + 1
+                );
             }
 
             // Mine the block
@@ -202,7 +230,9 @@ impl Node {
             }
 
             // Append to blockchain
-            self.storage.blockchain.append_block(&mined_block)
+            self.storage
+                .blockchain
+                .append_block(&mined_block)
                 .context("Failed to append mined block")?;
 
             mined_count += 1;
@@ -225,7 +255,11 @@ impl Node {
         println!("{}", "═".repeat(60).cyan());
         println!();
         println!("{}: {} blocks", "Mined".yellow(), mined_count);
-        println!("{}: {:.2}s", "Total time".yellow(), total_time.as_secs_f64());
+        println!(
+            "{}: {:.2}s",
+            "Total time".yellow(),
+            total_time.as_secs_f64()
+        );
         println!(
             "{}: {:.2}s",
             "Avg time/block".yellow(),
@@ -294,12 +328,7 @@ impl Node {
     }
 
     /// Cast a vote on a proposal
-    pub fn vote_on_proposal(
-        &self,
-        proposal_id: u64,
-        voter: PublicKey,
-        vote: Vote,
-    ) -> Result<()> {
+    pub fn vote_on_proposal(&self, proposal_id: u64, voter: PublicKey, vote: Vote) -> Result<()> {
         let mut manager = self.load_governance()?;
 
         // Get voter's voting power from their balance
@@ -407,16 +436,12 @@ impl Node {
             format!("{}", stats.hashes_computed).white(),
             stats.duration.as_secs_f64()
         );
-        println!(
-            "    {}: {:.2} H/s",
-            "Hash Rate".dimmed(),
-            stats.hash_rate
-        );
+        println!("    {}: {:.2} H/s", "Hash Rate".dimmed(), stats.hash_rate);
         println!();
     }
 
     // API accessors for wallet API
-    
+
     /// Get reference to blockchain
     pub fn get_blockchain(&self) -> &opensyria_storage::BlockchainStorage {
         &self.storage.blockchain
@@ -435,13 +460,14 @@ impl Node {
     /// Add transaction to pending pool
     pub fn add_transaction_to_mempool(&mut self, transaction: Transaction) -> Result<()> {
         // Verify transaction
-        transaction.verify()
+        transaction
+            .verify()
             .context("Invalid transaction signature")?;
 
         // Check sender has sufficient balance
         let balance = self.storage.state.get_balance(&transaction.from)?;
         let nonce = self.storage.state.get_nonce(&transaction.from)?;
-        
+
         let total_cost = transaction.amount + transaction.fee;
         if balance < total_cost {
             anyhow::bail!("Insufficient balance");
@@ -449,13 +475,17 @@ impl Node {
 
         // Check nonce
         if transaction.nonce != nonce {
-            anyhow::bail!("Invalid nonce. Expected {}, got {}", nonce, transaction.nonce);
+            anyhow::bail!(
+                "Invalid nonce. Expected {}, got {}",
+                nonce,
+                transaction.nonce
+            );
         }
 
         // Add to pending pool
         let tx_hash = transaction.hash();
         self.pending_transactions.insert(tx_hash, transaction);
-        
+
         Ok(())
     }
 }

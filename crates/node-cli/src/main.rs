@@ -3,9 +3,9 @@ mod node;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::*;
+use ed25519_dalek::Signer;
 use node::Node;
 use opensyria_core::crypto::PublicKey;
-use ed25519_dalek::Signer;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -394,20 +394,28 @@ async fn main() -> Result<()> {
             println!("{}", "═".repeat(60).cyan());
             println!();
             println!("{}: {}", "Chain Height".yellow(), height);
-            
+
             if let Some(tip_block) = tip {
-                println!("{}: {}", "Latest Block".yellow(), hex::encode(tip_block.hash()));
+                println!(
+                    "{}: {}",
+                    "Latest Block".yellow(),
+                    hex::encode(tip_block.hash())
+                );
                 println!("{}: {}", "Timestamp".yellow(), tip_block.header.timestamp);
                 println!("{}: {}", "Difficulty".yellow(), tip_block.header.difficulty);
-                println!("{}: {}", "Transactions".yellow(), tip_block.transactions.len());
+                println!(
+                    "{}: {}",
+                    "Transactions".yellow(),
+                    tip_block.transactions.len()
+                );
             }
-            
+
             println!();
         }
 
         Commands::Block { height } => {
             let node = Node::open(data_dir)?;
-            
+
             let block = if height == "latest" {
                 node.get_tip()?
             } else {
@@ -421,8 +429,16 @@ async fn main() -> Result<()> {
                 println!("{}", "═".repeat(60).cyan());
                 println!();
                 println!("{}: {}", "Hash".yellow(), hex::encode(block.hash()));
-                println!("{}: {}", "Previous Hash".yellow(), hex::encode(block.header.previous_hash));
-                println!("{}: {}", "Merkle Root".yellow(), hex::encode(block.header.merkle_root));
+                println!(
+                    "{}: {}",
+                    "Previous Hash".yellow(),
+                    hex::encode(block.header.previous_hash)
+                );
+                println!(
+                    "{}: {}",
+                    "Merkle Root".yellow(),
+                    hex::encode(block.header.merkle_root)
+                );
                 println!("{}: {}", "Timestamp".yellow(), block.header.timestamp);
                 println!("{}: {}", "Difficulty".yellow(), block.header.difficulty);
                 println!("{}: {}", "Nonce".yellow(), block.header.nonce);
@@ -450,7 +466,11 @@ async fn main() -> Result<()> {
 
             println!();
             println!("{}: {}...", "Address".cyan(), &address[..16]);
-            println!("{}: {} SYL", "Balance".yellow().bold(), balance as f64 / 1_000_000.0);
+            println!(
+                "{}: {} SYL",
+                "Balance".yellow().bold(),
+                balance as f64 / 1_000_000.0
+            );
             println!();
         }
 
@@ -469,7 +489,10 @@ async fn main() -> Result<()> {
             let height = node.get_height()?;
             let end = if end == 0 { height } else { end };
 
-            println!("{}", format!("Exporting blocks {} to {}...", start, end).dimmed());
+            println!(
+                "{}",
+                format!("Exporting blocks {} to {}...", start, end).dimmed()
+            );
 
             let blocks = node.get_block_range(start, end)?;
             let json = serde_json::to_string_pretty(&blocks)?;
@@ -502,24 +525,32 @@ async fn main() -> Result<()> {
 }
 
 async fn handle_network_command(command: NetworkCommands, data_dir: PathBuf) -> Result<()> {
-    use opensyria_network::{NetworkNode, NodeConfig, NetworkEvent};
+    use opensyria_network::{NetworkEvent, NetworkNode, NodeConfig};
     use std::sync::Arc;
     use tokio::sync::RwLock;
 
     match command {
-        NetworkCommands::Start { listen, bootstrap, mdns } => {
+        NetworkCommands::Start {
+            listen,
+            bootstrap,
+            mdns,
+        } => {
             println!("{}", "═".repeat(60).cyan());
             println!("{}", "  Starting P2P Network Node  ".cyan().bold());
             println!("{}", "═".repeat(60).cyan());
             println!();
 
             // Parse multiaddrs
-            let listen_addr = listen.parse()
+            let listen_addr = listen
+                .parse()
                 .map_err(|e| anyhow::anyhow!("Invalid listen address: {}", e))?;
-            
+
             let bootstrap_peers: Result<Vec<_>> = bootstrap
                 .iter()
-                .map(|addr| addr.parse().map_err(|e| anyhow::anyhow!("Invalid bootstrap address {}: {}", addr, e)))
+                .map(|addr| {
+                    addr.parse()
+                        .map_err(|e| anyhow::anyhow!("Invalid bootstrap address {}: {}", addr, e))
+                })
                 .collect();
             let bootstrap_peers = bootstrap_peers?;
 
@@ -533,7 +564,11 @@ async fn handle_network_command(command: NetworkCommands, data_dir: PathBuf) -> 
             };
 
             println!("{}: {}", "Listen address".cyan(), listen);
-            println!("{}: {}", "mDNS discovery".cyan(), if mdns { "enabled" } else { "disabled" });
+            println!(
+                "{}: {}",
+                "mDNS discovery".cyan(),
+                if mdns { "enabled" } else { "disabled" }
+            );
             if !bootstrap.is_empty() {
                 println!("{}: {} peers", "Bootstrap".cyan(), bootstrap.len());
                 for peer in &bootstrap {
@@ -589,19 +624,14 @@ async fn handle_network_command(command: NetworkCommands, data_dir: PathBuf) -> 
                             );
                         }
                         NetworkEvent::SyncProgress { current, target } => {
-                            println!(
-                                "{} {}/{}",
-                                "🔄 Syncing:".dimmed(),
-                                current,
-                                target
-                            );
+                            println!("{} {}/{}", "🔄 Syncing:".dimmed(), current, target);
                         }
                     }
                 }
             });
 
             println!("{}", "Press Ctrl+C to stop".dimmed());
-            
+
             // Run network node
             tokio::select! {
                 result = node.run() => {
@@ -632,7 +662,10 @@ async fn handle_network_command(command: NetworkCommands, data_dir: PathBuf) -> 
             println!("{}", "═".repeat(60).cyan());
             println!();
             println!("{}", "Not implemented: requires persistent node".yellow());
-            println!("{}", "Use 'network start --bootstrap <addr>' instead".dimmed());
+            println!(
+                "{}",
+                "Use 'network start --bootstrap <addr>' instead".dimmed()
+            );
         }
 
         NetworkCommands::Sync => {
@@ -671,7 +704,16 @@ async fn handle_network_command(command: NetworkCommands, data_dir: PathBuf) -> 
             mine,
             difficulty,
         } => {
-            handle_daemon(data_dir, listen, bootstrap, mdns, sync_interval, mine, difficulty).await?;
+            handle_daemon(
+                data_dir,
+                listen,
+                bootstrap,
+                mdns,
+                sync_interval,
+                mine,
+                difficulty,
+            )
+            .await?;
         }
     }
 
@@ -687,8 +729,8 @@ async fn handle_daemon(
     enable_mining: bool,
     difficulty: u32,
 ) -> Result<()> {
-    use tokio::time::{interval, Duration};
     use tokio::signal;
+    use tokio::time::{interval, Duration};
 
     println!("{}", "═".repeat(60).cyan().bold());
     println!("{}", "  Open Syria Network Daemon  ".cyan().bold());
@@ -698,33 +740,58 @@ async fn handle_daemon(
     // Open node
     let mut node = Node::open(data_dir.clone())?;
     let mut chain_height = node.get_blockchain().get_chain_height()?;
-    
+
     println!("{} {}", "📂 Node directory:".bold(), data_dir.display());
-    println!("{} {}", "📊 Chain height:".bold(), chain_height.to_string().cyan());
+    println!(
+        "{} {}",
+        "📊 Chain height:".bold(),
+        chain_height.to_string().cyan()
+    );
     println!("{} {}", "🌐 Listen address:".bold(), listen.cyan());
-    println!("{} {} seconds", "🔄 Sync interval:".bold(), sync_interval.to_string().cyan());
-    
+    println!(
+        "{} {} seconds",
+        "🔄 Sync interval:".bold(),
+        sync_interval.to_string().cyan()
+    );
+
     if enable_mining {
         println!("{} {}", "⛏️  Mining:".bold(), "enabled".green());
-        println!("{} {}", "💎 Difficulty:".bold(), difficulty.to_string().cyan());
+        println!(
+            "{} {}",
+            "💎 Difficulty:".bold(),
+            difficulty.to_string().cyan()
+        );
     }
-    
+
     if !bootstrap.is_empty() {
-        println!("{} {}", "🔗 Bootstrap peers:".bold(), bootstrap.len().to_string().cyan());
+        println!(
+            "{} {}",
+            "🔗 Bootstrap peers:".bold(),
+            bootstrap.len().to_string().cyan()
+        );
         for peer in &bootstrap {
             println!("   {}", peer.dimmed());
         }
     }
-    
+
     if mdns {
         println!("{} {}", "📡 mDNS:".bold(), "enabled".green());
     }
-    
+
     println!();
-    println!("{}", "🚀 Daemon running... (Press Ctrl+C to stop)".green().bold());
+    println!(
+        "{}",
+        "🚀 Daemon running... (Press Ctrl+C to stop)".green().bold()
+    );
     println!();
-    println!("{}", "Note: Full P2P networking requires NetworkNode integration".dimmed());
-    println!("{}", "This daemon demonstrates auto-mining and periodic checks".dimmed());
+    println!(
+        "{}",
+        "Note: Full P2P networking requires NetworkNode integration".dimmed()
+    );
+    println!(
+        "{}",
+        "This daemon demonstrates auto-mining and periodic checks".dimmed()
+    );
     println!();
 
     // Setup periodic tasks
@@ -742,14 +809,14 @@ async fn handle_daemon(
             _ = status_timer.tick() => {
                 let current_height = node.get_blockchain().get_chain_height()?;
                 if current_height != chain_height {
-                    println!("{} Chain height: {} → {}", 
+                    println!("{} Chain height: {} → {}",
                         "📊".cyan(),
                         chain_height.to_string().dimmed(),
                         current_height.to_string().green()
                     );
                     chain_height = current_height;
                 } else {
-                    println!("{} Status check - height: {}, pending txs: {}", 
+                    println!("{} Status check - height: {}, pending txs: {}",
                         "💫".dimmed(),
                         chain_height.to_string().cyan(),
                         node.get_pending_transactions().len().to_string().dimmed()
@@ -768,8 +835,8 @@ async fn handle_daemon(
                 match mine_block(&mut node, difficulty).await {
                     Ok(Some(block)) => {
                         let height = node.get_blockchain().get_chain_height()?;
-                        println!("{} Mined block at height {} with {} tx(s) ({})", 
-                            "⛏️ ".green(), 
+                        println!("{} Mined block at height {} with {} tx(s) ({})",
+                            "⛏️ ".green(),
                             height.to_string().cyan(),
                             block.transactions.len().to_string().yellow(),
                             hex::encode(&block.hash()[..8]).dimmed()
@@ -796,7 +863,11 @@ async fn handle_daemon(
 
     let final_height = node.get_blockchain().get_chain_height()?;
     println!();
-    println!("{} {}", "Final height:".bold(), final_height.to_string().green());
+    println!(
+        "{} {}",
+        "Final height:".bold(),
+        final_height.to_string().green()
+    );
     println!("{}", "✓ Daemon stopped".green());
     Ok(())
 }
@@ -804,36 +875,38 @@ async fn handle_daemon(
 async fn mine_block(node: &mut Node, difficulty: u32) -> Result<Option<opensyria_core::Block>> {
     use opensyria_consensus::ProofOfWork;
     use opensyria_core::Block;
-    
+
     // Get pending transactions
     let transactions = node.get_pending_transactions();
     if transactions.is_empty() {
         return Ok(None); // Nothing to mine
     }
-    
+
     // Take up to 100 transactions
     let txs: Vec<_> = transactions.into_iter().take(100).collect();
-    
+
     let blockchain = node.get_blockchain();
-    let tip_hash = blockchain.get_chain_tip()?.ok_or_else(|| anyhow::anyhow!("No chain tip"))?;
-    
+    let tip_hash = blockchain
+        .get_chain_tip()?
+        .ok_or_else(|| anyhow::anyhow!("No chain tip"))?;
+
     // Create block
     let block = Block::new(tip_hash, txs, difficulty);
-    
+
     // Mine block (use low difficulty for daemon to avoid blocking too long)
     let pow = ProofOfWork::new(difficulty.min(16)); // Cap at 16 for daemon
     let (mined_block, _stats) = pow.mine(block);
-    
+
     // Append block
     blockchain.append_block(&mined_block)?;
-    
+
     // Update state for block transactions
     for tx in &mined_block.transactions {
         let _ = node.get_state().transfer(&tx.from, &tx.to, tx.amount);
         let _ = node.get_state().sub_balance(&tx.from, tx.fee);
         let _ = node.get_state().increment_nonce(&tx.from);
     }
-    
+
     Ok(Some(mined_block))
 }
 
@@ -860,11 +933,15 @@ async fn handle_governance(data_dir: PathBuf, command: GovernanceCommands) -> Re
                 },
                 "min-fee" => ProposalType::MinimumFee { new_fee: 200 },
                 _ => {
-                    anyhow::bail!("Unknown proposal type: {}\nAvailable types: text, min-fee", proposal_type);
+                    anyhow::bail!(
+                        "Unknown proposal type: {}\nAvailable types: text, min-fee",
+                        proposal_type
+                    );
                 }
             };
 
-            let proposal_id = node.create_proposal(proposer_key, prop_type, title.clone(), description)?;
+            let proposal_id =
+                node.create_proposal(proposer_key, prop_type, title.clone(), description)?;
 
             println!("{}", "═".repeat(60).cyan());
             println!("{}", "  Proposal Created  ".green().bold());
@@ -892,7 +969,10 @@ async fn handle_governance(data_dir: PathBuf, command: GovernanceCommands) -> Re
                 "yes" | "y" => Vote::Yes,
                 "no" | "n" => Vote::No,
                 "abstain" | "a" => Vote::Abstain,
-                _ => anyhow::bail!("Invalid vote choice: {}\nValid choices: yes, no, abstain", choice),
+                _ => anyhow::bail!(
+                    "Invalid vote choice: {}\nValid choices: yes, no, abstain",
+                    choice
+                ),
             };
 
             node.vote_on_proposal(proposal_id, voter_key, vote)?;
@@ -942,7 +1022,11 @@ async fn handle_governance(data_dir: PathBuf, command: GovernanceCommands) -> Re
                 println!("{}: {}", "ID".bold(), proposal.id);
                 println!("{}: {}", "Title".bold(), proposal.title);
                 println!("{}: {:?}", "Status".bold(), proposal.status);
-                println!("{}: {}%", "Participation".bold(), proposal.participation_rate());
+                println!(
+                    "{}: {}%",
+                    "Participation".bold(),
+                    proposal.participation_rate()
+                );
                 println!("{}: {}%", "Yes Votes".bold(), proposal.yes_percentage());
                 println!("{}", "-".repeat(60));
             }
@@ -970,26 +1054,54 @@ async fn handle_governance(data_dir: PathBuf, command: GovernanceCommands) -> Re
             println!("{}: {}", "Created".bold(), proposal.created_at);
             println!("{}: {}", "Voting Start".bold(), proposal.voting_start);
             println!("{}: {}", "Voting End".bold(), proposal.voting_end);
-            println!("{}: {} blocks", "Execution Delay".bold(), proposal.execution_delay);
+            println!(
+                "{}: {} blocks",
+                "Execution Delay".bold(),
+                proposal.execution_delay
+            );
             println!();
-            println!("{}: {}%", "Required Quorum".bold(), proposal.required_quorum);
-            println!("{}: {}%", "Required Threshold".bold(), proposal.required_threshold);
+            println!(
+                "{}: {}%",
+                "Required Quorum".bold(),
+                proposal.required_quorum
+            );
+            println!(
+                "{}: {}%",
+                "Required Threshold".bold(),
+                proposal.required_threshold
+            );
             println!();
             println!("{}: {}", "Yes Votes".bold(), proposal.votes_yes);
             println!("{}: {}", "No Votes".bold(), proposal.votes_no);
             println!("{}: {}", "Abstain Votes".bold(), proposal.votes_abstain);
-            println!("{}: {}%", "Participation".bold(), proposal.participation_rate());
-            println!("{}: {}%", "Yes Percentage".bold(), proposal.yes_percentage());
+            println!(
+                "{}: {}%",
+                "Participation".bold(),
+                proposal.participation_rate()
+            );
+            println!(
+                "{}: {}%",
+                "Yes Percentage".bold(),
+                proposal.yes_percentage()
+            );
             println!();
             println!(
                 "{}: {}",
                 "Meets Quorum".bold(),
-                if proposal.meets_quorum() { "Yes".green() } else { "No".red() }
+                if proposal.meets_quorum() {
+                    "Yes".green()
+                } else {
+                    "No".red()
+                }
             );
             println!(
                 "{}: {}",
                 "Meets Threshold".bold(),
-                if proposal.meets_threshold() { "Yes".green() } else { "No".red() }
+                if proposal.meets_threshold() {
+                    "Yes".green()
+                } else {
+                    "No".red()
+                }
             );
             println!();
 
@@ -998,7 +1110,10 @@ async fn handle_governance(data_dir: PathBuf, command: GovernanceCommands) -> Re
                 println!("{}", "Votes Cast:".cyan().bold());
                 println!("{}", "-".repeat(60));
                 for vote in votes.iter().take(10) {
-                    println!("  {:?} - Power: {} - Block: {}", vote.vote, vote.voting_power, vote.timestamp);
+                    println!(
+                        "  {:?} - Power: {} - Block: {}",
+                        vote.vote, vote.voting_power, vote.timestamp
+                    );
                 }
                 if votes.len() > 10 {
                     println!("  ... and {} more votes", votes.len() - 10);
@@ -1019,19 +1134,47 @@ async fn handle_governance(data_dir: PathBuf, command: GovernanceCommands) -> Re
             println!("{}: {}", "Total Proposals".bold(), stats.total_proposals);
             println!("{}: {}", "Active Proposals".bold(), stats.active_proposals);
             println!("{}: {}", "Passed Proposals".bold(), stats.passed_proposals);
-            println!("{}: {}", "Rejected Proposals".bold(), stats.rejected_proposals);
-            println!("{}: {}", "Executed Proposals".bold(), stats.executed_proposals);
-            println!("{}: {}", "Cancelled Proposals".bold(), stats.cancelled_proposals);
+            println!(
+                "{}: {}",
+                "Rejected Proposals".bold(),
+                stats.rejected_proposals
+            );
+            println!(
+                "{}: {}",
+                "Executed Proposals".bold(),
+                stats.executed_proposals
+            );
+            println!(
+                "{}: {}",
+                "Cancelled Proposals".bold(),
+                stats.cancelled_proposals
+            );
             println!("{}: {}", "Total Votes Cast".bold(), stats.total_votes_cast);
             println!();
 
             let config = manager.config();
             println!("{}", "Configuration:".cyan().bold());
             println!("{}", "-".repeat(60));
-            println!("{}: {} Lira", "Min Proposal Stake".bold(), config.min_proposal_stake / 1_000_000);
-            println!("{}: {} blocks", "Default Voting Period".bold(), config.default_voting_period);
-            println!("{}: {} blocks", "Default Execution Delay".bold(), config.default_execution_delay);
-            println!("{}: {}", "Enabled".bold(), if config.enabled { "Yes" } else { "No" });
+            println!(
+                "{}: {} Lira",
+                "Min Proposal Stake".bold(),
+                config.min_proposal_stake / 1_000_000
+            );
+            println!(
+                "{}: {} blocks",
+                "Default Voting Period".bold(),
+                config.default_voting_period
+            );
+            println!(
+                "{}: {} blocks",
+                "Default Execution Delay".bold(),
+                config.default_execution_delay
+            );
+            println!(
+                "{}: {}",
+                "Enabled".bold(),
+                if config.enabled { "Yes" } else { "No" }
+            );
             println!();
         }
 
@@ -1052,12 +1195,16 @@ async fn handle_governance(data_dir: PathBuf, command: GovernanceCommands) -> Re
 }
 
 fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Result<()> {
+    use opensyria_core::crypto::{KeyPair, PublicKey};
     use opensyria_core::multisig::{MultisigAccount, MultisigTransaction};
-    use opensyria_core::crypto::{PublicKey, KeyPair};
     use std::fs;
 
     match command {
-        MultisigCommands::Create { signer, threshold, balance } => {
+        MultisigCommands::Create {
+            signer,
+            threshold,
+            balance,
+        } => {
             println!("{}", "═".repeat(60).cyan());
             println!("{}", "  Creating Multisig Account  ".cyan().bold());
             println!("{}", "═".repeat(60).cyan());
@@ -1066,7 +1213,9 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
             // Parse signer public keys
             let signers: Result<Vec<PublicKey>> = signer
                 .iter()
-                .map(|s| PublicKey::from_hex(s).map_err(|e| anyhow::anyhow!("Invalid signer key: {}", e)))
+                .map(|s| {
+                    PublicKey::from_hex(s).map_err(|e| anyhow::anyhow!("Invalid signer key: {}", e))
+                })
                 .collect();
             let signers = signers?;
 
@@ -1081,7 +1230,11 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
             // Fund account if balance specified
             if balance > 0 {
                 node.get_state().set_balance(&address, balance)?;
-                println!("{}: {} Lira", "Initial balance".green(), balance as f64 / 1_000_000.0);
+                println!(
+                    "{}: {} Lira",
+                    "Initial balance".green(),
+                    balance as f64 / 1_000_000.0
+                );
             }
 
             println!("{}: {}", "Address".bold(), hex::encode(address.0));
@@ -1111,9 +1264,18 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
                     println!("{}", "═".repeat(60).cyan());
                     println!();
                     println!("{}: {}", "Address".bold(), hex::encode(addr.0));
-                    println!("{}: {} Lira", "Balance".bold(), balance as f64 / 1_000_000.0);
+                    println!(
+                        "{}: {} Lira",
+                        "Balance".bold(),
+                        balance as f64 / 1_000_000.0
+                    );
                     println!("{}: {}", "Nonce".bold(), nonce);
-                    println!("{}: {}-of-{}", "Threshold".bold(), account.threshold, account.num_signers());
+                    println!(
+                        "{}: {}-of-{}",
+                        "Threshold".bold(),
+                        account.threshold,
+                        account.num_signers()
+                    );
                     println!();
                     println!("{}", "Authorized signers:".cyan());
                     for (i, signer) in account.signers.iter().enumerate() {
@@ -1127,13 +1289,21 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
             }
         }
 
-        MultisigCommands::CreateTx { from, to, amount, fee, output } => {
+        MultisigCommands::CreateTx {
+            from,
+            to,
+            amount,
+            fee,
+            output,
+        } => {
             let node = Node::open(data_dir)?;
             let from_addr = PublicKey::from_hex(&from)?;
             let to_addr = PublicKey::from_hex(&to)?;
 
             // Load multisig account
-            let account = node.get_state().get_multisig_account(&from_addr)?
+            let account = node
+                .get_state()
+                .get_multisig_account(&from_addr)?
                 .ok_or_else(|| anyhow::anyhow!("Not a multisig account"))?;
 
             // Get nonce
@@ -1165,7 +1335,11 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
             println!();
         }
 
-        MultisigCommands::Sign { tx_file, private_key, output } => {
+        MultisigCommands::Sign {
+            tx_file,
+            private_key,
+            output,
+        } => {
             // Load transaction
             let json = fs::read_to_string(&tx_file)?;
             let mut tx: MultisigTransaction = serde_json::from_str(&json)?;
@@ -1177,7 +1351,7 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
             }
             let mut key_array = [0u8; 32];
             key_array.copy_from_slice(&key_bytes);
-            
+
             // Create keypair (this is a simplified approach - in production, use proper key derivation)
             let signing_key = ed25519_dalek::SigningKey::from_bytes(&key_array);
             let verifying_key = signing_key.verifying_key();
@@ -1186,7 +1360,7 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
             // Sign transaction
             let msg = tx.signing_hash();
             let signature = signing_key.sign(&msg).to_bytes().to_vec();
-            
+
             tx.add_signature(public_key, signature)?;
 
             // Save signed transaction
@@ -1198,8 +1372,21 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
             println!("{}", "═".repeat(60).cyan());
             println!();
             println!("{}: {}", "Signer".bold(), hex::encode(public_key.0));
-            println!("{}: {}/{}", "Signatures".bold(), tx.signatures.len(), tx.account.threshold);
-            println!("{}: {}", "Ready to submit".bold(), if tx.is_ready() { "Yes ✓".green() } else { "No (need more signatures)".yellow() });
+            println!(
+                "{}: {}/{}",
+                "Signatures".bold(),
+                tx.signatures.len(),
+                tx.account.threshold
+            );
+            println!(
+                "{}: {}",
+                "Ready to submit".bold(),
+                if tx.is_ready() {
+                    "Yes ✓".green()
+                } else {
+                    "No (need more signatures)".yellow()
+                }
+            );
             println!();
             println!("{}: {}", "Output file".green(), output.display());
             println!();
@@ -1207,7 +1394,7 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
 
         MultisigCommands::Submit { tx_file } => {
             let node = Node::open(data_dir)?;
-            
+
             // Load transaction
             let json = fs::read_to_string(&tx_file)?;
             let tx: MultisigTransaction = serde_json::from_str(&json)?;
@@ -1219,9 +1406,10 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
             let from = tx.from();
             let balance = node.get_state().get_balance(&from)?;
             let required = tx.amount + tx.fee;
-            
+
             if balance < required {
-                anyhow::bail!("Insufficient balance: {} required, {} available", 
+                anyhow::bail!(
+                    "Insufficient balance: {} required, {} available",
                     required as f64 / 1_000_000.0,
                     balance as f64 / 1_000_000.0
                 );
@@ -1238,7 +1426,11 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
             println!("{}: {}", "Transaction hash".bold(), hex::encode(tx.hash()));
             println!("{}: {}", "From".bold(), hex::encode(from.0));
             println!("{}: {}", "To".bold(), hex::encode(tx.to.0));
-            println!("{}: {} Lira", "Amount".bold(), tx.amount as f64 / 1_000_000.0);
+            println!(
+                "{}: {} Lira",
+                "Amount".bold(),
+                tx.amount as f64 / 1_000_000.0
+            );
             println!("{}: {} Lira", "Fee".bold(), tx.fee as f64 / 1_000_000.0);
             println!("{}: {}", "Signatures".bold(), tx.signatures.len());
             println!();
@@ -1251,22 +1443,27 @@ fn handle_multisig_command(command: MultisigCommands, data_dir: PathBuf) -> Resu
 }
 
 fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
-    use opensyria_mining_pool::{MiningPool, PoolConfig, RewardMethod, Share};
     use opensyria_core::crypto::PublicKey;
+    use opensyria_mining_pool::{MiningPool, PoolConfig, RewardMethod, Share};
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     let pool_file = data_dir.join("mining_pool.json");
 
     match command {
-        PoolCommands::Init { operator, fee, share_difficulty, method } => {
+        PoolCommands::Init {
+            operator,
+            fee,
+            share_difficulty,
+            method,
+        } => {
             println!("{}", "═".repeat(60).cyan());
             println!("{}", "  Initializing Mining Pool  ".cyan().bold());
             println!("{}", "═".repeat(60).cyan());
             println!();
 
             let operator_key = PublicKey::from_hex(&operator)?;
-            
+
             let reward_method = match method.as_str() {
                 "proportional" => RewardMethod::Proportional,
                 "pps" => RewardMethod::PPS,
@@ -1314,10 +1511,22 @@ fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
             println!("{}", "═".repeat(60).cyan());
             println!();
             println!("{}: {}", "Active Miners".bold(), stats.active_miners);
-            println!("{}: {:.2} MH/s", "Pool Hashrate".bold(), stats.pool_hashrate / 1_000_000.0);
+            println!(
+                "{}: {:.2} MH/s",
+                "Pool Hashrate".bold(),
+                stats.pool_hashrate / 1_000_000.0
+            );
             println!("{}: {}", "Blocks Mined".bold(), stats.blocks_mined);
-            println!("{}: {}", "Current Difficulty".bold(), stats.current_difficulty);
-            println!("{}: {}", "Current Round Shares".bold(), stats.current_round_shares);
+            println!(
+                "{}: {}",
+                "Current Difficulty".bold(),
+                stats.current_difficulty
+            );
+            println!(
+                "{}: {}",
+                "Current Round Shares".bold(),
+                stats.current_round_shares
+            );
             println!("{}: {}%", "Pool Fee".bold(), stats.pool_fee);
             println!();
         }
@@ -1348,8 +1557,14 @@ fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
                 println!("   Valid Shares: {}", miner.valid_shares);
                 println!("   Invalid Shares: {}", miner.invalid_shares);
                 println!("   Hashrate: {:.2} MH/s", miner.hashrate / 1_000_000.0);
-                println!("   Total Rewards: {} Lira", miner.total_rewards as f64 / 1_000_000.0);
-                println!("   Pending: {} Lira", miner.pending_rewards as f64 / 1_000_000.0);
+                println!(
+                    "   Total Rewards: {} Lira",
+                    miner.total_rewards as f64 / 1_000_000.0
+                );
+                println!(
+                    "   Pending: {} Lira",
+                    miner.pending_rewards as f64 / 1_000_000.0
+                );
                 println!();
             }
         }
@@ -1362,9 +1577,9 @@ fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
             let json = fs::read_to_string(&pool_file)?;
             let config: PoolConfig = serde_json::from_str(&json)?;
             let pool = MiningPool::new(config);
-            
+
             let miner_key = PublicKey::from_hex(&address)?;
-            
+
             match pool.get_miner_stats(&miner_key) {
                 Some(stats) => {
                     println!("{}", "═".repeat(60).cyan());
@@ -1375,9 +1590,21 @@ fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
                     println!("{}: {}", "Total Shares".bold(), stats.total_shares);
                     println!("{}: {}", "Valid Shares".bold(), stats.valid_shares);
                     println!("{}: {}", "Invalid Shares".bold(), stats.invalid_shares);
-                    println!("{}: {:.2} MH/s", "Hashrate".bold(), stats.hashrate / 1_000_000.0);
-                    println!("{}: {} Lira", "Total Rewards".bold(), stats.total_rewards as f64 / 1_000_000.0);
-                    println!("{}: {} Lira", "Pending Rewards".bold(), stats.pending_rewards as f64 / 1_000_000.0);
+                    println!(
+                        "{}: {:.2} MH/s",
+                        "Hashrate".bold(),
+                        stats.hashrate / 1_000_000.0
+                    );
+                    println!(
+                        "{}: {} Lira",
+                        "Total Rewards".bold(),
+                        stats.total_rewards as f64 / 1_000_000.0
+                    );
+                    println!(
+                        "{}: {} Lira",
+                        "Pending Rewards".bold(),
+                        stats.pending_rewards as f64 / 1_000_000.0
+                    );
                     println!();
                 }
                 None => {
@@ -1394,7 +1621,7 @@ fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
             let json = fs::read_to_string(&pool_file)?;
             let config: PoolConfig = serde_json::from_str(&json)?;
             let mut pool = MiningPool::new(config.clone());
-            
+
             let miner_key = PublicKey::from_hex(&address)?;
             pool.register_miner(miner_key);
 
@@ -1408,7 +1635,10 @@ fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
             println!();
             println!("{}", "Next steps:".yellow());
             println!("  1. Start your miner pointing to pool server");
-            println!("  2. Monitor stats: pool miner {}", hex::encode(miner_key.0));
+            println!(
+                "  2. Monitor stats: pool miner {}",
+                hex::encode(miner_key.0)
+            );
             println!();
         }
 
@@ -1428,7 +1658,7 @@ fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
 
             if let Some(addr) = miner {
                 let miner_key = PublicKey::from_hex(&addr)?;
-                
+
                 match pool.process_payout(&miner_key) {
                     Ok(amount) => {
                         println!("{}: {}", "Miner".bold(), hex::encode(miner_key.0));
@@ -1442,18 +1672,17 @@ fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
                 }
             } else {
                 // Process all miners
-                let miner_keys: Vec<PublicKey> = pool.get_all_miners()
-                    .into_iter()
-                    .map(|m| m.miner)
-                    .collect();
-                    
+                let miner_keys: Vec<PublicKey> =
+                    pool.get_all_miners().into_iter().map(|m| m.miner).collect();
+
                 let mut total_paid = 0u64;
                 let mut count = 0;
 
                 for miner_key in miner_keys {
                     if let Ok(amount) = pool.process_payout(&miner_key) {
-                        println!("{}: {} Lira", 
-                            hex::encode(&miner_key.0[..8]), 
+                        println!(
+                            "{}: {} Lira",
+                            hex::encode(&miner_key.0[..8]),
                             amount as f64 / 1_000_000.0
                         );
                         total_paid += amount;
@@ -1463,7 +1692,11 @@ fn handle_pool_command(command: PoolCommands, data_dir: PathBuf) -> Result<()> {
 
                 println!();
                 println!("{}: {}", "Miners Paid".bold(), count);
-                println!("{}: {} Lira", "Total Paid".bold(), total_paid as f64 / 1_000_000.0);
+                println!(
+                    "{}: {} Lira",
+                    "Total Paid".bold(),
+                    total_paid as f64 / 1_000_000.0
+                );
                 println!();
             }
         }

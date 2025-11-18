@@ -1,33 +1,33 @@
-use serde::{Deserialize, Serialize};
 use opensyria_core::crypto::PublicKey;
+use serde::{Deserialize, Serialize};
 
 /// Cultural identity token representing Syrian heritage
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IdentityToken {
     /// Unique token identifier
     pub id: String,
-    
+
     /// Owner's public key
     pub owner: PublicKey,
-    
+
     /// Token type classification
     pub token_type: TokenType,
-    
+
     /// Cultural category
     pub category: CulturalCategory,
-    
+
     /// Token metadata (heritage information)
     pub metadata: crate::metadata::HeritageMetadata,
-    
+
     /// IPFS content identifier for multimedia (optional)
     pub ipfs_cid: Option<String>,
-    
+
     /// Creation timestamp
     pub created_at: u64,
-    
+
     /// Minting authority signature
     pub authority_signature: Option<Vec<u8>>,
-    
+
     /// Transfer history (optional)
     pub provenance: Vec<Transfer>,
 }
@@ -46,31 +46,31 @@ pub struct Transfer {
 pub enum TokenType {
     /// Cultural heritage site or monument
     HeritageSite,
-    
+
     /// Traditional craft or artisanship
     TraditionalCraft,
-    
+
     /// Historical document or artifact
     HistoricalDocument,
-    
+
     /// Musical or performing arts tradition
     PerformingArts,
-    
+
     /// Culinary heritage (recipes, techniques)
     CulinaryHeritage,
-    
+
     /// Oral tradition or folklore
     OralTradition,
-    
+
     /// Language preservation
     LanguageHeritage,
-    
+
     /// Community or regional identity
     CommunityIdentity,
-    
+
     /// Personal cultural contribution
     PersonalContribution,
-    
+
     /// Digital cultural creation
     DigitalCulture,
 }
@@ -80,31 +80,31 @@ pub enum TokenType {
 pub enum CulturalCategory {
     /// Ancient history (pre-Islamic)
     Ancient,
-    
+
     /// Islamic heritage
     Islamic,
-    
+
     /// Ottoman period
     Ottoman,
-    
+
     /// Modern Syrian culture
     Modern,
-    
+
     /// Regional traditions (specific cities/areas)
     Regional {
         region: String, // Damascus, Aleppo, Palmyra, etc.
     },
-    
+
     /// Religious minority heritage
     ReligiousMinority {
         community: String, // Christian, Druze, Alawite, etc.
     },
-    
+
     /// Ethnic heritage
     Ethnic {
         ethnicity: String, // Kurdish, Armenian, Assyrian, etc.
     },
-    
+
     /// Contemporary culture
     Contemporary,
 }
@@ -187,11 +187,15 @@ impl std::fmt::Display for CulturalCategory {
             CulturalCategory::Islamic => write!(f, "Islamic | إسلامي"),
             CulturalCategory::Ottoman => write!(f, "Ottoman | عثماني"),
             CulturalCategory::Modern => write!(f, "Modern | حديث"),
-            CulturalCategory::Regional { region } => write!(f, "Regional: {} | إقليمي: {}", region, region),
+            CulturalCategory::Regional { region } => {
+                write!(f, "Regional: {} | إقليمي: {}", region, region)
+            }
             CulturalCategory::ReligiousMinority { community } => {
                 write!(f, "Religious: {} | ديني: {}", community, community)
             }
-            CulturalCategory::Ethnic { ethnicity } => write!(f, "Ethnic: {} | عرقي: {}", ethnicity, ethnicity),
+            CulturalCategory::Ethnic { ethnicity } => {
+                write!(f, "Ethnic: {} | عرقي: {}", ethnicity, ethnicity)
+            }
             CulturalCategory::Contemporary => write!(f, "Contemporary | معاصر"),
         }
     }

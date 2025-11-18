@@ -262,7 +262,11 @@ fn show_proposal(data_dir: &PathBuf, proposal_id: u64) {
         proposal.execution_delay
     );
     println!();
-    println!("{} {}%", "Required quorum:".bold(), proposal.required_quorum);
+    println!(
+        "{} {}%",
+        "Required quorum:".bold(),
+        proposal.required_quorum
+    );
     println!(
         "{} {}%",
         "Required threshold:".bold(),
@@ -339,7 +343,13 @@ fn vote_on_proposal(data_dir: &PathBuf, proposal_id: u64, choice: String) {
     let voting_power = 1_000_000; // In real use, get from state
     let current_height = 1500; // In real use, get from blockchain
 
-    match manager.vote(proposal_id, voter.public_key(), vote, voting_power, current_height) {
+    match manager.vote(
+        proposal_id,
+        voter.public_key(),
+        vote,
+        voting_power,
+        current_height,
+    ) {
         Ok(_) => {
             println!("{}", "✓ Vote recorded successfully".green());
             println!("Proposal ID: {}", proposal_id);

@@ -1,6 +1,6 @@
+use opensyria_node_cli::Node;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use opensyria_node_cli::Node;
 
 pub mod api;
 pub mod models;

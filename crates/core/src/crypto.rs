@@ -16,7 +16,7 @@ impl KeyPair {
         let secret_bytes = rand::Rng::gen::<[u8; 32]>(&mut csprng);
         let signing_key = SigningKey::from_bytes(&secret_bytes);
         let verifying_key = signing_key.verifying_key();
-        
+
         Self {
             signing_key,
             verifying_key,
@@ -27,7 +27,7 @@ impl KeyPair {
     pub fn from_bytes(bytes: &[u8; 32]) -> Result<Self, CryptoError> {
         let signing_key = SigningKey::from_bytes(bytes);
         let verifying_key = signing_key.verifying_key();
-        
+
         Ok(Self {
             signing_key,
             verifying_key,
@@ -57,12 +57,11 @@ pub struct PublicKey(pub [u8; 32]);
 impl PublicKey {
     /// Verify a signature against this public key
     pub fn verify(&self, message: &[u8], signature: &[u8]) -> Result<(), CryptoError> {
-        let verifying_key = VerifyingKey::from_bytes(&self.0)
-            .map_err(|_| CryptoError::InvalidPublicKey)?;
-        
-        let sig = Signature::from_slice(signature)
-            .map_err(|_| CryptoError::InvalidSignature)?;
-        
+        let verifying_key =
+            VerifyingKey::from_bytes(&self.0).map_err(|_| CryptoError::InvalidPublicKey)?;
+
+        let sig = Signature::from_slice(signature).map_err(|_| CryptoError::InvalidSignature)?;
+
         verifying_key
             .verify(message, &sig)
             .map_err(|_| CryptoError::VerificationFailed)
@@ -115,7 +114,7 @@ mod tests {
         let kp = KeyPair::generate();
         let message = b"Open Syria Blockchain";
         let signature = kp.sign(message);
-        
+
         assert!(kp.public_key().verify(message, &signature).is_ok());
     }
 
@@ -125,7 +124,7 @@ mod tests {
         let pk = kp.public_key();
         let hex = pk.to_hex();
         let parsed = PublicKey::from_hex(&hex).unwrap();
-        
+
         assert_eq!(pk, parsed);
     }
 
@@ -135,7 +134,7 @@ mod tests {
         let message = b"test";
         let mut signature = kp.sign(message);
         signature[0] ^= 1; // Corrupt signature
-        
+
         assert!(kp.public_key().verify(message, &signature).is_err());
     }
 }

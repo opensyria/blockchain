@@ -114,7 +114,7 @@ mod tests {
     fn test_transaction_creation_and_signing() {
         let sender = KeyPair::generate();
         let receiver = KeyPair::generate();
-        
+
         let mut tx = Transaction::new(
             sender.public_key(),
             receiver.public_key(),
@@ -122,10 +122,10 @@ mod tests {
             100,
             0,
         );
-        
+
         let sig_hash = tx.signing_hash();
         tx = tx.with_signature(sender.sign(&sig_hash));
-        
+
         assert!(tx.verify().is_ok());
     }
 
@@ -133,7 +133,7 @@ mod tests {
     fn test_transaction_hash_deterministic() {
         let sender = KeyPair::generate();
         let receiver = KeyPair::generate();
-        
+
         let mut tx = Transaction::new(
             sender.public_key(),
             receiver.public_key(),
@@ -141,13 +141,13 @@ mod tests {
             100,
             0,
         );
-        
+
         let sig_hash = tx.signing_hash();
         tx = tx.with_signature(sender.sign(&sig_hash));
-        
+
         let hash1 = tx.hash();
         let hash2 = tx.hash();
-        
+
         assert_eq!(hash1, hash2);
     }
 
@@ -155,7 +155,7 @@ mod tests {
     fn test_unsigned_transaction_fails_verify() {
         let sender = KeyPair::generate();
         let receiver = KeyPair::generate();
-        
+
         let tx = Transaction::new(
             sender.public_key(),
             receiver.public_key(),
@@ -163,7 +163,10 @@ mod tests {
             100,
             0,
         );
-        
-        assert!(matches!(tx.verify(), Err(TransactionError::MissingSignature)));
+
+        assert!(matches!(
+            tx.verify(),
+            Err(TransactionError::MissingSignature)
+        ));
     }
 }

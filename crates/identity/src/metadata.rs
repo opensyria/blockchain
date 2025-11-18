@@ -5,40 +5,40 @@ use serde::{Deserialize, Serialize};
 pub struct HeritageMetadata {
     /// Primary name (English/transliterated)
     pub name: String,
-    
+
     /// Arabic name
     pub name_ar: Option<String>,
-    
+
     /// Detailed description
     pub description: String,
-    
+
     /// Arabic description
     pub description_ar: Option<String>,
-    
+
     /// Location information
     pub location: Option<Location>,
-    
+
     /// Historical period/date
     pub historical_period: Option<String>,
-    
+
     /// UNESCO status
     pub unesco_status: Option<UNESCOStatus>,
-    
+
     /// Languages associated
     pub languages: Vec<Language>,
-    
+
     /// Tags for categorization
     pub tags: Vec<String>,
-    
+
     /// External references (URLs, documents)
     pub references: Vec<String>,
-    
+
     /// IPFS hash for multimedia content
     pub content_hash: Option<String>,
-    
+
     /// Creator/curator information
     pub creator: Option<String>,
-    
+
     /// License information
     pub license: Option<String>,
 }
@@ -48,16 +48,16 @@ pub struct HeritageMetadata {
 pub struct Location {
     /// City
     pub city: String,
-    
+
     /// Arabic city name
     pub city_ar: Option<String>,
-    
+
     /// Governorate/Province
     pub governorate: Option<String>,
-    
+
     /// Coordinates (latitude, longitude)
     pub coordinates: Option<(f64, f64)>,
-    
+
     /// Address or specific location
     pub address: Option<String>,
 }
@@ -67,16 +67,16 @@ pub struct Location {
 pub enum UNESCOStatus {
     /// World Heritage Site
     WorldHeritage,
-    
+
     /// Intangible Cultural Heritage
     IntangibleHeritage,
-    
+
     /// Memory of the World
     MemoryOfWorld,
-    
+
     /// Endangered
     Endangered,
-    
+
     /// Tentative list
     Tentative,
 }
@@ -86,31 +86,31 @@ pub enum UNESCOStatus {
 pub enum Language {
     /// Modern Standard Arabic
     Arabic,
-    
+
     /// Syrian Arabic dialect
     SyrianArabic,
-    
+
     /// Kurdish
     Kurdish,
-    
+
     /// Armenian
     Armenian,
-    
+
     /// Assyrian/Aramaic
     Aramaic,
-    
+
     /// Circassian
     Circassian,
-    
+
     /// Turkish
     Turkish,
-    
+
     /// French (historical)
     French,
-    
+
     /// English
     English,
-    
+
     /// Other language
     Other(String),
 }
@@ -248,14 +248,11 @@ mod tests {
 
     #[test]
     fn test_metadata_builder() {
-        let metadata = HeritageMetadata::new(
-            "Test Site".to_string(),
-            "Description".to_string(),
-            None,
-        )
-        .with_unesco_status(UNESCOStatus::WorldHeritage)
-        .with_period("Ancient".to_string())
-        .with_tags(vec!["archaeology".to_string(), "monument".to_string()]);
+        let metadata =
+            HeritageMetadata::new("Test Site".to_string(), "Description".to_string(), None)
+                .with_unesco_status(UNESCOStatus::WorldHeritage)
+                .with_period("Ancient".to_string())
+                .with_tags(vec!["archaeology".to_string(), "monument".to_string()]);
 
         assert_eq!(metadata.unesco_status, Some(UNESCOStatus::WorldHeritage));
         assert_eq!(metadata.tags.len(), 2);

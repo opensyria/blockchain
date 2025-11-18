@@ -69,12 +69,22 @@ fn main() -> Result<()> {
             let account = opensyria_wallet::storage::Account::new(name.clone());
             storage.save_account(&account)?;
 
-            println!("{}", "✓ Account created successfully | تم إنشاء الحساب بنجاح".green());
+            println!(
+                "{}",
+                "✓ Account created successfully | تم إنشاء الحساب بنجاح".green()
+            );
             println!();
             println!("{}: {}", "Name | الاسم".cyan(), name);
-            println!("{}: {}", "Address | العنوان".cyan(), account.address.to_hex());
+            println!(
+                "{}: {}",
+                "Address | العنوان".cyan(),
+                account.address.to_hex()
+            );
             println!();
-            println!("{}", "⚠ Keep your wallet files secure | احفظ ملفات المحفظة بأمان".yellow());
+            println!(
+                "{}",
+                "⚠ Keep your wallet files secure | احفظ ملفات المحفظة بأمان".yellow()
+            );
         }
 
         Commands::List => {
@@ -82,7 +92,10 @@ fn main() -> Result<()> {
 
             if accounts.is_empty() {
                 println!("{}", "No accounts found | لا توجد حسابات".yellow());
-                println!("{}", "Create one with: wallet create --name <name>".dimmed());
+                println!(
+                    "{}",
+                    "Create one with: wallet create --name <name>".dimmed()
+                );
             } else {
                 println!("{}", "Wallet Accounts | الحسابات".cyan().bold());
                 println!("{}", "─".repeat(50).dimmed());
@@ -107,10 +120,17 @@ fn main() -> Result<()> {
             println!("{}", "─".repeat(50).dimmed());
             println!();
             println!("{}: {}", "Name | الاسم".cyan(), name);
-            println!("{}: {}", "Address | العنوان".cyan(), account.address.to_hex());
+            println!(
+                "{}: {}",
+                "Address | العنوان".cyan(),
+                account.address.to_hex()
+            );
             println!("{}: {}", "Created | تاريخ الإنشاء".cyan(), created);
             println!();
-            println!("{}", format!("Balance | الرصيد: {} (coming soon)", "0.00 SYL".bold()));
+            println!(
+                "{}",
+                format!("Balance | الرصيد: {} (coming soon)", "0.00 SYL".bold())
+            );
         }
 
         Commands::Send {
@@ -127,13 +147,8 @@ fn main() -> Result<()> {
             let amount_units = (amount * 1_000_000.0) as u64;
             let fee_units = (fee * 1_000_000.0) as u64;
 
-            let mut tx = Transaction::new(
-                account.address,
-                recipient,
-                amount_units,
-                fee_units,
-                nonce,
-            );
+            let mut tx =
+                Transaction::new(account.address, recipient, amount_units, fee_units, nonce);
 
             let keypair = account.keypair()?;
             let sig_hash = tx.signing_hash();
@@ -144,7 +159,10 @@ fn main() -> Result<()> {
 
             let tx_json = serde_json::to_string_pretty(&tx)?;
 
-            println!("{}", "✓ Transaction created and signed | تم إنشاء المعاملة وتوقيعها".green());
+            println!(
+                "{}",
+                "✓ Transaction created and signed | تم إنشاء المعاملة وتوقيعها".green()
+            );
             println!();
             println!("{}", "Transaction Details | تفاصيل المعاملة".cyan().bold());
             println!("{}", "─".repeat(50).dimmed());

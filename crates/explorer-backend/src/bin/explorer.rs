@@ -9,7 +9,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Parse command line arguments (simple version)
     let args: Vec<String> = std::env::args().collect();
-    
+
     let data_dir = if args.len() > 1 {
         PathBuf::from(&args[1])
     } else {
@@ -40,8 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Open your browser to: http://localhost:{}", port);
     println!();
 
-    let server = ExplorerServer::new(data_dir, addr)?
-        .with_static_dir(static_dir);
+    let server = ExplorerServer::new(data_dir, addr)?.with_static_dir(static_dir);
 
     server.run().await?;
 

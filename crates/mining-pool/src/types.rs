@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use opensyria_core::crypto::PublicKey;
+use serde::{Deserialize, Serialize};
 
 /// Mining pool share submission
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,9 +107,9 @@ impl Default for PoolConfig {
     fn default() -> Self {
         Self {
             operator: PublicKey([0u8; 32]),
-            fee_percent: 2, // 2% pool fee
+            fee_percent: 2,        // 2% pool fee
             min_payout: 1_000_000, // 1 Lira minimum
-            share_difficulty: 12, // Easier than typical block difficulty
+            share_difficulty: 12,  // Easier than typical block difficulty
             reward_method: RewardMethod::Proportional,
             server_address: "0.0.0.0:3333".to_string(),
         }

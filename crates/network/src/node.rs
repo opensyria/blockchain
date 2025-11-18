@@ -12,8 +12,8 @@ use libp2p::{
     noise, tcp, yamux, Multiaddr, PeerId, Swarm, Transport,
 };
 use opensyria_core::{Block, Transaction};
-use opensyria_storage::{BlockchainStorage, StateStorage};
 use opensyria_mempool::{Mempool, MempoolConfig};
+use opensyria_storage::{BlockchainStorage, StateStorage};
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -21,7 +21,7 @@ use std::{
     time::Duration,
 };
 use tokio::sync::{mpsc, RwLock};
-use tracing::{debug, info, warn, error};
+use tracing::{debug, error, info, warn};
 
 /// P2P Network Node
 pub struct NetworkNode {
@@ -116,37 +116,27 @@ impl NetworkNode {
             .boxed();
 
         // Create behaviour
-        let behaviour = OpenSyriaBehaviour::new(&local_key)
-            .map_err(|e| anyhow::anyhow!(e))?;
+        let behaviour = OpenSyriaBehaviour::new(&local_key).map_err(|e| anyhow::anyhow!(e))?;
 
         // Create swarm
-        let mut swarm_config = libp2p::swarm::Config::with_executor(
-            Box::new(|fut| {
-                tokio::spawn(fut);
-            })
-        );
+        let mut swarm_config = libp2p::swarm::Config::with_executor(Box::new(|fut| {
+            tokio::spawn(fut);
+        }));
         swarm_config = swarm_config.with_idle_connection_timeout(Duration::from_secs(60));
-        
-        let swarm = Swarm::new(
-            transport,
-            behaviour,
-            local_peer_id,
-            swarm_config,
-        );
+
+        let swarm = Swarm::new(transport, behaviour, local_peer_id, swarm_config);
 
         // Open storage
-        let blockchain = Arc::new(RwLock::new(
-            BlockchainStorage::open(config.data_dir.join("blockchain"))?,
-        ));
-        let state = Arc::new(RwLock::new(
-            StateStorage::open(config.data_dir.join("state"))?,
-        ));
+        let blockchain = Arc::new(RwLock::new(BlockchainStorage::open(
+            config.data_dir.join("blockchain"),
+        )?));
+        let state = Arc::new(RwLock::new(StateStorage::open(
+            config.data_dir.join("state"),
+        )?));
 
         // Create mempool
         let mempool_config = MempoolConfig::default();
-        let mempool = Arc::new(RwLock::new(
-            Mempool::new(mempool_config, state.clone())
-        ));
+        let mempool = Arc::new(RwLock::new(Mempool::new(mempool_config, state.clone())));
 
         // Create event channel
         let (event_tx, event_rx) = mpsc::unbounded_channel();
@@ -224,7 +214,9 @@ impl NetworkNode {
     /// Get local chain height
     pub async fn get_chain_height(&self) -> Result<u64> {
         let blockchain = self.blockchain.read().await;
-        blockchain.get_chain_height().map_err(|e| anyhow::anyhow!(e))
+        blockchain
+            .get_chain_height()
+            .map_err(|e| anyhow::anyhow!(e))
     }
 
     /// Request blocks from a peer
@@ -240,10 +232,16 @@ impl NetworkNode {
             .request_response
             .send_request(&peer_id, request);
 
-        debug!("Requested blocks from {} starting at height {}", peer_id, start_height);
+        debug!(
+            "Requested blocks from {} starting at height {}",
+            peer_id, start_height
+        );
 
         // Track pending request
-        self.pending_blocks.write().await.insert(peer_id, start_height);
+        self.pending_blocks
+            .write()
+            .await
+            .insert(peer_id, start_height);
     }
 
     /// Sync with network
@@ -271,14 +269,19 @@ impl NetworkNode {
     pub async fn submit_transaction(&mut self, tx: Transaction) -> Result<()> {
         // Add to mempool
         let mut mempool = self.mempool.write().await;
-        mempool.add_transaction(tx.clone()).await
+        mempool
+            .add_transaction(tx.clone())
+            .await
             .map_err(|e| anyhow::anyhow!("Failed to add transaction to mempool: {}", e))?;
         drop(mempool);
 
         // Broadcast to network
         self.broadcast_transaction(&tx).await?;
 
-        info!("Transaction submitted and broadcast: {} SYL", tx.amount as f64 / 1_000_000.0);
+        info!(
+            "Transaction submitted and broadcast: {} SYL",
+            tx.amount as f64 / 1_000_000.0
+        );
         Ok(())
     }
 
@@ -312,7 +315,10 @@ impl NetworkNode {
     }
 
     /// Handle swarm events
-    async fn handle_swarm_event(&mut self, event: libp2p::swarm::SwarmEvent<OpenSyriaBehaviourEvent>) -> Result<()> {
+    async fn handle_swarm_event(
+        &mut self,
+        event: libp2p::swarm::SwarmEvent<OpenSyriaBehaviourEvent>,
+    ) -> Result<()> {
         use libp2p::swarm::SwarmEvent;
 
         match event {
@@ -347,9 +353,7 @@ impl NetworkNode {
         use crate::behaviour::OpenSyriaBehaviourEvent;
 
         match event {
-            OpenSyriaBehaviourEvent::Gossipsub(gossipsub::Event::Message {
-                message, ..
-            }) => {
+            OpenSyriaBehaviourEvent::Gossipsub(gossipsub::Event::Message { message, .. }) => {
                 self.handle_gossipsub_message(message).await?;
             }
 
@@ -362,14 +366,16 @@ impl NetworkNode {
                 }
             }
 
-            OpenSyriaBehaviourEvent::RequestResponse(libp2p::request_response::Event::Message {
-                message,
-                peer,
-            }) => {
+            OpenSyriaBehaviourEvent::RequestResponse(
+                libp2p::request_response::Event::Message { message, peer },
+            ) => {
                 self.handle_request_response(peer, message).await?;
             }
 
-            OpenSyriaBehaviourEvent::Identify(libp2p::identify::Event::Received { peer_id, info }) => {
+            OpenSyriaBehaviourEvent::Identify(libp2p::identify::Event::Received {
+                peer_id,
+                info,
+            }) => {
                 debug!("Identified peer {}: {:?}", peer_id, info.protocol_version);
             }
 
@@ -386,12 +392,12 @@ impl NetworkNode {
         match network_msg {
             NetworkMessage::NewBlock { block } => {
                 debug!("Received new block from gossipsub");
-                
+
                 // Validate and store block
                 let blockchain = self.blockchain.read().await;
                 let current_height = blockchain.get_chain_height()?;
                 drop(blockchain);
-                
+
                 // Try to append block
                 let mut blockchain = self.blockchain.write().await;
                 match blockchain.append_block(&block) {
@@ -408,13 +414,15 @@ impl NetworkNode {
 
             NetworkMessage::NewTransaction { transaction } => {
                 debug!("Received transaction from gossipsub");
-                
+
                 // Add to mempool
                 let mut mempool = self.mempool.write().await;
                 match mempool.add_transaction(transaction.clone()).await {
                     Ok(_) => {
                         info!("Added transaction to mempool from network");
-                        let _ = self.event_tx.send(NetworkEvent::NewTransaction(transaction));
+                        let _ = self
+                            .event_tx
+                            .send(NetworkEvent::NewTransaction(transaction));
                     }
                     Err(e) => {
                         warn!("Failed to add transaction to mempool: {}", e);
@@ -439,7 +447,9 @@ impl NetworkNode {
         use libp2p::request_response::Message;
 
         match message {
-            Message::Request { request, channel, .. } => {
+            Message::Request {
+                request, channel, ..
+            } => {
                 let response = self.handle_request(request).await;
                 let _ = self
                     .swarm
@@ -459,7 +469,10 @@ impl NetworkNode {
     /// Handle incoming requests
     async fn handle_request(&self, request: NetworkRequest) -> NetworkResponse {
         match request {
-            NetworkRequest::GetBlocks { start_height, max_blocks } => {
+            NetworkRequest::GetBlocks {
+                start_height,
+                max_blocks,
+            } => {
                 let blockchain = self.blockchain.read().await;
                 let mut blocks = Vec::new();
 
@@ -534,7 +547,10 @@ impl NetworkNode {
 
                 let local_height = self.get_chain_height().await?;
                 if height > local_height {
-                    info!("Peer ahead by {} blocks, requesting sync", height - local_height);
+                    info!(
+                        "Peer ahead by {} blocks, requesting sync",
+                        height - local_height
+                    );
                     self.request_blocks(peer, local_height + 1, 500).await;
                 }
             }

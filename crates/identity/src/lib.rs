@@ -1,9 +1,9 @@
+pub mod ipfs;
+pub mod metadata;
 pub mod registry;
 pub mod token;
-pub mod metadata;
-pub mod ipfs;
 
+pub use ipfs::{ContentMetadata, IpfsClient};
+pub use metadata::{HeritageMetadata, Language, Location};
 pub use registry::IdentityRegistry;
-pub use token::{IdentityToken, TokenType, CulturalCategory};
-pub use metadata::{HeritageMetadata, Location, Language};
-pub use ipfs::{IpfsClient, ContentMetadata};
+pub use token::{CulturalCategory, IdentityToken, TokenType};

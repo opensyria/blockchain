@@ -17,7 +17,7 @@ impl Storage {
     pub fn open(path: PathBuf) -> Result<Self, StorageError> {
         let blockchain = BlockchainStorage::open(path.join("blocks"))?;
         let state = StateStorage::open(path.join("state"))?;
-        
+
         Ok(Self { blockchain, state })
     }
 }

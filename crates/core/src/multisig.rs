@@ -19,11 +19,11 @@ impl MultisigAccount {
         if signers.is_empty() {
             return Err(MultisigError::NoSigners);
         }
-        
+
         if threshold == 0 {
             return Err(MultisigError::InvalidThreshold);
         }
-        
+
         if threshold as usize > signers.len() {
             return Err(MultisigError::ThresholdTooHigh {
                 threshold,
@@ -49,16 +49,16 @@ impl MultisigAccount {
     /// Get the multisig account address (deterministic hash of configuration)
     pub fn address(&self) -> PublicKey {
         let mut hasher = Sha256::new();
-        
+
         // Hash sorted signers for deterministic address
         let mut sorted_signers = self.signers.clone();
         sorted_signers.sort_by_key(|k| k.0);
-        
+
         for signer in sorted_signers {
             hasher.update(&signer.0);
         }
         hasher.update(&[self.threshold]);
-        
+
         let hash = hasher.finalize();
         PublicKey(hash.into())
     }
@@ -104,13 +104,7 @@ pub struct SignatureEntry {
 
 impl MultisigTransaction {
     /// Create a new unsigned multisig transaction
-    pub fn new(
-        account: MultisigAccount,
-        to: PublicKey,
-        amount: u64,
-        fee: u64,
-        nonce: u64,
-    ) -> Self {
+    pub fn new(account: MultisigAccount, to: PublicKey, amount: u64, fee: u64, nonce: u64) -> Self {
         Self {
             account,
             to,
@@ -131,20 +125,20 @@ impl MultisigTransaction {
     /// Get signing hash (what each signer signs)
     pub fn signing_hash(&self) -> [u8; 32] {
         let mut hasher = Sha256::new();
-        
+
         // Include multisig address
         let address = self.account.address();
         hasher.update(&address.0);
-        
+
         hasher.update(&self.to.0);
         hasher.update(&self.amount.to_le_bytes());
         hasher.update(&self.fee.to_le_bytes());
         hasher.update(&self.nonce.to_le_bytes());
-        
+
         if let Some(data) = &self.data {
             hasher.update(data);
         }
-        
+
         hasher.finalize().into()
     }
 
@@ -208,13 +202,13 @@ impl MultisigTransaction {
     pub fn hash(&self) -> [u8; 32] {
         let mut hasher = Sha256::new();
         hasher.update(&self.signing_hash());
-        
+
         // Include all signatures in hash
         for entry in &self.signatures {
             hasher.update(&entry.signer.0);
             hasher.update(&entry.signature);
         }
-        
+
         hasher.finalize().into()
     }
 
@@ -247,14 +241,24 @@ impl std::fmt::Display for MultisigError {
             MultisigError::NoSigners => write!(f, "Multisig account must have at least one signer"),
             MultisigError::InvalidThreshold => write!(f, "Threshold must be at least 1"),
             MultisigError::ThresholdTooHigh { threshold, signers } => {
-                write!(f, "Threshold ({}) exceeds number of signers ({})", threshold, signers)
+                write!(
+                    f,
+                    "Threshold ({}) exceeds number of signers ({})",
+                    threshold, signers
+                )
             }
             MultisigError::DuplicateSigners => write!(f, "Duplicate signers not allowed"),
-            MultisigError::UnauthorizedSigner => write!(f, "Signer not authorized for this account"),
+            MultisigError::UnauthorizedSigner => {
+                write!(f, "Signer not authorized for this account")
+            }
             MultisigError::DuplicateSignature => write!(f, "Duplicate signature from same signer"),
             MultisigError::InvalidSignature => write!(f, "Invalid signature"),
             MultisigError::InsufficientSignatures { required, provided } => {
-                write!(f, "Insufficient signatures: {} required, {} provided", required, provided)
+                write!(
+                    f,
+                    "Insufficient signatures: {} required, {} provided",
+                    required, provided
+                )
             }
         }
     }
@@ -295,17 +299,11 @@ mod tests {
         let signer1 = KeyPair::generate();
         let signer2 = KeyPair::generate();
 
-        let account1 = MultisigAccount::new(
-            vec![signer1.public_key(), signer2.public_key()],
-            2,
-        )
-        .unwrap();
+        let account1 =
+            MultisigAccount::new(vec![signer1.public_key(), signer2.public_key()], 2).unwrap();
 
-        let account2 = MultisigAccount::new(
-            vec![signer1.public_key(), signer2.public_key()],
-            2,
-        )
-        .unwrap();
+        let account2 =
+            MultisigAccount::new(vec![signer1.public_key(), signer2.public_key()], 2).unwrap();
 
         assert_eq!(account1.address(), account2.address());
     }
@@ -313,7 +311,7 @@ mod tests {
     #[test]
     fn test_multisig_invalid_threshold() {
         let signer = KeyPair::generate();
-        
+
         // Zero threshold
         assert!(matches!(
             MultisigAccount::new(vec![signer.public_key()], 0),
@@ -330,11 +328,8 @@ mod tests {
     #[test]
     fn test_multisig_duplicate_signers() {
         let signer = KeyPair::generate();
-        
-        let result = MultisigAccount::new(
-            vec![signer.public_key(), signer.public_key()],
-            1,
-        );
+
+        let result = MultisigAccount::new(vec![signer.public_key(), signer.public_key()], 1);
 
         assert!(matches!(result, Err(MultisigError::DuplicateSigners)));
     }
@@ -356,13 +351,7 @@ mod tests {
         )
         .unwrap();
 
-        let mut tx = MultisigTransaction::new(
-            account,
-            recipient.public_key(),
-            1_000_000,
-            100,
-            0,
-        );
+        let mut tx = MultisigTransaction::new(account, recipient.public_key(), 1_000_000, 100, 0);
 
         // Sign with first signer
         let msg = tx.signing_hash();
@@ -390,19 +379,10 @@ mod tests {
         let unauthorized = KeyPair::generate();
         let recipient = KeyPair::generate();
 
-        let account = MultisigAccount::new(
-            vec![signer1.public_key(), signer2.public_key()],
-            2,
-        )
-        .unwrap();
+        let account =
+            MultisigAccount::new(vec![signer1.public_key(), signer2.public_key()], 2).unwrap();
 
-        let mut tx = MultisigTransaction::new(
-            account,
-            recipient.public_key(),
-            1_000_000,
-            100,
-            0,
-        );
+        let mut tx = MultisigTransaction::new(account, recipient.public_key(), 1_000_000, 100, 0);
 
         let msg = tx.signing_hash();
         let sig = unauthorized.sign(&msg);
@@ -417,24 +397,16 @@ mod tests {
         let signer2 = KeyPair::generate();
         let recipient = KeyPair::generate();
 
-        let account = MultisigAccount::new(
-            vec![signer1.public_key(), signer2.public_key()],
-            2,
-        )
-        .unwrap();
+        let account =
+            MultisigAccount::new(vec![signer1.public_key(), signer2.public_key()], 2).unwrap();
 
-        let mut tx = MultisigTransaction::new(
-            account,
-            recipient.public_key(),
-            1_000_000,
-            100,
-            0,
-        );
+        let mut tx = MultisigTransaction::new(account, recipient.public_key(), 1_000_000, 100, 0);
 
         let msg = tx.signing_hash();
         let sig1 = signer1.sign(&msg);
-        
-        tx.add_signature(signer1.public_key(), sig1.clone()).unwrap();
+
+        tx.add_signature(signer1.public_key(), sig1.clone())
+            .unwrap();
         let result = tx.add_signature(signer1.public_key(), sig1);
 
         assert!(matches!(result, Err(MultisigError::DuplicateSignature)));
@@ -457,22 +429,21 @@ mod tests {
         )
         .unwrap();
 
-        let mut tx = MultisigTransaction::new(
-            account,
-            recipient.public_key(),
-            1_000_000,
-            100,
-            0,
-        );
+        let mut tx = MultisigTransaction::new(account, recipient.public_key(), 1_000_000, 100, 0);
 
         // Only 2 signatures
         let msg = tx.signing_hash();
-        tx.add_signature(signer1.public_key(), signer1.sign(&msg)).unwrap();
-        tx.add_signature(signer2.public_key(), signer2.sign(&msg)).unwrap();
+        tx.add_signature(signer1.public_key(), signer1.sign(&msg))
+            .unwrap();
+        tx.add_signature(signer2.public_key(), signer2.sign(&msg))
+            .unwrap();
 
         assert!(matches!(
             tx.verify(),
-            Err(MultisigError::InsufficientSignatures { required: 3, provided: 2 })
+            Err(MultisigError::InsufficientSignatures {
+                required: 3,
+                provided: 2
+            })
         ));
     }
 }

@@ -1,0 +1,55 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+
+jobs:
+  check-links:
+    name: Check Documentation Links
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check Markdown links
+      uses: gaurav-nelson/github-action-markdown-link-check@v1
+      with:
+        use-quiet-mode: 'yes'
+        config-file: '.github/markdown-link-check-config.json'
+
+  validate-docs:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check for broken internal links
+      run: |
+        # Check if all referenced docs exist
+        find docs -name "*.md" -type f -exec grep -h "\[.*\](" {} \; | \
+        grep -o "([^)]*\.md)" | tr -d "()" | while read link; do
+          if [[ "$link" =~ ^http ]]; then
+            continue
+          fi
+          if [ ! -f "$link" ] && [ ! -f "docs/$link" ]; then
+            echo "Broken link: $link"
+            exit 1
+          fi
+        done
+    
+    - name: Verify all scripts are documented
+      run: |
+        # Check if all .sh files in scripts/ are mentioned in scripts/README.md
+        for script in scripts/*.sh; do
+          script_name=$(basename "$script")
+          if ! grep -q "$script_name" scripts/README.md; then
+            echo "Script $script_name not documented in scripts/README.md"
+            exit 1
+          fi
+        done

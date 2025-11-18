@@ -2,8 +2,8 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::*;
 use opensyria_core::crypto::KeyPair;
-use opensyria_identity::*;
 use opensyria_identity::ipfs::IpfsClient;
+use opensyria_identity::*;
 
 #[derive(Parser)]
 #[command(name = "identity")]
@@ -166,16 +166,26 @@ async fn async_main() -> Result<()> {
             }
 
             if let Some(tag_str) = tags {
-                let tag_list: Vec<String> = tag_str.split(',').map(|s| s.trim().to_string()).collect();
+                let tag_list: Vec<String> =
+                    tag_str.split(',').map(|s| s.trim().to_string()).collect();
                 metadata = metadata.with_tags(tag_list);
             }
 
             // Create token (using dummy owner for demo)
             let owner = KeyPair::generate().public_key();
-            let token = IdentityToken::new(id.clone(), owner, token_type.clone(), category.clone(), metadata);
+            let token = IdentityToken::new(
+                id.clone(),
+                owner,
+                token_type.clone(),
+                category.clone(),
+                metadata,
+            );
 
             // Display result
-            println!("{}", "✓ Token Created Successfully | تم إنشاء الرمز بنجاح".green());
+            println!(
+                "{}",
+                "✓ Token Created Successfully | تم إنشاء الرمز بنجاح".green()
+            );
             println!();
             print_token_info(&token);
 
@@ -189,7 +199,12 @@ async fn async_main() -> Result<()> {
 
         Commands::List { owner, type_filter } => {
             println!("{}", "═".repeat(60).cyan());
-            println!("{}", "  Cultural Identity Tokens | رموز الهوية الثقافية  ".cyan().bold());
+            println!(
+                "{}",
+                "  Cultural Identity Tokens | رموز الهوية الثقافية  "
+                    .cyan()
+                    .bold()
+            );
             println!("{}", "═".repeat(60).cyan());
             println!();
 
@@ -207,7 +222,9 @@ async fn async_main() -> Result<()> {
                 })
                 .filter(|t| {
                     if let Some(ref type_str) = type_filter {
-                        format!("{:?}", t.token_type).to_lowercase().contains(&type_str.to_lowercase())
+                        format!("{:?}", t.token_type)
+                            .to_lowercase()
+                            .contains(&type_str.to_lowercase())
                     } else {
                         true
                     }
@@ -250,7 +267,12 @@ async fn async_main() -> Result<()> {
 
         Commands::Examples => {
             println!("{}", "═".repeat(60).cyan());
-            println!("{}", "  Syrian Heritage Examples | أمثلة التراث السوري  ".cyan().bold());
+            println!(
+                "{}",
+                "  Syrian Heritage Examples | أمثلة التراث السوري  "
+                    .cyan()
+                    .bold()
+            );
             println!("{}", "═".repeat(60).cyan());
             println!();
 
@@ -315,17 +337,51 @@ fn print_token_info(token: &IdentityToken) {
 
     println!();
     println!("{}: {}", "Owner".dimmed(), hex::encode(&token.owner.0[..8]));
-    println!("{}: {}", "Verified".dimmed(), if token.is_verified() { "Yes" } else { "No" });
+    println!(
+        "{}: {}",
+        "Verified".dimmed(),
+        if token.is_verified() { "Yes" } else { "No" }
+    );
 }
 
 fn print_examples() {
     let examples = vec![
-        ("Umayyad Mosque", "مسجد بني أمية الكبير", "Damascus", "Islamic heritage site built 705-715 CE"),
-        ("Palmyra", "تدمر", "Tadmur", "Ancient Semitic city, UNESCO World Heritage"),
-        ("Aleppo Citadel", "قلعة حلب", "Aleppo", "Medieval fortified palace, 3rd millennium BCE origins"),
-        ("Damascus Steel", "الفولاذ الدمشقي", "Damascus", "Legendary metalworking technique, 300 BCE - 1700 CE"),
-        ("Dabke", "دبكة", "Syria", "Traditional folk dance of the Levant"),
-        ("Kibbeh", "كبة", "Syria", "National dish - bulgur and meat delicacy"),
+        (
+            "Umayyad Mosque",
+            "مسجد بني أمية الكبير",
+            "Damascus",
+            "Islamic heritage site built 705-715 CE",
+        ),
+        (
+            "Palmyra",
+            "تدمر",
+            "Tadmur",
+            "Ancient Semitic city, UNESCO World Heritage",
+        ),
+        (
+            "Aleppo Citadel",
+            "قلعة حلب",
+            "Aleppo",
+            "Medieval fortified palace, 3rd millennium BCE origins",
+        ),
+        (
+            "Damascus Steel",
+            "الفولاذ الدمشقي",
+            "Damascus",
+            "Legendary metalworking technique, 300 BCE - 1700 CE",
+        ),
+        (
+            "Dabke",
+            "دبكة",
+            "Syria",
+            "Traditional folk dance of the Levant",
+        ),
+        (
+            "Kibbeh",
+            "كبة",
+            "Syria",
+            "National dish - bulgur and meat delicacy",
+        ),
     ];
 
     for (name, name_ar, location, desc) in examples {
@@ -354,7 +410,10 @@ fn get_example_tokens() -> Vec<IdentityToken> {
                 "Great Mosque of Damascus, built 705-715 CE".to_string(),
                 Some("مسجد بني أمية الكبير".to_string()),
             )
-            .with_location(Location::new("Damascus".to_string(), Some("دمشق".to_string())))
+            .with_location(Location::new(
+                "Damascus".to_string(),
+                Some("دمشق".to_string()),
+            ))
             .with_period("8th Century CE".to_string())
             .with_unesco_status(metadata::UNESCOStatus::WorldHeritage),
         ),
@@ -368,7 +427,10 @@ fn get_example_tokens() -> Vec<IdentityToken> {
                 "Ancient Semitic city in the Syrian Desert".to_string(),
                 Some("تدمر".to_string()),
             )
-            .with_location(Location::new("Tadmur".to_string(), Some("تدمر".to_string())))
+            .with_location(Location::new(
+                "Tadmur".to_string(),
+                Some("تدمر".to_string()),
+            ))
             .with_period("1st-3rd Century CE".to_string())
             .with_unesco_status(metadata::UNESCOStatus::Endangered),
         ),
@@ -427,11 +489,19 @@ async fn handle_upload(
     println!("{}", "✓ Upload Successful | تم الرفع بنجاح".green());
     println!();
     println!("{}: {}", "CID".cyan(), metadata.cid);
-    println!("{}: {}", "Size".cyan(), format_bytes(metadata.size as usize));
+    println!(
+        "{}: {}",
+        "Size".cyan(),
+        format_bytes(metadata.size as usize)
+    );
     println!("{}: {}", "Type".cyan(), metadata.mime_type);
     println!("{}: {}", "Hash".cyan(), metadata.content_hash);
     println!();
-    println!("{}: {}", "Gateway URL".yellow(), client.gateway_url(&metadata.cid));
+    println!(
+        "{}: {}",
+        "Gateway URL".yellow(),
+        client.gateway_url(&metadata.cid)
+    );
     println!();
 
     // If token_id provided, link it
@@ -450,7 +520,10 @@ async fn handle_retrieve(
     gateway_url: Option<String>,
 ) -> Result<()> {
     println!("{}", "═".repeat(60).cyan());
-    println!("{}", "  Retrieve from IPFS | استرجاع من IPFS  ".cyan().bold());
+    println!(
+        "{}",
+        "  Retrieve from IPFS | استرجاع من IPFS  ".cyan().bold()
+    );
     println!("{}", "═".repeat(60).cyan());
     println!();
 

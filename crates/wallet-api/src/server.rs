@@ -1,21 +1,16 @@
 use std::sync::Arc;
-use tower_http::cors::{CorsLayer, Any};
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
 use crate::{api, AppState};
 
 /// Start the wallet API server
-pub async fn start_server(
-    state: AppState,
-    host: &str,
-    port: u16,
-) -> anyhow::Result<()> {
+pub async fn start_server(state: AppState, host: &str, port: u16) -> anyhow::Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .init();
 
@@ -34,7 +29,7 @@ pub async fn start_server(
     // Bind server
     let addr = format!("{}:{}", host, port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
-    
+
     info!("🚀 Wallet API server running on http://{}", addr);
     info!("📡 Endpoints:");
     info!("   POST /api/v1/transaction/submit");

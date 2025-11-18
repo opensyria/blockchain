@@ -1,4 +1,4 @@
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use reqwest::multipart;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -50,14 +50,14 @@ impl IpfsClient {
     /// Upload a file to IPFS
     pub async fn upload_file<P: AsRef<Path>>(&self, path: P) -> Result<ContentMetadata> {
         let path = path.as_ref();
-        let filename = path.file_name()
+        let filename = path
+            .file_name()
             .and_then(|n| n.to_str())
             .context("Invalid filename")?
             .to_string();
 
         // Read file content
-        let content = tokio::fs::read(path).await
-            .context("Failed to read file")?;
+        let content = tokio::fs::read(path).await.context("Failed to read file")?;
 
         self.upload_bytes(&content, &filename).await
     }
@@ -73,13 +73,12 @@ impl IpfsClient {
         let mime_type = self.detect_mime_type(filename);
 
         // Create multipart form
-        let form = multipart::Form::new()
-            .part(
-                "file",
-                multipart::Part::bytes(data.to_vec())
-                    .file_name(filename.to_string())
-                    .mime_str(&mime_type)?,
-            );
+        let form = multipart::Form::new().part(
+            "file",
+            multipart::Part::bytes(data.to_vec())
+                .file_name(filename.to_string())
+                .mime_str(&mime_type)?,
+        );
 
         // Upload to IPFS
         let client = reqwest::Client::new();
@@ -96,7 +95,9 @@ impl IpfsClient {
             anyhow::bail!("IPFS upload failed ({}): {}", status, error_text);
         }
 
-        let ipfs_response: IpfsAddResponse = response.json().await
+        let ipfs_response: IpfsAddResponse = response
+            .json()
+            .await
             .context("Failed to parse IPFS response")?;
 
         Ok(ContentMetadata {
@@ -117,7 +118,11 @@ impl IpfsClient {
     }
 
     /// Upload JSON data to IPFS
-    pub async fn upload_json<T: Serialize>(&self, data: &T, filename: &str) -> Result<ContentMetadata> {
+    pub async fn upload_json<T: Serialize>(
+        &self,
+        data: &T,
+        filename: &str,
+    ) -> Result<ContentMetadata> {
         let json = serde_json::to_string_pretty(data)?;
         self.upload_text(&json, filename).await
     }
@@ -126,7 +131,7 @@ impl IpfsClient {
     pub async fn retrieve(&self, cid: &str) -> Result<Vec<u8>> {
         let client = reqwest::Client::new();
         let url = format!("{}/ipfs/{}", self.gateway_url, cid);
-        
+
         let response = client
             .get(&url)
             .send()
@@ -137,7 +142,9 @@ impl IpfsClient {
             anyhow::bail!("IPFS retrieval failed: {}", response.status());
         }
 
-        let bytes = response.bytes().await
+        let bytes = response
+            .bytes()
+            .await
             .context("Failed to read IPFS response")?;
 
         Ok(bytes.to_vec())
@@ -164,7 +171,7 @@ impl IpfsClient {
     pub async fn pin(&self, cid: &str) -> Result<()> {
         let client = reqwest::Client::new();
         let url = format!("{}/api/v0/pin/add?arg={}", self.api_url, cid);
-        
+
         let response = client
             .post(&url)
             .send()
@@ -182,7 +189,7 @@ impl IpfsClient {
     pub async fn unpin(&self, cid: &str) -> Result<()> {
         let client = reqwest::Client::new();
         let url = format!("{}/api/v0/pin/rm?arg={}", self.api_url, cid);
-        
+
         let response = client
             .post(&url)
             .send()
@@ -224,7 +231,8 @@ impl IpfsClient {
             "md" => "text/markdown",
             "html" => "text/html",
             _ => "application/octet-stream",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
@@ -235,7 +243,7 @@ mod tests {
     #[tokio::test]
     async fn test_upload_text() {
         let client = IpfsClient::new(None, None);
-        
+
         // Skip test if IPFS daemon not running
         if !client.is_available().await {
             println!("Skipping IPFS test - daemon not running");
@@ -244,7 +252,7 @@ mod tests {
 
         let content = "Syrian Cultural Heritage Content";
         let result = client.upload_text(content, "test.txt").await;
-        
+
         if let Ok(metadata) = result {
             assert!(!metadata.cid.is_empty());
             assert_eq!(metadata.filename, "test.txt");
@@ -256,7 +264,7 @@ mod tests {
     #[tokio::test]
     async fn test_mime_detection() {
         let client = IpfsClient::new(None, None);
-        
+
         assert_eq!(client.detect_mime_type("image.jpg"), "image/jpeg");
         assert_eq!(client.detect_mime_type("video.mp4"), "video/mp4");
         assert_eq!(client.detect_mime_type("document.pdf"), "application/pdf");

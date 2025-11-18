@@ -28,7 +28,9 @@ impl BlockInfo {
             previous_hash: hex::encode(block.header.previous_hash),
             merkle_root: hex::encode(block.header.merkle_root),
             transaction_count: block.transactions.len(),
-            transactions: block.transactions.iter()
+            transactions: block
+                .transactions
+                .iter()
                 .map(|tx| hex::encode(tx.hash()))
                 .collect(),
         }

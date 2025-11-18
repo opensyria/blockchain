@@ -45,9 +45,9 @@ impl GovernanceStorage {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, StorageError> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
-        
+
         let db = DB::open(&opts, path)?;
-        
+
         Ok(Self { db })
     }
 
@@ -64,7 +64,7 @@ impl GovernanceStorage {
             .db
             .get(b"governance_snapshot")?
             .ok_or(StorageError::NotFound)?;
-        
+
         let snapshot = bincode::deserialize(&data)?;
         Ok(snapshot)
     }
@@ -118,7 +118,7 @@ mod tests {
         };
 
         storage.save_snapshot(&snapshot).unwrap();
-        
+
         let loaded = storage.load_snapshot().unwrap();
         assert_eq!(loaded.proposals.len(), 1);
         assert_eq!(loaded.next_proposal_id, 2);

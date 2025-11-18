@@ -41,16 +41,16 @@ impl std::error::Error for GovernanceError {}
 pub struct GovernanceState {
     /// All proposals indexed by ID
     proposals: HashMap<ProposalId, Proposal>,
-    
+
     /// Vote records: proposal_id -> voter -> vote_record
     votes: HashMap<ProposalId, HashMap<PublicKey, VoteRecord>>,
-    
+
     /// Next proposal ID
     next_proposal_id: ProposalId,
-    
+
     /// Active proposals (for quick lookup)
     active_proposals: Vec<ProposalId>,
-    
+
     /// Passed proposals pending execution
     pending_execution: Vec<ProposalId>,
 }
@@ -167,13 +167,13 @@ impl GovernanceState {
         let proposal_ids: Vec<ProposalId> = self.active_proposals.clone();
         let mut newly_passed = Vec::new();
         let mut to_remove = Vec::new();
-        
+
         for id in proposal_ids {
             if let Some(proposal) = self.proposals.get_mut(&id) {
                 if proposal.has_ended(current_height) && proposal.status == ProposalStatus::Active {
                     proposal.finalize(current_height);
                     to_remove.push(id);
-                    
+
                     // Track if passed for later addition to pending_execution
                     if proposal.status == ProposalStatus::Passed {
                         newly_passed.push(id);
@@ -181,12 +181,12 @@ impl GovernanceState {
                 }
             }
         }
-        
+
         // Remove from active list
         for id in to_remove {
             self.active_proposals.retain(|pid| *pid != id);
         }
-        
+
         // Add to pending execution
         self.pending_execution.extend(newly_passed);
     }
@@ -207,10 +207,10 @@ impl GovernanceState {
             .ok_or(GovernanceError::ProposalNotFound(proposal_id))?;
 
         proposal.mark_executed();
-        
+
         // Remove from pending execution
         self.pending_execution.retain(|id| *id != proposal_id);
-        
+
         Ok(())
     }
 
@@ -233,10 +233,10 @@ impl GovernanceState {
         }
 
         proposal.cancel();
-        
+
         // Remove from active list
         self.active_proposals.retain(|id| *id != proposal_id);
-        
+
         Ok(())
     }
 

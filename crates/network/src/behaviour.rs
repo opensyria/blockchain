@@ -2,9 +2,8 @@ use libp2p::{
     gossipsub::{self, IdentTopic, MessageAuthenticity, ValidationMode},
     identify,
     kad::{self, store::MemoryStore},
-    mdns,
-    ping,
-    request_response::{self, ProtocolSupport, cbor},
+    mdns, ping,
+    request_response::{self, cbor, ProtocolSupport},
     swarm::NetworkBehaviour,
     StreamProtocol,
 };
@@ -35,7 +34,10 @@ pub struct OpenSyriaBehaviour {
 /// Request types for request-response protocol
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NetworkRequest {
-    GetBlocks { start_height: u64, max_blocks: usize },
+    GetBlocks {
+        start_height: u64,
+        max_blocks: usize,
+    },
     GetChainTip,
     GetPeers,
 }
@@ -72,19 +74,21 @@ impl OpenSyriaBehaviour {
         let mut gossipsub = gossipsub::Behaviour::new(
             MessageAuthenticity::Signed(local_key.clone()),
             gossipsub_config,
-        ).map_err(|e| format!("Gossipsub error: {}", e))?;
+        )
+        .map_err(|e| format!("Gossipsub error: {}", e))?;
 
         // Subscribe to topics
-        gossipsub.subscribe(&IdentTopic::new(TOPIC_BLOCKS))
+        gossipsub
+            .subscribe(&IdentTopic::new(TOPIC_BLOCKS))
             .map_err(|e| format!("Subscribe error: {}", e))?;
-        gossipsub.subscribe(&IdentTopic::new(TOPIC_TRANSACTIONS))
+        gossipsub
+            .subscribe(&IdentTopic::new(TOPIC_TRANSACTIONS))
             .map_err(|e| format!("Subscribe error: {}", e))?;
 
         // Configure mDNS
-        let mdns = mdns::tokio::Behaviour::new(
-            mdns::Config::default(),
-            local_key.public().to_peer_id(),
-        ).map_err(|e| format!("mDNS error: {}", e))?;
+        let mdns =
+            mdns::tokio::Behaviour::new(mdns::Config::default(), local_key.public().to_peer_id())
+                .map_err(|e| format!("mDNS error: {}", e))?;
 
         // Configure Kademlia DHT
         let local_peer_id = local_key.public().to_peer_id();

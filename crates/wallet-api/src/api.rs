@@ -8,32 +8,28 @@ use axum::{
 use std::sync::Arc;
 
 use opensyria_core::{
-    crypto::{PublicKey, KeyPair},
+    crypto::{KeyPair, PublicKey},
     transaction::Transaction,
 };
 
-use crate::{
-    models::*,
-    AppState,
-};
+use crate::{models::*, AppState};
 
 /// Create API router
 pub fn create_router(state: Arc<AppState>) -> Router {
     Router::new()
         // Transaction endpoints
         .route("/api/v1/transaction/submit", post(submit_transaction))
-        .route("/api/v1/transaction/create", post(create_and_sign_transaction))
-        
+        .route(
+            "/api/v1/transaction/create",
+            post(create_and_sign_transaction),
+        )
         // Account endpoints
         .route("/api/v1/account/{address}/balance", get(get_balance))
-        
         // Blockchain endpoints
         .route("/api/v1/blockchain/info", get(get_blockchain_info))
         .route("/api/v1/mempool/status", get(get_mempool_status))
-        
         // Health check
         .route("/health", get(health_check))
-        
         .with_state(state)
 }
 
@@ -51,37 +47,34 @@ async fn submit_transaction(
     Json(request): Json<SubmitTransactionRequest>,
 ) -> Result<Json<TransactionResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Parse sender public key
-    let from = PublicKey::from_hex(&request.from)
-        .map_err(|_| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: "Invalid sender address".to_string(),
-                }),
-            )
-        })?;
+    let from = PublicKey::from_hex(&request.from).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Invalid sender address".to_string(),
+            }),
+        )
+    })?;
 
     // Parse recipient public key
-    let to = PublicKey::from_hex(&request.to)
-        .map_err(|_| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: "Invalid recipient address".to_string(),
-                }),
-            )
-        })?;
+    let to = PublicKey::from_hex(&request.to).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Invalid recipient address".to_string(),
+            }),
+        )
+    })?;
 
     // Parse signature
-    let signature_bytes = hex::decode(&request.signature)
-        .map_err(|_| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: "Invalid signature format".to_string(),
-                }),
-            )
-        })?;
+    let signature_bytes = hex::decode(&request.signature).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Invalid signature format".to_string(),
+            }),
+        )
+    })?;
 
     // Get node and current state
     let node = state.node.read().await;
@@ -90,14 +83,8 @@ async fn submit_transaction(
     let nonce = state_storage.get_nonce(&from).unwrap_or(0);
 
     // Create transaction with signature
-    let transaction = Transaction::new(
-        from,
-        to,
-        request.amount,
-        request.fee,
-        nonce,
-    )
-    .with_signature(signature_bytes);
+    let transaction = Transaction::new(from, to, request.amount, request.fee, nonce)
+        .with_signature(signature_bytes);
 
     // Verify signature
     if transaction.verify().is_err() {
@@ -115,7 +102,7 @@ async fn submit_transaction(
     // Add to mempool
     drop(node); // Release read lock
     let mut node = state.node.write().await;
-    
+
     match node.add_transaction_to_mempool(transaction) {
         Ok(_) => Ok(Json(TransactionResponse {
             success: true,
@@ -137,15 +124,14 @@ async fn create_and_sign_transaction(
     Json(request): Json<CreateTransactionRequest>,
 ) -> Result<Json<TransactionResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Parse private key (must be exactly 32 bytes)
-    let private_key_bytes = hex::decode(&request.private_key)
-        .map_err(|_| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: "Invalid private key format".to_string(),
-                }),
-            )
-        })?;
+    let private_key_bytes = hex::decode(&request.private_key).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Invalid private key format".to_string(),
+            }),
+        )
+    })?;
 
     if private_key_bytes.len() != 32 {
         return Err((
@@ -158,27 +144,25 @@ async fn create_and_sign_transaction(
 
     let mut key_array = [0u8; 32];
     key_array.copy_from_slice(&private_key_bytes);
-    
-    let keypair = KeyPair::from_bytes(&key_array)
-        .map_err(|_| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: "Invalid private key".to_string(),
-                }),
-            )
-        })?;
+
+    let keypair = KeyPair::from_bytes(&key_array).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Invalid private key".to_string(),
+            }),
+        )
+    })?;
 
     // Verify sender matches private key
-    let from = PublicKey::from_hex(&request.from)
-        .map_err(|_| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: "Invalid sender address".to_string(),
-                }),
-            )
-        })?;
+    let from = PublicKey::from_hex(&request.from).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Invalid sender address".to_string(),
+            }),
+        )
+    })?;
 
     if keypair.public_key() != from {
         return Err((
@@ -190,15 +174,14 @@ async fn create_and_sign_transaction(
     }
 
     // Parse recipient
-    let to = PublicKey::from_hex(&request.to)
-        .map_err(|_| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: "Invalid recipient address".to_string(),
-                }),
-            )
-        })?;
+    let to = PublicKey::from_hex(&request.to).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Invalid recipient address".to_string(),
+            }),
+        )
+    })?;
 
     // Get current nonce
     let node = state.node.read().await;
@@ -206,14 +189,8 @@ async fn create_and_sign_transaction(
     let nonce = state_storage.get_nonce(&from).unwrap_or(0);
 
     // Create and sign transaction
-    let mut transaction = Transaction::new(
-        from,
-        to,
-        request.amount,
-        request.fee,
-        nonce,
-    );
-    
+    let mut transaction = Transaction::new(from, to, request.amount, request.fee, nonce);
+
     // Sign the transaction
     let signing_hash = transaction.signing_hash();
     let signature = keypair.sign(&signing_hash);
@@ -224,7 +201,7 @@ async fn create_and_sign_transaction(
     // Add to mempool
     drop(node); // Release read lock
     let mut node = state.node.write().await;
-    
+
     match node.add_transaction_to_mempool(transaction) {
         Ok(_) => Ok(Json(TransactionResponse {
             success: true,
@@ -246,15 +223,14 @@ async fn get_balance(
     axum::extract::Path(address): axum::extract::Path<String>,
 ) -> Result<Json<BalanceResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Parse address
-    let public_key = PublicKey::from_hex(&address)
-        .map_err(|_| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: "Invalid address format".to_string(),
-                }),
-            )
-        })?;
+    let public_key = PublicKey::from_hex(&address).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Invalid address format".to_string(),
+            }),
+        )
+    })?;
 
     // Get account info
     let node = state.node.read().await;
@@ -276,17 +252,17 @@ async fn get_blockchain_info(
     let node = state.node.read().await;
     let blockchain = node.get_blockchain();
 
-    let chain_height = blockchain.get_chain_height()
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse {
-                    error: format!("Failed to get chain height: {}", e),
-                }),
-            )
-        })?;
+    let chain_height = blockchain.get_chain_height().map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse {
+                error: format!("Failed to get chain height: {}", e),
+            }),
+        )
+    })?;
 
-    let tip_hash = blockchain.get_chain_tip()
+    let tip_hash = blockchain
+        .get_chain_tip()
         .map_err(|e| {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -297,15 +273,14 @@ async fn get_blockchain_info(
         })?
         .unwrap_or([0u8; 32]);
 
-    let latest_block = blockchain.get_block_by_height(chain_height)
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse {
-                    error: format!("Failed to get latest block: {}", e),
-                }),
-            )
-        })?;
+    let latest_block = blockchain.get_block_by_height(chain_height).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse {
+                error: format!("Failed to get latest block: {}", e),
+            }),
+        )
+    })?;
 
     let (difficulty, total_transactions) = if let Some(block) = latest_block {
         let mut tx_count = 0u64;

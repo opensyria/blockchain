@@ -189,7 +189,12 @@ impl GovernanceManager {
         }
 
         GovernanceSnapshot {
-            proposals: self.state.get_all_proposals().into_iter().cloned().collect(),
+            proposals: self
+                .state
+                .get_all_proposals()
+                .into_iter()
+                .cloned()
+                .collect(),
             votes,
             next_proposal_id: self.state.next_proposal_id(),
             config: self.config.clone(),
@@ -199,7 +204,7 @@ impl GovernanceManager {
     /// Restore from snapshot
     pub fn from_snapshot(snapshot: GovernanceSnapshot) -> Self {
         let mut manager = Self::new(snapshot.config);
-        
+
         // Restore proposals
         for proposal in snapshot.proposals {
             manager.state.add_proposal(proposal);
@@ -351,10 +356,7 @@ mod tests {
         // Try to vote after voting ends (voting ends at 100 + 10080 = 10180)
         let result = manager.vote(proposal_id, voter.public_key(), Vote::Yes, 500_000, 20000);
         assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            GovernanceError::VotingEnded
-        ));
+        assert!(matches!(result.unwrap_err(), GovernanceError::VotingEnded));
     }
 
     #[test]

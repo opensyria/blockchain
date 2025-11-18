@@ -1,4 +1,4 @@
-use crate::{types::*, error::*};
+use crate::{error::*, types::*};
 use opensyria_core::crypto::PublicKey;
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -84,7 +84,11 @@ impl MiningPool {
         }
 
         // Check for duplicate share
-        if self.current_round.iter().any(|s| s.nonce == share.nonce && s.miner == share.miner) {
+        if self
+            .current_round
+            .iter()
+            .any(|s| s.nonce == share.nonce && s.miner == share.miner)
+        {
             if let Some(stats) = self.miners.get_mut(&share.miner) {
                 stats.invalid_shares += 1;
             }
@@ -177,10 +181,10 @@ impl MiningPool {
             RewardMethod::PPS => {
                 // Pay Per Share - fixed amount per share
                 let per_share = miner_reward / self.current_round.len() as u64;
-                
+
                 for share in &self.current_round {
                     *rewards.entry(share.miner).or_insert(0) += per_share;
-                    
+
                     if let Some(stats) = self.miners.get_mut(&share.miner) {
                         stats.pending_rewards += per_share;
                         stats.total_rewards += per_share;
@@ -190,7 +194,9 @@ impl MiningPool {
 
             RewardMethod::PPLNS { window } => {
                 // Pay Per Last N Shares
-                let recent_shares: Vec<_> = self.current_round.iter()
+                let recent_shares: Vec<_> = self
+                    .current_round
+                    .iter()
                     .rev()
                     .take(window as usize)
                     .collect();
@@ -204,7 +210,7 @@ impl MiningPool {
                 for (miner, count) in share_counts {
                     let reward = (miner_reward * count) / total;
                     *rewards.entry(miner).or_insert(0) += reward;
-                    
+
                     if let Some(stats) = self.miners.get_mut(&miner) {
                         stats.pending_rewards += reward;
                         stats.total_rewards += reward;
@@ -222,7 +228,9 @@ impl MiningPool {
 
     /// Process payout for a miner
     pub fn process_payout(&mut self, miner: &PublicKey) -> Result<u64> {
-        let stats = self.miners.get_mut(miner)
+        let stats = self
+            .miners
+            .get_mut(miner)
             .ok_or_else(|| PoolError::MinerNotFound(hex::encode(miner.0)))?;
 
         if stats.pending_rewards < self.config.min_payout {
@@ -243,12 +251,16 @@ impl MiningPool {
             .as_secs();
 
         // Count active miners (submitted share in last 10 minutes)
-        let active_miners = self.miners.values()
+        let active_miners = self
+            .miners
+            .values()
             .filter(|m| now - m.last_share_time < 600)
             .count();
 
         // Calculate total hashrate (simplified estimation)
-        let pool_hashrate: f64 = self.miners.values()
+        let pool_hashrate: f64 = self
+            .miners
+            .values()
             .filter(|m| now - m.last_share_time < 600)
             .map(|m| m.hashrate)
             .sum();
@@ -290,7 +302,7 @@ mod tests {
     fn test_pool_creation() {
         let config = PoolConfig::default();
         let pool = MiningPool::new(config);
-        
+
         assert_eq!(pool.blocks_mined, 0);
         assert_eq!(pool.miners.len(), 0);
     }
@@ -299,10 +311,10 @@ mod tests {
     fn test_miner_registration() {
         let config = PoolConfig::default();
         let mut pool = MiningPool::new(config);
-        
+
         let miner = KeyPair::generate().public_key();
         pool.register_miner(miner);
-        
+
         assert_eq!(pool.miners.len(), 1);
         assert!(pool.miners.contains_key(&miner));
     }
@@ -311,9 +323,9 @@ mod tests {
     fn test_work_creation() {
         let config = PoolConfig::default();
         let mut pool = MiningPool::new(config);
-        
+
         let work = pool.create_work(1, [0u8; 32], [0u8; 32], 16);
-        
+
         assert_eq!(work.height, 1);
         assert_eq!(work.block_difficulty, 16);
         assert_eq!(work.share_difficulty, 12);
@@ -324,15 +336,15 @@ mod tests {
         let mut config = PoolConfig::default();
         config.reward_method = RewardMethod::Proportional;
         config.fee_percent = 2;
-        
+
         let mut pool = MiningPool::new(config);
-        
+
         let miner1 = KeyPair::generate().public_key();
         let miner2 = KeyPair::generate().public_key();
-        
+
         pool.register_miner(miner1);
         pool.register_miner(miner2);
-        
+
         // Miner1 submits 3 shares, Miner2 submits 1 share
         for _ in 0..3 {
             pool.current_round.push(Share {
@@ -344,7 +356,7 @@ mod tests {
                 timestamp: 1234567890,
             });
         }
-        
+
         pool.current_round.push(Share {
             miner: miner2,
             height: 1,
@@ -353,14 +365,14 @@ mod tests {
             difficulty: 12,
             timestamp: 1234567890,
         });
-        
+
         let rewards = pool.distribute_rewards(1_000_000);
-        
+
         // Pool fee: 2% = 20,000
         // Miner reward: 980,000
         // Miner1 (3/4): 735,000
         // Miner2 (1/4): 245,000
-        
+
         assert_eq!(rewards.len(), 3); // operator + 2 miners
         assert_eq!(rewards.get(&miner1), Some(&735_000));
         assert_eq!(rewards.get(&miner2), Some(&245_000));
@@ -370,20 +382,20 @@ mod tests {
     fn test_payout_threshold() {
         let mut config = PoolConfig::default();
         config.min_payout = 1_000_000; // 1 Lira minimum
-        
+
         let mut pool = MiningPool::new(config);
         let miner = KeyPair::generate().public_key();
-        
+
         pool.register_miner(miner);
-        
+
         // Set pending rewards below threshold
         pool.miners.get_mut(&miner).unwrap().pending_rewards = 500_000;
-        
+
         assert!(pool.process_payout(&miner).is_err());
-        
+
         // Set pending rewards above threshold
         pool.miners.get_mut(&miner).unwrap().pending_rewards = 1_500_000;
-        
+
         let payout = pool.process_payout(&miner).unwrap();
         assert_eq!(payout, 1_500_000);
         assert_eq!(pool.miners.get(&miner).unwrap().pending_rewards, 0);

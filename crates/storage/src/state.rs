@@ -1,7 +1,7 @@
 use crate::StorageError;
 use opensyria_core::crypto::PublicKey;
 use opensyria_core::multisig::MultisigAccount;
-use rocksdb::{DB, Options};
+use rocksdb::{Options, DB};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -15,20 +15,19 @@ impl StateStorage {
     pub fn open(path: PathBuf) -> Result<Self, StorageError> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
-        
+
         let db = DB::open(&opts, path)?;
-        
+
         Ok(Self { db })
     }
 
     /// Get account balance
     pub fn get_balance(&self, address: &PublicKey) -> Result<u64, StorageError> {
         let key = Self::balance_key(address);
-        
+
         match self.db.get(&key)? {
             Some(data) => {
-                let bytes: [u8; 8] = data.try_into()
-                    .map_err(|_| StorageError::InvalidChain)?;
+                let bytes: [u8; 8] = data.try_into().map_err(|_| StorageError::InvalidChain)?;
                 Ok(u64::from_le_bytes(bytes))
             }
             None => Ok(0), // No balance = 0
@@ -52,11 +51,11 @@ impl StateStorage {
     /// Subtract from account balance (returns error if insufficient)
     pub fn sub_balance(&self, address: &PublicKey, amount: u64) -> Result<(), StorageError> {
         let current = self.get_balance(address)?;
-        
+
         if current < amount {
             return Err(StorageError::InvalidChain); // Insufficient balance
         }
-        
+
         let new_balance = current - amount;
         self.set_balance(address, new_balance)
     }
@@ -76,11 +75,10 @@ impl StateStorage {
     /// Get account nonce (transaction counter)
     pub fn get_nonce(&self, address: &PublicKey) -> Result<u64, StorageError> {
         let key = Self::nonce_key(address);
-        
+
         match self.db.get(&key)? {
             Some(data) => {
-                let bytes: [u8; 8] = data.try_into()
-                    .map_err(|_| StorageError::InvalidChain)?;
+                let bytes: [u8; 8] = data.try_into().map_err(|_| StorageError::InvalidChain)?;
                 Ok(u64::from_le_bytes(bytes))
             }
             None => Ok(0),
@@ -104,23 +102,23 @@ impl StateStorage {
     pub fn get_all_balances(&self) -> Result<HashMap<PublicKey, u64>, StorageError> {
         let mut balances = HashMap::new();
         let prefix = b"balance_";
-        
+
         let iter = self.db.prefix_iterator(prefix);
-        
+
         for item in iter {
             let (key, value) = item?;
-            
+
             // Skip if not a balance key
             if !key.starts_with(prefix) {
                 break;
             }
-            
+
             // Extract public key from key (skip "balance_" prefix)
             if key.len() == prefix.len() + 32 {
                 let mut pk_bytes = [0u8; 32];
                 pk_bytes.copy_from_slice(&key[prefix.len()..]);
                 let pk = PublicKey(pk_bytes);
-                
+
                 // Parse balance
                 if value.len() == 8 {
                     let mut balance_bytes = [0u8; 8];
@@ -130,7 +128,7 @@ impl StateStorage {
                 }
             }
         }
-        
+
         Ok(balances)
     }
 
@@ -160,23 +158,25 @@ impl StateStorage {
     pub fn store_multisig_account(&self, account: &MultisigAccount) -> Result<(), StorageError> {
         let address = account.address();
         let key = Self::multisig_key(&address);
-        
+
         // Serialize multisig account using bincode
-        let serialized = bincode::serialize(account)
-            .map_err(|_e| StorageError::InvalidChain)?;
-        
+        let serialized = bincode::serialize(account).map_err(|_e| StorageError::InvalidChain)?;
+
         self.db.put(&key, &serialized)?;
         Ok(())
     }
 
     /// Get multisig account configuration
-    pub fn get_multisig_account(&self, address: &PublicKey) -> Result<Option<MultisigAccount>, StorageError> {
+    pub fn get_multisig_account(
+        &self,
+        address: &PublicKey,
+    ) -> Result<Option<MultisigAccount>, StorageError> {
         let key = Self::multisig_key(address);
-        
+
         match self.db.get(&key)? {
             Some(data) => {
-                let account: MultisigAccount = bincode::deserialize(&data)
-                    .map_err(|_| StorageError::InvalidChain)?;
+                let account: MultisigAccount =
+                    bincode::deserialize(&data).map_err(|_| StorageError::InvalidChain)?;
                 Ok(Some(account))
             }
             None => Ok(None),
@@ -270,7 +270,7 @@ mod tests {
         storage.set_balance(&bob, 2_000_000).unwrap();
 
         let balances = storage.get_all_balances().unwrap();
-        
+
         assert_eq!(balances.len(), 2);
         assert_eq!(balances.get(&alice), Some(&1_000_000));
         assert_eq!(balances.get(&bob), Some(&2_000_000));
