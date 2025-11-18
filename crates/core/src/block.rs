@@ -23,12 +23,12 @@ impl BlockHeader {
     /// Calculate block header hash
     pub fn hash(&self) -> [u8; 32] {
         let mut hasher = Sha256::new();
-        hasher.update(&self.version.to_le_bytes());
-        hasher.update(&self.previous_hash);
-        hasher.update(&self.merkle_root);
-        hasher.update(&self.timestamp.to_le_bytes());
-        hasher.update(&self.difficulty.to_le_bytes());
-        hasher.update(&self.nonce.to_le_bytes());
+        hasher.update(self.version.to_le_bytes());
+        hasher.update(self.previous_hash);
+        hasher.update(self.merkle_root);
+        hasher.update(self.timestamp.to_le_bytes());
+        hasher.update(self.difficulty.to_le_bytes());
+        hasher.update(self.nonce.to_le_bytes());
         hasher.finalize().into()
     }
 
@@ -39,8 +39,8 @@ impl BlockHeader {
         let remainder = self.difficulty % 8;
 
         // Check full zero bytes
-        for i in 0..leading_zeros as usize {
-            if hash[i] != 0 {
+        for &byte in hash.iter().take(leading_zeros as usize) {
+            if byte != 0 {
                 return false;
             }
         }
@@ -106,11 +106,11 @@ impl Block {
             let mut new_hashes = Vec::new();
             for chunk in hashes.chunks(2) {
                 let mut hasher = Sha256::new();
-                hasher.update(&chunk[0]);
+                hasher.update(chunk[0]);
                 if chunk.len() > 1 {
-                    hasher.update(&chunk[1]);
+                    hasher.update(chunk[1]);
                 } else {
-                    hasher.update(&chunk[0]); // Duplicate if odd
+                    hasher.update(chunk[0]); // Duplicate if odd
                 }
                 new_hashes.push(hasher.finalize().into());
             }

@@ -50,14 +50,11 @@ impl Transaction {
     /// Get signing hash (what gets signed by sender)
     pub fn signing_hash(&self) -> [u8; 32] {
         let mut hasher = Sha256::new();
-        hasher.update(&self.from.0);
-        hasher.update(&self.to.0);
-        hasher.update(&self.amount.to_le_bytes());
-        hasher.update(&self.fee.to_le_bytes());
-        hasher.update(&self.nonce.to_le_bytes());
-        if let Some(data) = &self.data {
-            hasher.update(data);
-        }
+        hasher.update(self.from.0);
+        hasher.update(self.to.0);
+        hasher.update(self.amount.to_le_bytes());
+        hasher.update(self.fee.to_le_bytes());
+        hasher.update(self.nonce.to_le_bytes());
         hasher.finalize().into()
     }
 
@@ -75,10 +72,10 @@ impl Transaction {
         Ok(())
     }
 
-    /// Calculate transaction hash (unique ID)
+    /// Calculate transaction hash (includes signature for uniqueness)
     pub fn hash(&self) -> [u8; 32] {
         let mut hasher = Sha256::new();
-        hasher.update(&self.signing_hash());
+        hasher.update(self.signing_hash());
         hasher.update(&self.signature);
         hasher.finalize().into()
     }

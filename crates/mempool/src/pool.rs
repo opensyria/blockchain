@@ -114,7 +114,7 @@ impl Mempool {
         let sender_key = tx.from.0;
         self.by_sender
             .entry(sender_key)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((tx.nonce, tx_hash));
 
         // Add timestamp

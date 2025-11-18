@@ -48,7 +48,7 @@ impl IdentityRegistry {
         // Add to owner's collection
         self.owners
             .entry(token.owner)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(token_id.clone());
 
         // Store token
@@ -84,7 +84,7 @@ impl IdentityRegistry {
         // Add to new owner
         self.owners
             .entry(*to)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(token_id.to_string());
 
         // Update token

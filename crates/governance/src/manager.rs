@@ -21,6 +21,7 @@ impl GovernanceManager {
     }
 
     /// Create a new proposal
+    #[allow(clippy::too_many_arguments)]
     pub fn create_proposal(
         &mut self,
         proposer: PublicKey,

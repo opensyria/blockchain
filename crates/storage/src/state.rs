@@ -37,7 +37,7 @@ impl StateStorage {
     /// Set account balance
     pub fn set_balance(&self, address: &PublicKey, amount: u64) -> Result<(), StorageError> {
         let key = Self::balance_key(address);
-        self.db.put(&key, &amount.to_le_bytes())?;
+        self.db.put(&key, amount.to_le_bytes())?;
         Ok(())
     }
 
@@ -88,7 +88,7 @@ impl StateStorage {
     /// Set account nonce
     pub fn set_nonce(&self, address: &PublicKey, nonce: u64) -> Result<(), StorageError> {
         let key = Self::nonce_key(address);
-        self.db.put(&key, &nonce.to_le_bytes())?;
+        self.db.put(&key, nonce.to_le_bytes())?;
         Ok(())
     }
 

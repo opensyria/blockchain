@@ -6,9 +6,8 @@ use anyhow::Result;
 use futures::StreamExt;
 use libp2p::{
     core::upgrade,
-    gossipsub::{self, IdentTopic},
+    gossipsub::{self},
     identity,
-    multiaddr::Protocol,
     noise, tcp, yamux, Multiaddr, PeerId, Swarm, Transport,
 };
 use opensyria_core::{Block, Transaction};
@@ -21,7 +20,7 @@ use std::{
     time::Duration,
 };
 use tokio::sync::{mpsc, RwLock};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 /// P2P Network Node
 pub struct NetworkNode {
@@ -35,6 +34,7 @@ pub struct NetworkNode {
     blockchain: Arc<RwLock<BlockchainStorage>>,
 
     /// State storage
+    #[allow(dead_code)]
     state: Arc<RwLock<StateStorage>>,
 
     /// Transaction mempool
@@ -226,7 +226,7 @@ impl NetworkNode {
             max_blocks,
         };
 
-        let request_id = self
+        let _request_id = self
             .swarm
             .behaviour_mut()
             .request_response
@@ -395,11 +395,11 @@ impl NetworkNode {
 
                 // Validate and store block
                 let blockchain = self.blockchain.read().await;
-                let current_height = blockchain.get_chain_height()?;
+                let _current_height = blockchain.get_chain_height()?;
                 drop(blockchain);
 
                 // Try to append block
-                let mut blockchain = self.blockchain.write().await;
+                let blockchain = self.blockchain.write().await;
                 match blockchain.append_block(&block) {
                     Ok(()) => {
                         let new_height = blockchain.get_chain_height()?;
@@ -528,7 +528,7 @@ impl NetworkNode {
             NetworkResponse::Blocks { blocks } => {
                 info!("Received {} blocks from {}", blocks.len(), peer);
 
-                let mut blockchain = self.blockchain.write().await;
+                let blockchain = self.blockchain.write().await;
                 let mut added = 0;
 
                 for block_data in blocks {
@@ -542,7 +542,7 @@ impl NetworkNode {
                 info!("Added {} blocks to chain", added);
             }
 
-            NetworkResponse::ChainTip { height, block_hash } => {
+            NetworkResponse::ChainTip { height, block_hash: _ } => {
                 info!("Peer {} has chain height {}", peer, height);
 
                 let local_height = self.get_chain_height().await?;

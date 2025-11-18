@@ -97,6 +97,7 @@ pub struct Proposal {
 
 impl Proposal {
     /// Create a new proposal
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: ProposalId,
         proposer: PublicKey,

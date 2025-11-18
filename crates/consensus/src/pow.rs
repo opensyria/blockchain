@@ -55,7 +55,7 @@ impl ProofOfWork {
             }
 
             // Progress reporting every 100k hashes
-            if hashes % 100_000 == 0 {
+            if hashes.is_multiple_of(100_000) {
                 let elapsed = start.elapsed().as_secs_f64();
                 if elapsed > 0.0 {
                     let rate = hashes as f64 / elapsed;
@@ -95,8 +95,8 @@ impl ProofOfWork {
                 return (block, stats);
             }
 
-            // Progress callback every 50k hashes
-            if hashes % 50_000 == 0 {
+                        // Progress update every 50k hashes
+            if hashes.is_multiple_of(50_000) {
                 let elapsed = start.elapsed().as_secs_f64();
                 if elapsed > 0.0 {
                     let rate = hashes as f64 / elapsed;
@@ -159,7 +159,7 @@ impl DifficultyAdjuster {
             -((current_difficulty as f64 * (ratio - 1.0).min(0.25)) as i32)
         } else {
             // Too fast, increase difficulty (add)
-            ((current_difficulty as f64 * (1.0 - ratio).min(0.25)) as i32)
+            (current_difficulty as f64 * (1.0 - ratio).min(0.25)) as i32
         };
 
         let new_difficulty = (current_difficulty as i32 + adjustment_factor).max(8) as u32;

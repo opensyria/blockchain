@@ -143,7 +143,7 @@ impl GovernanceState {
         // Store vote record
         self.votes
             .entry(proposal_id)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .insert(vote_record.voter, vote_record);
 
         Ok(())

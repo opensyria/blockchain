@@ -54,10 +54,10 @@ impl MultisigAccount {
         let mut sorted_signers = self.signers.clone();
         sorted_signers.sort_by_key(|k| k.0);
 
-        for signer in sorted_signers {
-            hasher.update(&signer.0);
+        for signer in &self.signers {
+            hasher.update(signer.0);
         }
-        hasher.update(&[self.threshold]);
+        hasher.update([self.threshold]);
 
         let hash = hasher.finalize();
         PublicKey(hash.into())
@@ -128,12 +128,12 @@ impl MultisigTransaction {
 
         // Include multisig address
         let address = self.account.address();
-        hasher.update(&address.0);
+        hasher.update(address.0);
 
-        hasher.update(&self.to.0);
-        hasher.update(&self.amount.to_le_bytes());
-        hasher.update(&self.fee.to_le_bytes());
-        hasher.update(&self.nonce.to_le_bytes());
+        hasher.update(self.to.0);
+        hasher.update(self.amount.to_le_bytes());
+        hasher.update(self.fee.to_le_bytes());
+        hasher.update(self.nonce.to_le_bytes());
 
         if let Some(data) = &self.data {
             hasher.update(data);
@@ -201,11 +201,11 @@ impl MultisigTransaction {
     /// Calculate transaction hash (unique ID)
     pub fn hash(&self) -> [u8; 32] {
         let mut hasher = Sha256::new();
-        hasher.update(&self.signing_hash());
+        hasher.update(self.signing_hash());
 
         // Include all signatures in hash
         for entry in &self.signatures {
-            hasher.update(&entry.signer.0);
+            hasher.update(entry.signer.0);
             hasher.update(&entry.signature);
         }
 

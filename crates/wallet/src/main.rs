@@ -128,8 +128,8 @@ fn main() -> Result<()> {
             println!("{}: {}", "Created | تاريخ الإنشاء".cyan(), created);
             println!();
             println!(
-                "{}",
-                format!("Balance | الرصيد: {} (coming soon)", "0.00 SYL".bold())
+                "Balance | الرصيد: {} (coming soon)",
+                "0.00 SYL".bold()
             );
         }
 

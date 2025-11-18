@@ -11,7 +11,8 @@ pub struct IpfsClient {
 }
 
 /// IPFS add response
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
 struct IpfsAddResponse {
     #[serde(rename = "Hash")]
     hash: String,
@@ -216,7 +217,7 @@ impl IpfsClient {
 
     /// Detect MIME type from filename
     fn detect_mime_type(&self, filename: &str) -> String {
-        let extension = filename.split('.').last().unwrap_or("");
+        let extension = filename.split('.').next_back().unwrap_or("");
         match extension.to_lowercase().as_str() {
             "jpg" | "jpeg" => "image/jpeg",
             "png" => "image/png",

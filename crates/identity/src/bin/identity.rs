@@ -215,7 +215,7 @@ async fn async_main() -> Result<()> {
                 .iter()
                 .filter(|t| {
                     if let Some(ref owner_addr) = owner {
-                        hex::encode(&t.owner.0).starts_with(owner_addr)
+                        hex::encode(t.owner.0).starts_with(owner_addr)
                     } else {
                         true
                     }

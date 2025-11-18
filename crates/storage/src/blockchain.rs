@@ -25,7 +25,7 @@ impl BlockchainStorage {
         let hash = block.hash();
         let data = bincode::serialize(block)?;
 
-        self.db.put(&hash, &data)?;
+        self.db.put(hash, &data)?;
 
         // Also store by height if we know it
         // For now, just store by hash
@@ -100,8 +100,8 @@ impl BlockchainStorage {
     }
 
     /// Set blockchain height
-    pub fn set_chain_height(&self, height: u64) -> Result<(), StorageError> {
-        self.db.put(b"chain_height", &height.to_le_bytes())?;
+    fn set_chain_height(&self, height: u64) -> Result<(), StorageError> {
+        self.db.put(b"chain_height", height.to_le_bytes())?;
         Ok(())
     }
 
