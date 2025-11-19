@@ -16,6 +16,9 @@ pub enum GovernanceError {
     CannotCancel,
     NotReadyForExecution,
     ExecutionFailed(String),
+    InvalidParameters(String),
+    DelegationLoop,
+    DelegationToSelf,
 }
 
 impl std::fmt::Display for GovernanceError {
@@ -31,6 +34,9 @@ impl std::fmt::Display for GovernanceError {
             Self::CannotCancel => write!(f, "Cannot cancel proposal"),
             Self::NotReadyForExecution => write!(f, "Proposal not ready for execution"),
             Self::ExecutionFailed(msg) => write!(f, "Execution failed: {}", msg),
+            Self::InvalidParameters(msg) => write!(f, "Invalid parameters: {}", msg),
+            Self::DelegationLoop => write!(f, "Delegation would create a loop"),
+            Self::DelegationToSelf => write!(f, "Cannot delegate to self"),
         }
     }
 }
@@ -44,6 +50,12 @@ pub struct GovernanceState {
 
     /// Vote records: proposal_id -> voter -> vote_record
     votes: HashMap<ProposalId, HashMap<PublicKey, VoteRecord>>,
+
+    /// Vote delegations: delegator -> delegate
+    delegations: HashMap<PublicKey, PublicKey>,
+
+    /// Balance snapshots: proposal_id -> address -> balance
+    balance_snapshots: HashMap<ProposalId, HashMap<PublicKey, u64>>,
 
     /// Next proposal ID
     next_proposal_id: ProposalId,
@@ -61,6 +73,8 @@ impl GovernanceState {
         Self {
             proposals: HashMap::new(),
             votes: HashMap::new(),
+            delegations: HashMap::new(),
+            balance_snapshots: HashMap::new(),
             next_proposal_id: 1,
             active_proposals: Vec::new(),
             pending_execution: Vec::new(),
@@ -238,6 +252,66 @@ impl GovernanceState {
         Ok(())
     }
 
+    /// Delegate voting power to another address
+    pub fn delegate_vote(&mut self, delegator: PublicKey, delegate: PublicKey) -> Result<(), GovernanceError> {
+        // Prevent self-delegation
+        if delegator == delegate {
+            return Err(GovernanceError::DelegationToSelf);
+        }
+
+        // Detect delegation loops
+        let mut current = delegate;
+        let mut visited = vec![delegator];
+        for _ in 0..100 {
+            if let Some(next) = self.delegations.get(&current) {
+                if visited.contains(next) {
+                    return Err(GovernanceError::DelegationLoop);
+                }
+                visited.push(*next);
+                current = *next;
+            } else {
+                break;
+            }
+        }
+
+        self.delegations.insert(delegator, delegate);
+        Ok(())
+    }
+
+    /// Remove vote delegation
+    pub fn remove_delegation(&mut self, delegator: &PublicKey) -> bool {
+        self.delegations.remove(delegator).is_some()
+    }
+
+    /// Get the final delegate for an address (follows delegation chain)
+    pub fn get_delegate(&self, address: &PublicKey) -> PublicKey {
+        let mut current = *address;
+        for _ in 0..100 {
+            if let Some(delegate) = self.delegations.get(&current) {
+                current = *delegate;
+            } else {
+                break;
+            }
+        }
+        current
+    }
+
+    /// Store balance snapshot for a proposal
+    pub fn store_balance_snapshot(&mut self, proposal_id: ProposalId, address: PublicKey, balance: u64) {
+        self.balance_snapshots
+            .entry(proposal_id)
+            .or_default()
+            .insert(address, balance);
+    }
+
+    /// Get balance snapshot for a proposal
+    pub fn get_balance_snapshot(&self, proposal_id: ProposalId, address: &PublicKey) -> Option<u64> {
+        self.balance_snapshots
+            .get(&proposal_id)?
+            .get(address)
+            .copied()
+    }
+
     /// Get total number of proposals
     pub fn total_proposals(&self) -> usize {
         self.proposals.len()
@@ -348,7 +422,9 @@ mod tests {
             voter: voter.public_key(),
             vote: Vote::Yes,
             voting_power: 100_000,
+            snapshot_balance: 100_000,
             timestamp: 150,
+            delegated_from: None,
         };
 
         state.record_vote(id, vote_record).unwrap();
@@ -387,7 +463,9 @@ mod tests {
             voter: voter.public_key(),
             vote: Vote::Yes,
             voting_power: 100_000,
+            snapshot_balance: 100_000,
             timestamp: 150,
+            delegated_from: None,
         };
 
         state.record_vote(id, vote1).unwrap();
@@ -396,7 +474,9 @@ mod tests {
             voter: voter.public_key(),
             vote: Vote::No,
             voting_power: 100_000,
+            snapshot_balance: 100_000,
             timestamp: 160,
+            delegated_from: None,
         };
 
         let result = state.record_vote(id, vote2);
@@ -432,7 +512,9 @@ mod tests {
                     voter: voter1.public_key(),
                     vote: Vote::Yes,
                     voting_power: 350_000,
+                    snapshot_balance: 350_000,
                     timestamp: 150,
+                    delegated_from: None,
                 },
             )
             .unwrap();
@@ -445,7 +527,9 @@ mod tests {
                     voter: voter2.public_key(),
                     vote: Vote::No,
                     voting_power: 50_000,
+                    snapshot_balance: 50_000,
                     timestamp: 160,
+                    delegated_from: None,
                 },
             )
             .unwrap();

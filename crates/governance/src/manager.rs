@@ -63,7 +63,7 @@ impl GovernanceManager {
             self.config.default_voting_period,
             self.config.default_execution_delay,
             total_voting_power,
-        );
+        ).map_err(|e| GovernanceError::InvalidProposal)?;
 
         let id = self.state.add_proposal(proposal);
         Ok(id)
@@ -106,7 +106,9 @@ impl GovernanceManager {
             voter,
             vote,
             voting_power: validated_power,
+            snapshot_balance: validated_power, // Use current balance as snapshot
             timestamp: current_height,
+            delegated_from: None, // Direct vote, not delegated
         };
 
         self.state.record_vote(proposal_id, vote_record)?;

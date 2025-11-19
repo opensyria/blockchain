@@ -91,6 +91,8 @@ pub struct MultisigTransaction {
     pub signatures: Vec<SignatureEntry>,
     /// Optional transaction metadata
     pub data: Option<Vec<u8>>,
+    /// Expiry block height (transaction invalid after this)
+    pub expiry_height: Option<u64>,
 }
 
 /// Single signature entry with signer identification
@@ -113,13 +115,29 @@ impl MultisigTransaction {
             nonce,
             signatures: Vec::new(),
             data: None,
+            expiry_height: None,
         }
+    }
+
+    /// Set expiry block height
+    pub fn with_expiry(mut self, expiry_height: u64) -> Self {
+        self.expiry_height = Some(expiry_height);
+        self
     }
 
     /// Add optional data payload
     pub fn with_data(mut self, data: Vec<u8>) -> Self {
         self.data = Some(data);
         self
+    }
+
+    /// Check if transaction has expired
+    pub fn is_expired(&self, current_height: u64) -> bool {
+        if let Some(expiry) = self.expiry_height {
+            current_height > expiry
+        } else {
+            false
+        }
     }
 
     /// Get signing hash (what each signer signs)

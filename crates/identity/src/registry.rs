@@ -114,8 +114,8 @@ impl IdentityRegistry {
             .or_default()
             .push(token_id.to_string());
 
-        // Update token
-        token.transfer(*to, block_height);
+        // Update token (no price for registry transfers)
+        token.transfer(*to, block_height, None);
 
         Ok(())
     }
@@ -266,7 +266,9 @@ mod tests {
             TokenType::HeritageSite,
             CulturalCategory::Ancient,
             metadata,
-        );
+            0,
+            0,
+        ).unwrap();
 
         assert!(registry.mint(token, None).is_ok());
         assert_eq!(registry.total_tokens(), 1);
@@ -292,7 +294,9 @@ mod tests {
             TokenType::TraditionalCraft,
             CulturalCategory::Modern,
             metadata,
-        );
+            0,
+            0,
+        ).unwrap();
 
         registry.mint(token, None).unwrap();
 
@@ -346,7 +350,9 @@ mod tests {
             TokenType::HeritageSite,
             CulturalCategory::Ancient,
             metadata,
-        );
+            0,
+            0,
+        ).unwrap();
 
         registry.mint(token, None).unwrap();
 

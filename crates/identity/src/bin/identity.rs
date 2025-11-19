@@ -179,7 +179,9 @@ async fn async_main() -> Result<()> {
                 token_type.clone(),
                 category.clone(),
                 metadata,
-            );
+                0, // No royalty for demo
+                0, // Block height 0
+            )?;
 
             // Display result
             println!(
@@ -416,7 +418,9 @@ fn get_example_tokens() -> Vec<IdentityToken> {
             ))
             .with_period("8th Century CE".to_string())
             .with_unesco_status(metadata::UNESCOStatus::WorldHeritage),
-        ),
+            0,
+            0,
+        ).unwrap(),
         IdentityToken::new(
             "palmyra".to_string(),
             owner,
@@ -433,7 +437,9 @@ fn get_example_tokens() -> Vec<IdentityToken> {
             ))
             .with_period("1st-3rd Century CE".to_string())
             .with_unesco_status(metadata::UNESCOStatus::Endangered),
-        ),
+            0,
+            0,
+        ).unwrap(),
     ]
 }
 

@@ -13,6 +13,7 @@ tracing.workspace = true
 serde.workspace = true
 tokio.workspace = true
 hex = "0.4"
+bincode.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }

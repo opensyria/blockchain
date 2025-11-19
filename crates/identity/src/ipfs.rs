@@ -8,6 +8,18 @@ use std::path::Path;
 pub struct IpfsClient {
     api_url: String,
     gateway_url: String,
+    provider: IpfsProvider,
+}
+
+/// IPFS provider configuration
+#[derive(Debug, Clone)]
+pub enum IpfsProvider {
+    /// Local IPFS daemon
+    Local,
+    /// Pinata cloud service
+    Pinata { api_key: String, api_secret: String },
+    /// Infura IPFS service
+    Infura { project_id: String, project_secret: String },
 }
 
 /// IPFS add response
@@ -40,11 +52,30 @@ pub struct ContentMetadata {
 }
 
 impl IpfsClient {
-    /// Create a new IPFS client
+    /// Create a new IPFS client with local daemon
     pub fn new(api_url: Option<String>, gateway_url: Option<String>) -> Self {
         Self {
             api_url: api_url.unwrap_or_else(|| "http://127.0.0.1:5001".to_string()),
             gateway_url: gateway_url.unwrap_or_else(|| "http://127.0.0.1:8080".to_string()),
+            provider: IpfsProvider::Local,
+        }
+    }
+
+    /// Create a new IPFS client with Pinata
+    pub fn with_pinata(api_key: String, api_secret: String) -> Self {
+        Self {
+            api_url: "https://api.pinata.cloud".to_string(),
+            gateway_url: "https://gateway.pinata.cloud".to_string(),
+            provider: IpfsProvider::Pinata { api_key, api_secret },
+        }
+    }
+
+    /// Create a new IPFS client with Infura
+    pub fn with_infura(project_id: String, project_secret: String) -> Self {
+        Self {
+            api_url: format!("https://ipfs.infura.io:5001"),
+            gateway_url: format!("https://ipfs.infura.io/ipfs"),
+            provider: IpfsProvider::Infura { project_id, project_secret },
         }
     }
 
@@ -65,6 +96,19 @@ impl IpfsClient {
 
     /// Upload bytes to IPFS
     pub async fn upload_bytes(&self, data: &[u8], filename: &str) -> Result<ContentMetadata> {
+        match &self.provider {
+            IpfsProvider::Local => self.upload_to_local(data, filename).await,
+            IpfsProvider::Pinata { api_key, api_secret } => {
+                self.upload_to_pinata(data, filename, api_key, api_secret).await
+            }
+            IpfsProvider::Infura { project_id, project_secret } => {
+                self.upload_to_infura(data, filename, project_id, project_secret).await
+            }
+        }
+    }
+
+    /// Upload to local IPFS daemon
+    async fn upload_to_local(&self, data: &[u8], filename: &str) -> Result<ContentMetadata> {
         // Calculate SHA-256 hash
         let mut hasher = Sha256::new();
         hasher.update(data);
@@ -100,6 +144,123 @@ impl IpfsClient {
             .json()
             .await
             .context("Failed to parse IPFS response")?;
+
+        Ok(ContentMetadata {
+            cid: ipfs_response.hash,
+            filename: filename.to_string(),
+            size: data.len() as u64,
+            mime_type,
+            content_hash,
+            uploaded_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_secs(),
+        })
+    }
+
+    /// Upload to Pinata cloud service
+    async fn upload_to_pinata(
+        &self,
+        data: &[u8],
+        filename: &str,
+        api_key: &str,
+        api_secret: &str,
+    ) -> Result<ContentMetadata> {
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let content_hash = hex::encode(hasher.finalize());
+
+        let mime_type = self.detect_mime_type(filename);
+
+        let form = multipart::Form::new().part(
+            "file",
+            multipart::Part::bytes(data.to_vec())
+                .file_name(filename.to_string())
+                .mime_str(&mime_type)?,
+        );
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("{}/pinning/pinFileToIPFS", self.api_url))
+            .header("pinata_api_key", api_key)
+            .header("pinata_secret_api_key", api_secret)
+            .multipart(form)
+            .send()
+            .await
+            .context("Failed to upload to Pinata")?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            anyhow::bail!("Pinata upload failed ({}): {}", status, error_text);
+        }
+
+        #[derive(Deserialize)]
+        struct PinataResponse {
+            #[serde(rename = "IpfsHash")]
+            ipfs_hash: String,
+        }
+
+        let pinata_response: PinataResponse = response
+            .json()
+            .await
+            .context("Failed to parse Pinata response")?;
+
+        Ok(ContentMetadata {
+            cid: pinata_response.ipfs_hash,
+            filename: filename.to_string(),
+            size: data.len() as u64,
+            mime_type,
+            content_hash,
+            uploaded_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_secs(),
+        })
+    }
+
+    /// Upload to Infura IPFS service
+    async fn upload_to_infura(
+        &self,
+        data: &[u8],
+        filename: &str,
+        project_id: &str,
+        project_secret: &str,
+    ) -> Result<ContentMetadata> {
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let content_hash = hex::encode(hasher.finalize());
+
+        let mime_type = self.detect_mime_type(filename);
+
+        let form = multipart::Form::new().part(
+            "file",
+            multipart::Part::bytes(data.to_vec())
+                .file_name(filename.to_string())
+                .mime_str(&mime_type)?,
+        );
+
+        let auth = format!("{}:{}", project_id, project_secret);
+        use base64::Engine;
+        let auth_header = format!("Basic {}", base64::engine::general_purpose::STANDARD.encode(auth));
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("{}/api/v0/add", self.api_url))
+            .header("Authorization", auth_header)
+            .multipart(form)
+            .send()
+            .await
+            .context("Failed to upload to Infura")?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            anyhow::bail!("Infura upload failed ({}): {}", status, error_text);
+        }
+
+        let ipfs_response: IpfsAddResponse = response
+            .json()
+            .await
+            .context("Failed to parse Infura response")?;
 
         Ok(ContentMetadata {
             cid: ipfs_response.hash,

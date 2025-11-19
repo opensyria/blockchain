@@ -20,3 +20,9 @@ anyhow = "1.0"
 tokio = { workspace = true, features = ["full"] }
 reqwest = { version = "0.11", features = ["json", "multipart"] }
 sha2.workspace = true
+rocksdb.workspace = true
+bincode.workspace = true
+base64 = "0.21"
+
+[dev-dependencies]
+tempfile = "3.8"

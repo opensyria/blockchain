@@ -10,6 +10,12 @@ pub struct IdentityToken {
     /// Owner's public key
     pub owner: PublicKey,
 
+    /// Creator's public key (for royalties)
+    pub creator: PublicKey,
+
+    /// Royalty percentage (0-100, 0 = no royalties)
+    pub royalty_percentage: u8,
+
     /// Token type classification
     pub token_type: TokenType,
 
@@ -25,6 +31,9 @@ pub struct IdentityToken {
     /// Creation timestamp
     pub created_at: u64,
 
+    /// Block height when minted
+    pub minted_at_height: u64,
+
     /// Minting authority signature
     pub authority_signature: Option<Vec<u8>>,
 
@@ -37,6 +46,8 @@ pub struct IdentityToken {
 pub struct Transfer {
     pub from: PublicKey,
     pub to: PublicKey,
+    pub price: Option<u64>, // Sale price (if applicable)
+    pub royalty_paid: Option<u64>, // Royalty amount paid to creator
     pub timestamp: u64,
     pub block_height: u64,
 }
@@ -117,30 +128,52 @@ impl IdentityToken {
         token_type: TokenType,
         category: CulturalCategory,
         metadata: crate::metadata::HeritageMetadata,
-    ) -> Self {
+        royalty_percentage: u8,
+        block_height: u64,
+    ) -> Result<Self, &'static str> {
+        if royalty_percentage > 50 {
+            return Err("Royalty percentage cannot exceed 50%");
+        }
+
         let created_at = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
 
-        Self {
+        Ok(Self {
             id,
             owner,
+            creator: owner, // Creator is initial owner
+            royalty_percentage,
             token_type,
             category,
             metadata,
             created_at,
+            minted_at_height: block_height,
             authority_signature: None,
             provenance: Vec::new(),
             ipfs_cid: None,
-        }
+        })
     }
 
-    /// Transfer token to new owner
-    pub fn transfer(&mut self, to: PublicKey, block_height: u64) {
+    /// Transfer token to new owner with optional sale price
+    pub fn transfer(&mut self, to: PublicKey, block_height: u64, price: Option<u64>) -> u64 {
+        // Calculate royalty if there's a price
+        let royalty_paid = if let Some(sale_price) = price {
+            if self.royalty_percentage > 0 {
+                Some((sale_price as u128 * self.royalty_percentage as u128 / 100) as u64)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         let transfer = Transfer {
             from: self.owner,
             to,
+            price,
+            royalty_paid,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -150,6 +183,8 @@ impl IdentityToken {
 
         self.provenance.push(transfer);
         self.owner = to;
+        
+        royalty_paid.unwrap_or(0)
     }
 
     /// Get token unique identifier
@@ -160,6 +195,14 @@ impl IdentityToken {
     /// Check if token is verified by authority
     pub fn is_verified(&self) -> bool {
         self.authority_signature.is_some()
+    }
+
+    /// Calculate royalty for a given sale price
+    pub fn calculate_royalty(&self, sale_price: u64) -> u64 {
+        if self.royalty_percentage == 0 {
+            return 0;
+        }
+        (sale_price as u128 * self.royalty_percentage as u128 / 100) as u64
     }
 }
 
@@ -221,7 +264,9 @@ mod tests {
             TokenType::HeritageSite,
             CulturalCategory::Islamic,
             metadata,
-        );
+            5, // 5% royalty
+            0, // block height
+        ).unwrap();
 
         assert_eq!(token.token_id(), "heritage-001");
         assert_eq!(token.owner, owner);

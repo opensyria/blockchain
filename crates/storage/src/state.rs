@@ -247,6 +247,48 @@ impl StateStorage {
         Ok(self.db.get(&key)?.is_some())
     }
 
+    /// Get multisig nonce
+    pub fn get_multisig_nonce(&self, address: &PublicKey) -> Result<u64, StorageError> {
+        // Multisig accounts use the same nonce mechanism as regular accounts
+        self.get_nonce(address)
+    }
+
+    /// Increment multisig nonce
+    pub fn increment_multisig_nonce(&self, address: &PublicKey) -> Result<(), StorageError> {
+        self.increment_nonce(address)
+    }
+
+    /// Store partial multisig transaction (for incremental signing)
+    pub fn store_partial_multisig(
+        &self,
+        tx_hash: &[u8; 32],
+        transaction_data: &[u8],
+    ) -> Result<(), StorageError> {
+        let key = Self::partial_multisig_key(tx_hash);
+        self.db.put(&key, transaction_data)?;
+        Ok(())
+    }
+
+    /// Get partial multisig transaction
+    pub fn get_partial_multisig(&self, tx_hash: &[u8; 32]) -> Result<Option<Vec<u8>>, StorageError> {
+        let key = Self::partial_multisig_key(tx_hash);
+        Ok(self.db.get(&key)?)
+    }
+
+    /// Delete partial multisig transaction (after execution or expiry)
+    pub fn delete_partial_multisig(&self, tx_hash: &[u8; 32]) -> Result<(), StorageError> {
+        let key = Self::partial_multisig_key(tx_hash);
+        self.db.delete(&key)?;
+        Ok(())
+    }
+
+    fn partial_multisig_key(tx_hash: &[u8; 32]) -> Vec<u8> {
+        let mut key = Vec::with_capacity(48);
+        key.extend_from_slice(b"partial_multisig_");
+        key.extend_from_slice(tx_hash);
+        key
+    }
+
     /// Apply block transactions atomically (all-or-nothing)
     /// تطبيق معاملات الكتلة بشكل ذري (كل شيء أو لا شيء)
     pub fn apply_block_atomic(&self, transactions: &[Transaction]) -> Result<(), StorageError> {
