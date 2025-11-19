@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Development server launcher for Open Syria Explorer
+# Development server launcher for OpenSyria Explorer
 
 set -e
 
@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$SCRIPT_DIR/../crates/explorer-backend/frontend"
 BACKEND_DIR="$SCRIPT_DIR/../crates/explorer-backend"
 
-echo "🚀 Open Syria Block Explorer - Development Mode"
+echo "🚀 OpenSyria Explorer - Development Mode"
 echo ""
 
 # Check if frontend dependencies are installed

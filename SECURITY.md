@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Currently supported versions of Open Syria blockchain:
+Currently supported versions of OpenSyria blockchain:
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -12,7 +12,7 @@ Currently supported versions of Open Syria blockchain:
 
 **⚠️ IMPORTANT: Do NOT open public issues for security vulnerabilities.**
 
-If you discover a security vulnerability in the Open Syria blockchain, please report it responsibly by:
+If you discover a security vulnerability in the OpenSyria blockchain, please report it responsibly by:
 
 ### 1. Email Report (Preferred)
 

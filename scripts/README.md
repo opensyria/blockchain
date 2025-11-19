@@ -1,6 +1,6 @@
 # Test Scripts
 
-This directory contains integration test scripts for the Open Syria blockchain.
+This directory contains integration test scripts for the OpenSyria blockchain.
 
 ---
 

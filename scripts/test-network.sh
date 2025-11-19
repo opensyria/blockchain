@@ -5,7 +5,7 @@
 set -e
 
 echo "════════════════════════════════════════════════════════════"
-echo "  Open Syria P2P Network Test - Two Node Setup"
+echo "  OpenSyria P2P Network Test - Two Node Setup"
 echo "════════════════════════════════════════════════════════════"
 echo ""
 

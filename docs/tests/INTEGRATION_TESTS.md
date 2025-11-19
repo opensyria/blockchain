@@ -1,6 +1,6 @@
 # Integration Tests | اختبارات التكامل
 
-This document describes the integration test suite for Open Syria Blockchain, which validates multi-node blockchain operations.
+This document describes the integration test suite for OpenSyria Blockchain, which validates multi-node blockchain operations.
 
 ## Overview
 

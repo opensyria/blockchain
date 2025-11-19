@@ -1,4 +1,4 @@
-//! Open Syria Block Explorer Backend
+//! OpenSyria Explorer Backend
 
 pub mod api;
 pub mod handlers;

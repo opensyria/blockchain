@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Open Syria Block Explorer',
-        short_name: 'Syria Explorer',
-        description: 'Explore the Open Syria blockchain with real-time analytics and cultural heritage',
+        name: 'OpenSyria Explorer',
+        short_name: 'OpenSyria',
+        description: 'Explore the OpenSyria blockchain with real-time analytics and cultural heritage',
         theme_color: '#667eea',
         background_color: '#ffffff',
         display: 'standalone',

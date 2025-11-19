@@ -1,17 +1,17 @@
 # Frequently Asked Questions (FAQ)
 
-**Common questions about the Open Syria blockchain**
+**Common questions about the OpenSyria blockchain**
 
 ---
 
 ## Table of Contents
 
 ### General Questions
-- [What is Open Syria?](#what-is-open-syria)
+- [What is OpenSyria?](#what-is-opensyria)
 - [Who is this blockchain for?](#who-is-this-blockchain-for)
 - [Is this production-ready?](#is-this-production-ready)
-- [What makes Open Syria different?](#what-makes-open-syria-different)
-- [Is Open Syria a fork of Bitcoin/Ethereum?](#is-open-syria-a-fork-of-bitcoinethereum)
+- [What makes OpenSyria different?](#what-makes-opensyria-different)
+- [Is OpenSyria a fork of Bitcoin/Ethereum?](#is-opensyria-a-fork-of-bitcoinethereum)
 
 ### Technical Questions
 - [What consensus mechanism does it use?](#what-consensus-mechanism-does-it-use)
@@ -68,9 +68,9 @@
 
 ## General Questions
 
-### What is Open Syria?
+### What is OpenSyria?
 
-Open Syria is a **sovereign blockchain** designed specifically for Syria and the Syrian diaspora. It combines:
+OpenSyria is a **sovereign blockchain** designed specifically for Syria and the Syrian diaspora. It combines:
 - A decentralized digital currency (Digital Lira / SYL)
 - A cultural heritage preservation system
 - On-chain governance
@@ -108,7 +108,7 @@ The blockchain is:
 
 **Recommendation:** Use for development, testing, and education. **Do not store real value** until after security audits and mainnet launch.
 
-### What makes Open Syria different?
+### What makes OpenSyria different?
 
 **Unique Features:**
 1. **Cultural Heritage Focus**: Built-in system for preserving Syrian culture
@@ -120,9 +120,9 @@ The blockchain is:
 7. **Multi-signature Accounts**: Enhanced security
 8. **Heritage-Aware Explorer**: Specialized blockchain browser
 
-### Is Open Syria a fork of Bitcoin/Ethereum?
+### Is OpenSyria a fork of Bitcoin/Ethereum?
 
-**No.** Open Syria is built **from scratch** in Rust. While it shares concepts with Bitcoin (PoW consensus, UTXO-like model), the codebase is completely original.
+**No.** OpenSyria is built **from scratch** in Rust. While it shares concepts with Bitcoin (PoW consensus, UTXO-like model), the codebase is completely original.
 
 **Similarities:**
 - Proof-of-Work consensus

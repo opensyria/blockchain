@@ -123,7 +123,7 @@ mod tests {
     #[test]
     fn test_keypair_generation() {
         let kp = KeyPair::generate();
-        let message = b"Open Syria Blockchain";
+        let message = b"OpenSyria Blockchain";
         let signature = kp.sign(message);
 
         assert!(kp.public_key().verify(message, &signature).is_ok());

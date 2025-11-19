@@ -1,7 +1,7 @@
 # Module 5E - Advanced Features Summary
 
 ## Overview
-Module 5E completes the Open Syria Block Explorer frontend with advanced analytics, heritage gallery, governance viewer, and Progressive Web App (PWA) capabilities. This is the final module (Items 17-20) of the explorer implementation.
+Module 5E completes the OpenSyria Explorer frontend with advanced analytics, heritage gallery, governance viewer, and Progressive Web App (PWA) capabilities. This is the final module (Items 17-20) of the explorer implementation.
 
 ## Deliverables
 
@@ -216,7 +216,7 @@ All charts use generated mock data (Array.from loops) for demonstration. Product
    - Generated files: `sw.js`, `workbox-28240d0c.js`
 
 2. **Web App Manifest**
-   - Name: "Open Syria Block Explorer"
+   - Name: "OpenSyria Explorer"
    - Short name: "Syria Explorer"
    - Theme color: #667eea (primary blue)
    - Background: #ffffff

@@ -1,6 +1,6 @@
 # Consensus Specification | مواصفات الإجماع
 
-**Open Syria Blockchain - Protocol Consensus Rules**
+**OpenSyria Blockchain - Protocol Consensus Rules**
 
 **Version:** 1.0 (CANONICAL SPECIFICATION)  
 **Status:** 🚨 **DRAFT - Requires Implementation**  
@@ -11,7 +11,7 @@
 
 ## Document Purpose
 
-This specification defines the **canonical consensus rules** for the Open Syria blockchain. All node implementations MUST follow these rules to maintain network consensus. Deviations will result in chain splits.
+This specification defines the **canonical consensus rules** for the OpenSyria blockchain. All node implementations MUST follow these rules to maintain network consensus. Deviations will result in chain splits.
 
 **Scope:**
 - Block structure and validation

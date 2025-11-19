@@ -27,7 +27,7 @@ impl std::fmt::Display for ValidationError {
 
 impl std::error::Error for ValidationError {}
 
-/// Network protocol messages for Open Syria blockchain
+/// Network protocol messages for OpenSyria blockchain
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NetworkMessage {
     /// Request blocks starting from a specific height

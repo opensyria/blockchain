@@ -9,7 +9,7 @@
 
 ## Overview
 
-Successfully implemented complete **P2P network CLI commands** for the Open Syria blockchain, enabling multi-node operation and real-time blockchain synchronization.
+Successfully implemented complete **P2P network CLI commands** for the OpenSyria blockchain, enabling multi-node operation and real-time blockchain synchronization.
 
 ---
 

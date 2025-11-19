@@ -94,7 +94,7 @@ opensyria/
 
 ## 🚀 Quick Start Guides
 
-### New to Open Syria?
+### New to OpenSyria?
 **Start here:** [GETTING_STARTED.md](GETTING_STARTED.md) - Complete 30-minute beginner tutorial
 
 ### For Developers

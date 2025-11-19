@@ -6,7 +6,7 @@ use std::time::Duration;
 
 #[derive(Parser)]
 #[command(name = "miner")]
-#[command(about = "Open Syria PoW Miner | منقّب الليرة الرقمية", long_about = None)]
+#[command(about = "OpenSyria PoW Miner | منقّب الليرة الرقمية", long_about = None)]
 struct Cli {
     /// Mining difficulty (number of leading zero bits)
     #[arg(short, long, default_value = "16")]
@@ -27,7 +27,7 @@ fn main() {
     println!("{}", "═".repeat(60).cyan());
     println!(
         "{}",
-        "  Open Syria Proof-of-Work Miner | منقّب البرهان على العمل  "
+        "  OpenSyria Proof-of-Work Miner | منقّب البرهان على العمل  "
             .cyan()
             .bold()
     );

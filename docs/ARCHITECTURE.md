@@ -1,4 +1,4 @@
-# Open Syria Blockchain - Technical Architecture
+# OpenSyria Blockchain - Technical Architecture
 **Digital Lira (الليرة الرقمية) | Sovereign Blockchain for Syria**
 
 Version: 0.1.0  
@@ -9,7 +9,7 @@ Status: Core Implementation Complete
 
 ## Executive Summary
 
-Open Syria is a sovereign, Rust-based blockchain designed to power the Digital Lira, Syria's decentralized digital currency. The system implements a Proof-of-Work consensus mechanism with a clear migration path to Proof-of-Stake, featuring bilingual tooling (Arabic/English), comprehensive state management, and a modular architecture designed for long-term evolution.
+OpenSyria is a sovereign, Rust-based blockchain designed to power the Digital Lira, Syria's decentralized digital currency. The system implements a Proof-of-Work consensus mechanism with a clear migration path to Proof-of-Stake, featuring bilingual tooling (Arabic/English), comprehensive state management, and a modular architecture designed for long-term evolution.
 
 **Key Metrics:**
 - **Language:** Rust (safe, concurrent, performant)
@@ -683,7 +683,7 @@ opensyria-node-cli export --output chain.json --start 1 --end 100
 - **PoW:** Proof-of-Work consensus mechanism
 - **PoS:** Proof-of-Stake consensus mechanism
 - **UTXO:** Unspent Transaction Output model (not used)
-- **Account-based:** Balance model used in Open Syria
+- **Account-based:** Balance model used in OpenSyria
 - **Ed25519:** Elliptic curve signature scheme
 - **Nonce:** Number used once (replay protection)
 - **Merkle Tree:** Hash tree for efficient verification

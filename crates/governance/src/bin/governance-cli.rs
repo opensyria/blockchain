@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "governance-cli")]
-#[command(about = "Open Syria Governance CLI | إدارة الحوكمة", long_about = None)]
+#[command(about = "OpenSyria Governance CLI | إدارة الحوكمة", long_about = None)]
 struct Cli {
     /// Data directory
     #[arg(short, long, default_value = "data/governance")]

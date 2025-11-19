@@ -1,14 +1,14 @@
-# Getting Started with Open Syria Blockchain
+# Getting Started with OpenSyria Blockchain
 
 **مرحباً! Welcome to the Digital Lira blockchain.**
 
-This tutorial will guide you through your first steps with the Open Syria blockchain, from installation to creating your first heritage token.
+This tutorial will guide you through your first steps with the OpenSyria blockchain, from installation to creating your first heritage token.
 
 ---
 
 ## Table of Contents
 
-1. [What is Open Syria?](#what-is-open-syria)
+1. [What is OpenSyria?](#what-is-opensyria)
 2. [Installation](#installation)
 3. [First Steps](#first-steps)
 4. [Creating Your First Wallet](#creating-your-first-wallet)
@@ -21,9 +21,9 @@ This tutorial will guide you through your first steps with the Open Syria blockc
 
 ---
 
-## What is Open Syria?
+## What is OpenSyria?
 
-Open Syria is a **sovereign blockchain** built specifically for Syria and the Syrian diaspora. It's designed to:
+OpenSyria is a **sovereign blockchain** built specifically for Syria and the Syrian diaspora. It's designed to:
 
 - 🏛️ **Preserve Syrian Culture**: Tokenize and protect 5,000+ years of heritage
 - 💰 **Power the Digital Lira**: A decentralized Syrian digital currency
@@ -72,7 +72,7 @@ rustc 1.75.0 (82e1608df 2023-12-21)
 cargo 1.75.0 (1d8b05cdd 2023-11-20)
 ```
 
-### Step 2: Download Open Syria
+### Step 2: Download OpenSyria
 
 ```bash
 # Clone the repository
@@ -580,7 +580,7 @@ A: Currently 50 SYL per block (subject to change via governance).
 
 You've learned how to:
 
-- ✅ Install and build Open Syria blockchain
+- ✅ Install and build OpenSyria blockchain
 - ✅ Initialize a node and check status
 - ✅ Create wallets
 - ✅ Mine blocks
@@ -605,6 +605,6 @@ Choose your path:
 - **🗳️ Governance Participant**: Create proposals and vote on changes
 - **🌐 Node Operator**: Run a public node and help decentralize the network
 
-**Welcome to Open Syria. Let's build the future together.**
+**Welcome to OpenSyria. Let's build the future together.**
 
 **مرحباً بك في سوريا المفتوحة. لنبني المستقبل معاً.**

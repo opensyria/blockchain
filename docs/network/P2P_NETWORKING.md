@@ -3,7 +3,7 @@
 
 ### Overview
 
-The Open Syria P2P networking layer enables **decentralized multi-node blockchain synchronization** using **libp2p**, the modular network stack used by IPFS, Filecoin, and Polkadot. This allows the Digital Lira blockchain to operate without central servers or single points of failure.
+The OpenSyria P2P networking layer enables **decentralized multi-node blockchain synchronization** using **libp2p**, the modular network stack used by IPFS, Filecoin, and Polkadot. This allows the Digital Lira blockchain to operate without central servers or single points of failure.
 
 **Status:** ✅ Core implementation complete (2 tests passing)
 
@@ -659,7 +659,7 @@ let peer_id = local_key.public().to_peer_id();
 
 ## Summary
 
-The Open Syria P2P networking layer provides:
+The OpenSyria P2P networking layer provides:
 - ✅ **Decentralized** peer-to-peer architecture
 - ✅ **Secure** transport encryption (Noise protocol)
 - ✅ **Scalable** to thousands of nodes (libp2p proven)

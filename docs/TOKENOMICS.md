@@ -1,11 +1,11 @@
 # Digital Lira Tokenomics | اقتصاديات الليرة الرقمية
 
-**Open Syria Blockchain - Economic Specification**
+**OpenSyria Blockchain - Economic Specification**
 
 **Version:** 1.0 (DRAFT - Requires Community Review)  
 **Status:** 🚨 **CRITICAL - NOT IMPLEMENTED**  
 **Last Updated:** November 18, 2025  
-**Authors:** Open Syria Core Team
+**Authors:** OpenSyria Core Team
 
 ---
 

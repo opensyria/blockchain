@@ -133,7 +133,7 @@ cargo run --bin explorer
 
 ### **Color Palette**
 ```css
---color-primary: #667eea      /* Open Syria brand purple */
+--color-primary: #667eea      /* OpenSyria brand purple */
 --color-primary-dark: #5568d3
 --color-secondary: #764ba2
 --color-accent: #f093fb

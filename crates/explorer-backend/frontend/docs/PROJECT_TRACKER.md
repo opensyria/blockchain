@@ -1,4 +1,4 @@
-# Open Syria Block Explorer - Project Tracker
+# OpenSyria Explorer - Project Tracker
 
 ## Module 5: Block Explorer Frontend - COMPLETE ✅
 

@@ -32,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|p| p.join("crates/explorer-backend/static"))
         .unwrap_or_else(|| PathBuf::from("crates/explorer-backend/static"));
 
-    println!("🚀 Open Syria Block Explorer");
+    println!("🚀 OpenSyria Explorer");
     println!("📂 Data directory: {}", data_dir.display());
     println!("🌐 Server address: http://{}", addr);
     println!("📁 Static files: {}", static_dir.display());

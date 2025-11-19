@@ -6,7 +6,7 @@
 
 ## Overview
 
-Module 5C adds real-time capabilities to the Open Syria Block Explorer through WebSocket integration, mempool viewer, and network topology visualization. This enables live blockchain monitoring with instant updates.
+Module 5C adds real-time capabilities to the OpenSyria Explorer through WebSocket integration, mempool viewer, and network topology visualization. This enables live blockchain monitoring with instant updates.
 
 ---
 

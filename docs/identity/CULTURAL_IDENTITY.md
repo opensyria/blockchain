@@ -3,7 +3,7 @@
 
 ### Executive Summary
 
-The **Cultural Identity System** is the soul of the Open Syria Blockchain Initiative. While most blockchains focus purely on financial transactions, Open Syria recognizes that Syria's greatest wealth lies in its **5,000+ years of cultural heritage**. This system allows Syrians to tokenize, preserve, and share their cultural identity on an immutable, decentralized ledger.
+The **Cultural Identity System** is the soul of the OpenSyria Blockchain Initiative. While most blockchains focus purely on financial transactions, OpenSyria recognizes that Syria's greatest wealth lies in its **5,000+ years of cultural heritage**. This system allows Syrians to tokenize, preserve, and share their cultural identity on an immutable, decentralized ledger.
 
 **Core Philosophy:**
 - 🏛️ **Preservation**: Protect Syrian heritage from erasure and destruction

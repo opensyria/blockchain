@@ -1,6 +1,6 @@
 # Wallet REST API
 
-REST API server for Open Syria blockchain wallet operations.
+REST API server for OpenSyria blockchain wallet operations.
 
 ## Features
 

@@ -6,7 +6,7 @@
 
 ## Summary
 
-Successfully implemented real-time capabilities for the Open Syria Block Explorer, enabling live blockchain monitoring through WebSocket integration, mempool viewer, and network topology visualization.
+Successfully implemented real-time capabilities for the OpenSyria Explorer, enabling live blockchain monitoring through WebSocket integration, mempool viewer, and network topology visualization.
 
 ---
 

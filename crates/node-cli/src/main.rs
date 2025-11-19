@@ -361,7 +361,7 @@ async fn main() -> Result<()> {
     match cli.command {
         Commands::Init { difficulty } => {
             println!("{}", "═".repeat(60).cyan());
-            println!("{}", "  Initializing Open Syria Node  ".cyan().bold());
+            println!("{}", "  Initializing OpenSyria Node  ".cyan().bold());
             println!("{}", "═".repeat(60).cyan());
             println!();
 
@@ -730,7 +730,7 @@ async fn handle_daemon(
     use tokio::time::{interval, Duration};
 
     println!("{}", "═".repeat(60).cyan().bold());
-    println!("{}", "  Open Syria Network Daemon  ".cyan().bold());
+    println!("{}", "  OpenSyria Network Daemon  ".cyan().bold());
     println!("{}", "═".repeat(60).cyan().bold());
     println!();
 

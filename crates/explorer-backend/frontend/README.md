@@ -1,4 +1,4 @@
-# Open Syria Block Explorer - Frontend
+# OpenSyria Explorer - Frontend
 
 Modern, bilingual (Arabic/English) blockchain explorer built with React, TypeScript, and Vite.
 

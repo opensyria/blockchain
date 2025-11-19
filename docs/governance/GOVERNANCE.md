@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Open Syria blockchain governance system enables on-chain decision-making through proposals and voting. This decentralized governance framework allows stakeholders to participate in protocol upgrades, parameter changes, and treasury management.
+The OpenSyria blockchain governance system enables on-chain decision-making through proposals and voting. This decentralized governance framework allows stakeholders to participate in protocol upgrades, parameter changes, and treasury management.
 
 ## Architecture
 

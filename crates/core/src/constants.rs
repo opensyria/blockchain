@@ -1,4 +1,4 @@
-// Protocol Constants for Open Syria Blockchain
+// Protocol Constants for OpenSyria Blockchain
 // الثوابت البروتوكولية لبلوك تشين سوريا المفتوحة
 
 /// Chain identifier for mainnet

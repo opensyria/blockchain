@@ -1,4 +1,4 @@
-# Open Syria Deployment Guide
+# OpenSyria Deployment Guide
 **Getting Started with the Digital Lira Blockchain**
 
 ---
@@ -93,7 +93,7 @@ opensyria-node-cli --data-dir ~/my-node init --difficulty 16
 **Output:**
 ```
 ════════════════════════════════════════════════════════════
-  Initializing Open Syria Node  
+  Initializing OpenSyria Node  
 ════════════════════════════════════════════════════════════
 
 ✓ Node initialized successfully
@@ -147,7 +147,7 @@ opensyria-node-cli mine --blocks 1 --difficulty 16 --verbose
 **Output:**
 ```
 ════════════════════════════════════════════════════════════
-  Open Syria Mining Node  
+  OpenSyria Mining Node  
 ════════════════════════════════════════════════════════════
 
 Starting height: 1
@@ -242,7 +242,7 @@ miner --difficulty 12 --blocks 3 --verbose
 **Output:**
 ```
 ═══════════════════════════════════════════════════════════
-  Open Syria Proof-of-Work Miner | منقّب البرهان على العمل  
+  OpenSyria Proof-of-Work Miner | منقّب البرهان على العمل  
 ═══════════════════════════════════════════════════════════
 
 Difficulty | الصعوبة: 12
@@ -447,7 +447,7 @@ sudo ufw enable
 Create `/etc/systemd/system/opensyria-node.service`:
 ```ini
 [Unit]
-Description=Open Syria Blockchain Node
+Description=OpenSyria Blockchain Node
 After=network.target
 
 [Service]

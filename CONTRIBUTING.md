@@ -1,4 +1,4 @@
-# Contributing to Open Syria Blockchain
+# Contributing to OpenSyria Blockchain
 
 **مرحباً بك في مشروع بلوكتشين سوريا المفتوحة!**
 
@@ -531,7 +531,7 @@ We value all contributions equally:
 
 ## License
 
-By contributing to Open Syria, you agree that your contributions will be licensed under the project's MIT OR Apache-2.0 dual license.
+By contributing to OpenSyria, you agree that your contributions will be licensed under the project's MIT OR Apache-2.0 dual license.
 
 ---
 

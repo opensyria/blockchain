@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "opensyria-wallet-api")]
-#[command(about = "Open Syria Wallet API Server | خادم واجهة برمجة التطبيقات للمحفظة")]
+#[command(about = "OpenSyria Wallet API Server | خادم واجهة برمجة التطبيقات للمحفظة")]
 struct Cli {
     /// Node data directory
     #[arg(short, long, default_value = "~/.opensyria/node")]

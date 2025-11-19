@@ -81,7 +81,7 @@ impl HDWallet {
         // Get seed from mnemonic (with empty passphrase)
         let seed = mnemonic.to_seed("");
 
-        // Simple derivation: Hash(seed || index) for Open Syria
+        // Simple derivation: Hash(seed || index) for OpenSyria
         // In production BIP44, would use proper HMAC-SHA512 chain
         let mut hasher = Sha256::new();
         hasher.update(&seed[..]);
@@ -110,19 +110,22 @@ impl HDWallet {
 /// Display warning about mnemonic security
 /// عرض تحذير حول أمان عبارة التذكير
 pub fn display_mnemonic_warning() {
-    println!("\n⚠️  CRITICAL SECURITY WARNING ⚠️");
-    println!("═══════════════════════════════════════════════════════════");
+    println!("\n⚠️  CRITICAL SECURITY WARNING | تحذير أمني حرج ⚠️");
+    println!("═══════════════════════════════════════════════════════════════════════════════════");
     println!("Your mnemonic phrase is the MASTER KEY to your wallet.");
+    println!("عبارة التذكير الخاصة بك هي المفتاح الرئيسي لمحفظتك.");
+    println!();
     println!("Anyone with this phrase can access ALL your funds.");
+    println!("أي شخص لديه هذه العبارة يمكنه الوصول إلى جميع أموالك.");
     println!();
-    println!("NEVER share it with anyone!");
-    println!("NEVER enter it on websites!");
-    println!("NEVER take screenshots!");
+    println!("NEVER share it with anyone! | لا تشاركها مع أي شخص أبداً!");
+    println!("NEVER enter it on websites! | لا تدخلها على المواقع الإلكترونية أبداً!");
+    println!("NEVER take screenshots! | لا تلتقط لقطات شاشة أبداً!");
     println!();
-    println!("✓ Write it down on paper");
-    println!("✓ Store in a secure location (safe, safety deposit box)");
-    println!("✓ Consider making multiple copies in different locations");
-    println!("═══════════════════════════════════════════════════════════\n");
+    println!("✓ Write it down on paper | اكتبها على ورقة");
+    println!("✓ Store in a secure location (safe, safety deposit box) | احفظها في مكان آمن (خزنة، صندوق ودائع)");
+    println!("✓ Consider making multiple copies in different locations | فكر في عمل نسخ متعددة في أماكن مختلفة");
+    println!("═══════════════════════════════════════════════════════════════════════════════════\n");
 }
 
 #[cfg(test)]

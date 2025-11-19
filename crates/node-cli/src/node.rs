@@ -181,7 +181,7 @@ impl Node {
     /// Start mining blocks
     pub fn start_mining(&mut self, block_count: u32, difficulty: u32, verbose: bool) -> Result<()> {
         println!("{}", "═".repeat(60).cyan());
-        println!("{}", "  Open Syria Mining Node  ".cyan().bold());
+        println!("{}", "  OpenSyria Mining Node  ".cyan().bold());
         println!("{}", "═".repeat(60).cyan());
         println!();
 
