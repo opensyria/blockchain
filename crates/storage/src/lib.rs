@@ -1,7 +1,9 @@
 pub mod blockchain;
+pub mod indexer;
 pub mod state;
 
 pub use blockchain::BlockchainStorage;
+pub use indexer::BlockchainIndexer;
 pub use state::StateStorage;
 
 use std::path::PathBuf;
@@ -28,6 +30,15 @@ pub enum StorageError {
     SerializationError(bincode::Error),
     BlockNotFound,
     InvalidChain,
+    InsufficientBalance,
+    BalanceOverflow,
+    InvalidProofOfWork,
+    InvalidTransaction,
+    InvalidMerkleRoot,
+    TimestampTooFarFuture,
+    TimestampDecreased,
+    CheckpointMismatch { height: u64, expected: String, got: String },
+    ColumnFamilyNotFound,
 }
 
 impl std::fmt::Display for StorageError {
@@ -37,6 +48,17 @@ impl std::fmt::Display for StorageError {
             StorageError::SerializationError(e) => write!(f, "Serialization error: {}", e),
             StorageError::BlockNotFound => write!(f, "Block not found"),
             StorageError::InvalidChain => write!(f, "Invalid blockchain"),
+            StorageError::InsufficientBalance => write!(f, "Insufficient balance"),
+            StorageError::BalanceOverflow => write!(f, "Balance overflow"),
+            StorageError::InvalidProofOfWork => write!(f, "Invalid proof of work"),
+            StorageError::InvalidTransaction => write!(f, "Invalid transaction in block"),
+            StorageError::InvalidMerkleRoot => write!(f, "Invalid merkle root"),
+            StorageError::TimestampTooFarFuture => write!(f, "Block timestamp too far in future"),
+            StorageError::TimestampDecreased => write!(f, "Block timestamp decreased from previous"),
+            StorageError::CheckpointMismatch { height, expected, got } => {
+                write!(f, "Checkpoint mismatch at height {}: expected {}, got {}", height, expected, got)
+            }
+            StorageError::ColumnFamilyNotFound => write!(f, "RocksDB column family not found"),
         }
     }
 }

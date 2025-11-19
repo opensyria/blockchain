@@ -120,18 +120,19 @@ impl GovernanceState {
         proposal_id: ProposalId,
         vote_record: VoteRecord,
     ) -> Result<(), GovernanceError> {
-        // Check if already voted first
-        if let Some(votes) = self.votes.get(&proposal_id) {
-            if votes.contains_key(&vote_record.voter) {
-                return Err(GovernanceError::AlreadyVoted);
-            }
-        }
-
-        // Get proposal and update vote counts
+        // Get proposal first to ensure it exists
         let proposal = self
             .proposals
             .get_mut(&proposal_id)
             .ok_or(GovernanceError::ProposalNotFound(proposal_id))?;
+
+        // Atomic check-and-insert to prevent double voting
+        let votes_map = self.votes.entry(proposal_id).or_default();
+        
+        // Check if already voted (atomic)
+        if votes_map.contains_key(&vote_record.voter) {
+            return Err(GovernanceError::AlreadyVoted);
+        }
 
         // Update vote counts
         match vote_record.vote {
@@ -140,11 +141,8 @@ impl GovernanceState {
             Vote::Abstain => proposal.votes_abstain += vote_record.voting_power,
         }
 
-        // Store vote record
-        self.votes
-            .entry(proposal_id)
-            .or_default()
-            .insert(vote_record.voter, vote_record);
+        // Store vote record (insert after counts updated)
+        votes_map.insert(vote_record.voter, vote_record);
 
         Ok(())
     }

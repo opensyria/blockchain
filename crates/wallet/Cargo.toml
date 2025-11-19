@@ -19,3 +19,13 @@ anyhow = "1.0"
 dirs = "5.0"
 hex = "0.4"
 chrono = "0.4"
+aes-gcm = "0.10"
+argon2 = "0.5"
+rand = "0.8"
+rpassword = "7.3"
+bip39 = "2.0"
+sha2 = "0.10"
+
+[dev-dependencies]
+tempfile = "3.14"
+

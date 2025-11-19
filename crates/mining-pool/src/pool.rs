@@ -1,7 +1,14 @@
 use crate::{error::*, types::*};
 use opensyria_core::crypto::PublicKey;
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Maximum share age in seconds (5 minutes)
+const SHARE_MAX_AGE_SECS: u64 = 300;
+
+/// Maximum shares per miner per minute (prevents DoS)
+const MAX_SHARES_PER_MINUTE: u64 = 60;
 
 /// Mining pool coordinator
 pub struct MiningPool {
@@ -66,13 +73,52 @@ impl MiningPool {
     }
 
     /// Submit a share from a miner
+    /// يرسل حصة من المُعدِّن - مع التحقق من صحة العمل
     pub fn submit_share(&mut self, share: Share) -> Result<bool> {
-        // Verify miner is registered
+        // 1. Verify miner is registered
         if !self.miners.contains_key(&share.miner) {
             return Err(PoolError::MinerNotFound(hex::encode(share.miner.0)));
         }
 
-        // Validate share difficulty
+        // 2. Check rate limit (DoS protection)
+        self.check_rate_limit(&share.miner)?;
+
+        // 3. Get current work assignment
+        let work = self
+            .current_work
+            .as_ref()
+            .ok_or(PoolError::InvalidWorkAssignment)?;
+
+        // 4. Verify share is for current work height
+        if share.height != work.height {
+            if let Some(stats) = self.miners.get_mut(&share.miner) {
+                stats.invalid_shares += 1;
+            }
+            return Err(PoolError::InvalidShare("Wrong work height".into()));
+        }
+
+        // 5. Verify share age (prevent old share replay)
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        if now.saturating_sub(share.timestamp) > SHARE_MAX_AGE_SECS {
+            if let Some(stats) = self.miners.get_mut(&share.miner) {
+                stats.invalid_shares += 1;
+            }
+            return Err(PoolError::InvalidShare("Share expired".into()));
+        }
+
+        // 6. CRITICAL: Verify PoW - recalculate hash to prevent fraud
+        let calculated_hash = self.calculate_share_hash(&work.prev_hash, &work.merkle_root, share.nonce);
+        if calculated_hash != share.hash {
+            if let Some(stats) = self.miners.get_mut(&share.miner) {
+                stats.invalid_shares += 1;
+            }
+            return Err(PoolError::InvalidShare("Hash mismatch - invalid PoW".into()));
+        }
+
+        // 7. Validate share difficulty
         if !self.validate_share_difficulty(&share) {
             if let Some(stats) = self.miners.get_mut(&share.miner) {
                 stats.invalid_shares += 1;
@@ -83,32 +129,73 @@ impl MiningPool {
             });
         }
 
-        // Check for duplicate share
-        if self
-            .current_round
-            .iter()
-            .any(|s| s.nonce == share.nonce && s.miner == share.miner)
-        {
+        // 8. Check for duplicate share (by nonce)
+        if self.current_round.iter().any(|s| s.nonce == share.nonce) {
             if let Some(stats) = self.miners.get_mut(&share.miner) {
                 stats.invalid_shares += 1;
             }
             return Err(PoolError::DuplicateShare);
         }
 
-        // Update miner stats
+        // 9. Update miner stats and estimate hashrate
         if let Some(stats) = self.miners.get_mut(&share.miner) {
             stats.total_shares += 1;
             stats.valid_shares += 1;
+
+            // Estimate hashrate from share submission rate
+            if stats.last_share_time > 0 {
+                let time_delta = share.timestamp.saturating_sub(stats.last_share_time).max(1);
+                let expected_hashes = 2_u64.pow(self.config.share_difficulty);
+                stats.hashrate = expected_hashes as f64 / time_delta as f64;
+            }
+
             stats.last_share_time = share.timestamp;
         }
 
-        // Add to current round
+        // 10. Add to current round
         self.current_round.push(share.clone());
 
-        // Check if this share meets block difficulty
+        // 11. Check if this share meets block difficulty
         let is_block = self.validate_block_difficulty(&share);
 
         Ok(is_block)
+    }
+
+    /// Check rate limit for a miner (prevents DoS attacks)
+    /// التحقق من حد معدل الإرسال للمُعدِّن
+    fn check_rate_limit(&self, miner: &PublicKey) -> Result<()> {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        // Count shares from this miner in the last minute
+        let recent_shares = self
+            .current_round
+            .iter()
+            .filter(|s| s.miner == *miner && now.saturating_sub(s.timestamp) < 60)
+            .count();
+
+        if recent_shares as u64 >= MAX_SHARES_PER_MINUTE {
+            return Err(PoolError::RateLimitExceeded);
+        }
+
+        Ok(())
+    }
+
+    /// Calculate share hash from work parameters
+    /// حساب تجزئة الحصة من معاملات العمل
+    fn calculate_share_hash(
+        &self,
+        prev_hash: &[u8; 32],
+        merkle_root: &[u8; 32],
+        nonce: u64,
+    ) -> [u8; 32] {
+        let mut hasher = Sha256::new();
+        hasher.update(prev_hash);
+        hasher.update(merkle_root);
+        hasher.update(nonce.to_le_bytes());
+        hasher.finalize().into()
     }
 
     /// Validate share meets minimum difficulty
@@ -403,5 +490,172 @@ mod tests {
         let payout = pool.process_payout(&miner).unwrap();
         assert_eq!(payout, 1_500_000);
         assert_eq!(pool.miners.get(&miner).unwrap().pending_rewards, 0);
+    }
+
+    #[test]
+    fn test_pow_verification() {
+        let config = PoolConfig::default();
+        let mut pool = MiningPool::new(config);
+
+        let miner = KeyPair::generate().public_key();
+        pool.register_miner(miner);
+
+        let prev_hash = [0u8; 32];
+        let merkle_root = [1u8; 32];
+        pool.create_work(1, prev_hash, merkle_root, 16);
+
+        // Create valid share with correct hash
+        let nonce = 12345u64;
+        let valid_hash = pool.calculate_share_hash(&prev_hash, &merkle_root, nonce);
+
+        let valid_share = Share {
+            miner,
+            height: 1,
+            nonce,
+            hash: valid_hash,
+            difficulty: 12,
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+        };
+
+        // Valid share with matching difficulty should be accepted
+        let result = pool.submit_share(valid_share.clone());
+        
+        // If difficulty is too low, we expect ShareDifficultyTooLow error
+        match result {
+            Ok(_) => {
+                // Share was valid and met difficulty
+                assert!(pool.current_round.len() > 0);
+            }
+            Err(PoolError::ShareDifficultyTooLow { .. }) => {
+                // Expected if random hash doesn't meet difficulty
+            }
+            Err(e) => panic!("Unexpected error: {}", e),
+        }
+    }
+
+    #[test]
+    fn test_invalid_pow_rejected() {
+        let config = PoolConfig::default();
+        let mut pool = MiningPool::new(config);
+
+        let miner = KeyPair::generate().public_key();
+        pool.register_miner(miner);
+
+        let prev_hash = [0u8; 32];
+        let merkle_root = [1u8; 32];
+        pool.create_work(1, prev_hash, merkle_root, 16);
+
+        // Create share with FAKE hash (doesn't match nonce)
+        let fake_share = Share {
+            miner,
+            height: 1,
+            nonce: 12345,
+            hash: [0u8; 32], // Fake hash
+            difficulty: 12,
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+        };
+
+        let result = pool.submit_share(fake_share);
+        assert!(matches!(
+            result,
+            Err(PoolError::InvalidShare(ref msg)) if msg.contains("Hash mismatch")
+        ));
+
+        // Verify invalid share counter incremented
+        let stats = pool.get_miner_stats(&miner).unwrap();
+        assert_eq!(stats.invalid_shares, 1);
+    }
+
+    #[test]
+    fn test_rate_limiting() {
+        let config = PoolConfig::default();
+        let mut pool = MiningPool::new(config);
+
+        let miner = KeyPair::generate().public_key();
+        pool.register_miner(miner);
+
+        let prev_hash = [0u8; 32];
+        let merkle_root = [1u8; 32];
+        pool.create_work(1, prev_hash, merkle_root, 16);
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        // Submit MAX_SHARES_PER_MINUTE shares
+        for i in 0..MAX_SHARES_PER_MINUTE {
+            let nonce = i;
+            let hash = pool.calculate_share_hash(&prev_hash, &merkle_root, nonce);
+
+            pool.current_round.push(Share {
+                miner,
+                height: 1,
+                nonce,
+                hash,
+                difficulty: 12,
+                timestamp: now,
+            });
+        }
+
+        // Next share should be rate limited
+        let nonce = 9999u64;
+        let hash = pool.calculate_share_hash(&prev_hash, &merkle_root, nonce);
+
+        let share = Share {
+            miner,
+            height: 1,
+            nonce,
+            hash,
+            difficulty: 12,
+            timestamp: now,
+        };
+
+        let result = pool.submit_share(share);
+        assert!(matches!(result, Err(PoolError::RateLimitExceeded)));
+    }
+
+    #[test]
+    fn test_share_expiration() {
+        let config = PoolConfig::default();
+        let mut pool = MiningPool::new(config);
+
+        let miner = KeyPair::generate().public_key();
+        pool.register_miner(miner);
+
+        let prev_hash = [0u8; 32];
+        let merkle_root = [1u8; 32];
+        pool.create_work(1, prev_hash, merkle_root, 16);
+
+        // Create share with old timestamp (expired)
+        let old_timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            - (SHARE_MAX_AGE_SECS + 10);
+
+        let nonce = 12345u64;
+        let hash = pool.calculate_share_hash(&prev_hash, &merkle_root, nonce);
+
+        let expired_share = Share {
+            miner,
+            height: 1,
+            nonce,
+            hash,
+            difficulty: 12,
+            timestamp: old_timestamp,
+        };
+
+        let result = pool.submit_share(expired_share);
+        assert!(matches!(
+            result,
+            Err(PoolError::InvalidShare(ref msg)) if msg.contains("expired")
+        ));
     }
 }

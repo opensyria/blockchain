@@ -1,6 +1,8 @@
+use crate::constants::{GENESIS_DIFFICULTY, GENESIS_NONCE, GENESIS_TIMESTAMP, MAX_FUTURE_DRIFT_SECS};
 use crate::transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Block header containing metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,9 +91,22 @@ impl Block {
         }
     }
 
-    /// Create genesis block
-    pub fn genesis(difficulty: u32) -> Self {
-        Self::new([0u8; 32], Vec::new(), difficulty)
+    /// Create genesis block (canonical, deterministic)
+    /// إنشاء الكتلة الأولى (معيارية، حتمية)
+    pub fn genesis() -> Self {
+        let header = BlockHeader {
+            version: 1,
+            previous_hash: [0u8; 32],
+            merkle_root: [0u8; 32], // Empty transaction list
+            timestamp: GENESIS_TIMESTAMP,
+            difficulty: GENESIS_DIFFICULTY,
+            nonce: GENESIS_NONCE,
+        };
+
+        Self {
+            header,
+            transactions: Vec::new(),
+        }
     }
 
     /// Calculate merkle root from transactions
@@ -137,6 +152,27 @@ impl Block {
     pub fn verify_merkle_root(&self) -> bool {
         self.header.merkle_root == Self::calculate_merkle_root(&self.transactions)
     }
+
+    /// Validate block timestamp against previous block and system time
+    /// التحقق من الطابع الزمني للكتلة مقابل الكتلة السابقة ووقت النظام
+    pub fn validate_timestamp(&self, previous_timestamp: u64) -> Result<(), BlockError> {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| BlockError::InvalidTimestamp)?
+            .as_secs();
+
+        // Check timestamp is not too far in the future (5 minutes tolerance)
+        if self.header.timestamp > now + MAX_FUTURE_DRIFT_SECS {
+            return Err(BlockError::TimestampTooFarFuture);
+        }
+
+        // Check timestamp is not before previous block (monotonic increase required)
+        if self.header.timestamp < previous_timestamp {
+            return Err(BlockError::TimestampDecreased);
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -145,6 +181,9 @@ pub enum BlockError {
     InvalidMerkleRoot,
     InvalidProofOfWork,
     InvalidPreviousHash,
+    InvalidTimestamp,
+    TimestampTooFarFuture,
+    TimestampDecreased,
 }
 
 impl std::fmt::Display for BlockError {
@@ -154,6 +193,9 @@ impl std::fmt::Display for BlockError {
             BlockError::InvalidMerkleRoot => write!(f, "Invalid merkle root"),
             BlockError::InvalidProofOfWork => write!(f, "Invalid proof of work"),
             BlockError::InvalidPreviousHash => write!(f, "Invalid previous block hash"),
+            BlockError::InvalidTimestamp => write!(f, "Invalid timestamp"),
+            BlockError::TimestampTooFarFuture => write!(f, "Block timestamp too far in future"),
+            BlockError::TimestampDecreased => write!(f, "Block timestamp decreased from previous block"),
         }
     }
 }
@@ -166,14 +208,16 @@ mod tests {
 
     #[test]
     fn test_genesis_block() {
-        let genesis = Block::genesis(16);
+        let genesis = Block::genesis();
         assert_eq!(genesis.header.previous_hash, [0u8; 32]);
         assert!(genesis.transactions.is_empty());
+        assert_eq!(genesis.header.difficulty, crate::constants::GENESIS_DIFFICULTY);
+        assert_eq!(genesis.header.timestamp, crate::constants::GENESIS_TIMESTAMP);
     }
 
     #[test]
     fn test_block_hash_deterministic() {
-        let block = Block::genesis(16);
+        let block = Block::genesis();
         let hash1 = block.hash();
         let hash2 = block.hash();
         assert_eq!(hash1, hash2);
@@ -244,5 +288,60 @@ mod tests {
 
         let block = Block::new([0u8; 32], vec![tx], 16);
         assert!(block.verify_merkle_root());
+    }
+
+    #[test]
+    fn test_timestamp_validation_future_block() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        // Block with timestamp 10 minutes in future (should fail)
+        let future_block = Block::new([0u8; 32], vec![], 16);
+        let mut future_header = future_block.header.clone();
+        future_header.timestamp = now + 600; // 10 minutes ahead
+
+        let future_block = Block {
+            header: future_header,
+            transactions: vec![],
+        };
+
+        let result = future_block.validate_timestamp(now - 120);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), BlockError::TimestampTooFarFuture);
+    }
+
+    #[test]
+    fn test_timestamp_validation_monotonic() {
+        // Block with timestamp before previous block (should fail)
+        let block = Block::new([0u8; 32], vec![], 16);
+        let mut header = block.header.clone();
+        header.timestamp = 1000;
+
+        let block = Block {
+            header,
+            transactions: vec![],
+        };
+
+        let result = block.validate_timestamp(2000); // Previous was 2000
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), BlockError::TimestampDecreased);
+    }
+
+    #[test]
+    fn test_timestamp_validation_valid() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        let block = Block::new([0u8; 32], vec![], 16);
+        let result = block.validate_timestamp(now - 120);
+        assert!(result.is_ok());
     }
 }

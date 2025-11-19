@@ -1,10 +1,14 @@
+use crate::constants::{calculate_block_reward, CHAIN_ID_MAINNET, MAX_TRANSACTION_SIZE};
 use crate::crypto::PublicKey;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Transaction transferring Digital Lira
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Transaction {
+    /// Chain identifier for replay protection (963 = mainnet, 963000 = testnet)
+    pub chain_id: u32,
     /// Sender's public key
     pub from: PublicKey,
     /// Recipient's public key
@@ -22,9 +26,22 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    /// Create new unsigned transaction
+    /// Create new unsigned transaction with default mainnet chain ID
     pub fn new(from: PublicKey, to: PublicKey, amount: u64, fee: u64, nonce: u64) -> Self {
+        Self::new_with_chain_id(CHAIN_ID_MAINNET, from, to, amount, fee, nonce)
+    }
+
+    /// Create new unsigned transaction with specific chain ID
+    pub fn new_with_chain_id(
+        chain_id: u32,
+        from: PublicKey,
+        to: PublicKey,
+        amount: u64,
+        fee: u64,
+        nonce: u64,
+    ) -> Self {
         Self {
+            chain_id,
             from,
             to,
             amount,
@@ -48,8 +65,10 @@ impl Transaction {
     }
 
     /// Get signing hash (what gets signed by sender)
+    /// Includes chain_id for replay protection
     pub fn signing_hash(&self) -> [u8; 32] {
         let mut hasher = Sha256::new();
+        hasher.update(self.chain_id.to_le_bytes()); // Prevents cross-chain replay
         hasher.update(self.from.0);
         hasher.update(self.to.0);
         hasher.update(self.amount.to_le_bytes());
@@ -79,6 +98,54 @@ impl Transaction {
         hasher.update(&self.signature);
         hasher.finalize().into()
     }
+
+    /// Check if this is a coinbase transaction (creates new coins)
+    pub fn is_coinbase(&self) -> bool {
+        self.from.is_zero() && self.signature.is_empty()
+    }
+
+    /// Create coinbase transaction for block reward
+    /// مكافأة المُعدِّن - إنشاء معاملة كوين بيس
+    pub fn coinbase(
+        chain_id: u32,
+        miner_address: PublicKey,
+        block_height: u64,
+        transaction_fees: u64,
+    ) -> Result<Self, TransactionError> {
+        let block_reward = calculate_block_reward(block_height);
+        let total_reward = block_reward
+            .checked_add(transaction_fees)
+            .ok_or(TransactionError::RewardOverflow)?;
+
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        let mut coinbase_data = Vec::new();
+        coinbase_data.extend_from_slice(&block_height.to_le_bytes());
+        coinbase_data.extend_from_slice(&timestamp.to_le_bytes());
+
+        Ok(Self {
+            chain_id,
+            from: PublicKey::zero(), // Special zero address for coinbase
+            to: miner_address,
+            amount: total_reward,
+            fee: 0, // Coinbase pays no fee
+            nonce: block_height, // Use height as unique identifier
+            signature: Vec::new(), // No signature (validated by consensus)
+            data: Some(coinbase_data),
+        })
+    }
+
+    /// Validate transaction size to prevent DoS attacks
+    pub fn validate_size(&self) -> Result<(), TransactionError> {
+        let size = bincode::serialized_size(self).map_err(|_| TransactionError::InvalidSize)?;
+        if size > MAX_TRANSACTION_SIZE as u64 {
+            return Err(TransactionError::TooLarge);
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -87,6 +154,9 @@ pub enum TransactionError {
     InvalidSignature,
     InsufficientBalance,
     InvalidAmount,
+    RewardOverflow,
+    InvalidSize,
+    TooLarge,
 }
 
 impl std::fmt::Display for TransactionError {
@@ -96,6 +166,9 @@ impl std::fmt::Display for TransactionError {
             TransactionError::InvalidSignature => write!(f, "Invalid transaction signature"),
             TransactionError::InsufficientBalance => write!(f, "Insufficient balance"),
             TransactionError::InvalidAmount => write!(f, "Invalid transaction amount"),
+            TransactionError::RewardOverflow => write!(f, "Block reward calculation overflow"),
+            TransactionError::InvalidSize => write!(f, "Cannot calculate transaction size"),
+            TransactionError::TooLarge => write!(f, "Transaction exceeds maximum size"),
         }
     }
 }
@@ -164,6 +237,110 @@ mod tests {
         assert!(matches!(
             tx.verify(),
             Err(TransactionError::MissingSignature)
+        ));
+    }
+
+    #[test]
+    fn test_chain_id_in_signing_hash() {
+        use crate::constants::{CHAIN_ID_MAINNET, CHAIN_ID_TESTNET};
+
+        let sender = KeyPair::generate();
+        let receiver = KeyPair::generate();
+
+        let tx_mainnet = Transaction::new_with_chain_id(
+            CHAIN_ID_MAINNET,
+            sender.public_key(),
+            receiver.public_key(),
+            1_000_000,
+            100,
+            0,
+        );
+
+        let tx_testnet = Transaction::new_with_chain_id(
+            CHAIN_ID_TESTNET,
+            sender.public_key(),
+            receiver.public_key(),
+            1_000_000,
+            100,
+            0,
+        );
+
+        // Different chain IDs should produce different hashes
+        assert_ne!(tx_mainnet.signing_hash(), tx_testnet.signing_hash());
+    }
+
+    #[test]
+    fn test_coinbase_transaction() {
+        use crate::constants::CHAIN_ID_MAINNET;
+
+        let miner = KeyPair::generate();
+        let coinbase = Transaction::coinbase(
+            CHAIN_ID_MAINNET,
+            miner.public_key(),
+            1, // Block height 1
+            1000, // Transaction fees
+        )
+        .unwrap();
+
+        assert!(coinbase.is_coinbase());
+        assert_eq!(coinbase.fee, 0);
+        assert_eq!(coinbase.from, PublicKey::zero());
+        // Block reward at height 1 is 50 Lira + fees
+        assert_eq!(coinbase.amount, 50_000_000 + 1000);
+    }
+
+    #[test]
+    fn test_coinbase_reward_halving() {
+        use crate::constants::{CHAIN_ID_MAINNET, HALVING_INTERVAL};
+
+        let miner = KeyPair::generate();
+
+        // First era
+        let cb1 = Transaction::coinbase(CHAIN_ID_MAINNET, miner.public_key(), 1, 0).unwrap();
+        assert_eq!(cb1.amount, 50_000_000);
+
+        // After first halving
+        let cb2 = Transaction::coinbase(CHAIN_ID_MAINNET, miner.public_key(), HALVING_INTERVAL + 1, 0).unwrap();
+        assert_eq!(cb2.amount, 25_000_000);
+    }
+
+    #[test]
+    fn test_transaction_size_validation() {
+        let sender = KeyPair::generate();
+        let receiver = KeyPair::generate();
+
+        let tx = Transaction::new(
+            sender.public_key(),
+            receiver.public_key(),
+            1_000_000,
+            100,
+            0,
+        );
+
+        // Normal transaction should pass
+        assert!(tx.validate_size().is_ok());
+    }
+
+    #[test]
+    fn test_oversized_transaction_rejected() {
+        let sender = KeyPair::generate();
+        let receiver = KeyPair::generate();
+
+        let mut tx = Transaction::new(
+            sender.public_key(),
+            receiver.public_key(),
+            1_000_000,
+            100,
+            0,
+        );
+
+        // Add massive data payload
+        tx.data = Some(vec![0u8; MAX_TRANSACTION_SIZE + 1]);
+
+        // Should fail size validation
+        assert!(matches!(
+            tx.validate_size(),
+            Err(TransactionError::TooLarge)
         ));
     }
 }

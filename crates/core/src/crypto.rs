@@ -82,6 +82,17 @@ impl PublicKey {
         arr.copy_from_slice(&bytes);
         Ok(PublicKey(arr))
     }
+
+    /// Create a zero public key (used for coinbase transactions)
+    /// إنشاء مفتاح عام صفري (للمعاملات الكوين بيس)
+    pub fn zero() -> Self {
+        PublicKey([0u8; 32])
+    }
+
+    /// Check if this is the zero public key
+    pub fn is_zero(&self) -> bool {
+        self.0 == [0u8; 32]
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

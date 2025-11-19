@@ -1,6 +1,32 @@
 use opensyria_core::{Block, Transaction};
 use serde::{Deserialize, Serialize};
 
+/// Maximum gossipsub message size: 2MB
+/// الحد الأقصى لحجم رسالة gossipsub: 2 ميغابايت
+pub const MAX_GOSSIPSUB_MESSAGE_SIZE: usize = 2 * 1024 * 1024;
+
+/// Message size validation error
+#[derive(Debug, Clone)]
+pub enum ValidationError {
+    MessageTooLarge { size: usize, max_size: usize },
+    DeserializationFailed(String),
+}
+
+impl std::fmt::Display for ValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ValidationError::MessageTooLarge { size, max_size } => {
+                write!(f, "Message size {} exceeds maximum {}", size, max_size)
+            }
+            ValidationError::DeserializationFailed(err) => {
+                write!(f, "Deserialization failed: {}", err)
+            }
+        }
+    }
+}
+
+impl std::error::Error for ValidationError {}
+
 /// Network protocol messages for Open Syria blockchain
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NetworkMessage {
@@ -84,9 +110,19 @@ impl NetworkMessage {
         bincode::serialize(self)
     }
 
-    /// Deserialize message from bytes
-    pub fn from_bytes(data: &[u8]) -> Result<Self, bincode::Error> {
-        bincode::deserialize(data)
+    /// Deserialize message from bytes with size validation
+    /// يفكك تسلسل الرسالة من البايتات مع التحقق من الحجم
+    pub fn from_bytes(data: &[u8]) -> Result<Self, ValidationError> {
+        // Validate message size BEFORE deserialization
+        if data.len() > MAX_GOSSIPSUB_MESSAGE_SIZE {
+            return Err(ValidationError::MessageTooLarge {
+                size: data.len(),
+                max_size: MAX_GOSSIPSUB_MESSAGE_SIZE,
+            });
+        }
+
+        // Deserialize message
+        bincode::deserialize(data).map_err(|e| ValidationError::DeserializationFailed(e.to_string()))
     }
 }
 
@@ -133,6 +169,23 @@ mod tests {
                 assert_eq!(transaction.amount, 100);
             }
             _ => panic!("Wrong message type"),
+        }
+    }
+
+    #[test]
+    fn test_oversized_message_rejected() {
+        // Create a message larger than MAX_GOSSIPSUB_MESSAGE_SIZE
+        let oversized_data = vec![0u8; MAX_GOSSIPSUB_MESSAGE_SIZE + 1];
+
+        let result = NetworkMessage::from_bytes(&oversized_data);
+        assert!(result.is_err());
+
+        match result.unwrap_err() {
+            ValidationError::MessageTooLarge { size, max_size } => {
+                assert_eq!(size, MAX_GOSSIPSUB_MESSAGE_SIZE + 1);
+                assert_eq!(max_size, MAX_GOSSIPSUB_MESSAGE_SIZE);
+            }
+            _ => panic!("Expected MessageTooLarge error"),
         }
     }
 }

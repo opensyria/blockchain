@@ -1,4 +1,4 @@
-use opensyria_core::Block;
+use opensyria_core::{Block, DIFFICULTY_ADJUSTMENT_INTERVAL, MAX_DIFFICULTY, MAX_DIFFICULTY_ADJUSTMENT, MIN_DIFFICULTY, TARGET_BLOCK_TIME_SECS};
 use std::time::{Duration, Instant};
 
 /// Mining statistics
@@ -140,32 +140,35 @@ impl DifficultyAdjuster {
         }
     }
 
-    /// Calculate new difficulty based on actual mining times
-    pub fn adjust(&self, current_difficulty: u32, actual_time: Duration) -> u32 {
-        let target_total = self.target_block_time.as_secs_f64() * self.adjustment_interval as f64;
-        let actual_total = actual_time.as_secs_f64();
+    /// Create adjuster with default protocol parameters
+    pub fn default() -> Self {
+        Self::new(TARGET_BLOCK_TIME_SECS, DIFFICULTY_ADJUSTMENT_INTERVAL)
+    }
 
-        if actual_total == 0.0 {
+    /// Calculate new difficulty based on actual mining times
+    /// Uses integer arithmetic to prevent floating-point accumulation errors
+    /// حساب الصعوبة الجديدة بناءً على أوقات التعدين الفعلية
+    pub fn adjust(&self, current_difficulty: u32, actual_time: Duration, block_count: u32) -> u32 {
+        // Wait for full adjustment interval before adjusting
+        if block_count < self.adjustment_interval {
             return current_difficulty;
         }
 
-        let ratio = actual_total / target_total;
+        let target_total = self.target_block_time.as_secs() * block_count as u64;
+        let actual_total = actual_time.as_secs().max(1); // Prevent division by zero
 
-        // Adjust difficulty based on time ratio
-        // If ratio > 1, blocks took longer → decrease difficulty
-        // If ratio < 1, blocks were faster → increase difficulty
-        let adjustment_factor = if ratio > 1.0 {
-            // Too slow, decrease difficulty (subtract)
-            -((current_difficulty as f64 * (ratio - 1.0).min(0.25)) as i32)
-        } else {
-            // Too fast, increase difficulty (add)
-            (current_difficulty as f64 * (1.0 - ratio).min(0.25)) as i32
-        };
+        // Integer-only calculation (Bitcoin-style) to avoid floating-point errors
+        // Use u128 to prevent overflow during multiplication
+        let new_difficulty = (current_difficulty as u128 * target_total as u128 
+                             / actual_total as u128) as u32;
 
-        let new_difficulty = (current_difficulty as i32 + adjustment_factor).max(8) as u32;
+        // Clamp adjustment to ±25% (MAX_DIFFICULTY_ADJUSTMENT)
+        let min_diff = ((current_difficulty as f64 * (1.0 - MAX_DIFFICULTY_ADJUSTMENT)) as u32)
+            .max(MIN_DIFFICULTY);
+        let max_diff = ((current_difficulty as f64 * (1.0 + MAX_DIFFICULTY_ADJUSTMENT)) as u32)
+            .min(MAX_DIFFICULTY);
 
-        // Clamp to reasonable range (8-bit to 24-bit difficulty)
-        new_difficulty.clamp(8, 192)
+        new_difficulty.clamp(min_diff, max_diff)
     }
 }
 
@@ -177,9 +180,11 @@ mod tests {
     #[test]
     fn test_mine_genesis_block() {
         let pow = ProofOfWork::new(8); // Easy difficulty for testing
-        let genesis = Block::genesis(8);
+        let genesis = Block::genesis();
+        let mut test_block = genesis.clone();
+        test_block.header.difficulty = 8; // Override for test
 
-        let (mined, stats) = pow.mine(genesis);
+        let (mined, stats) = pow.mine(test_block);
 
         assert!(pow.validate(&mined));
         assert!(stats.hashes_computed > 0);
@@ -217,8 +222,10 @@ mod tests {
 
         // Mine with easier difficulty
         let easy_pow = ProofOfWork::new(8);
-        let genesis = Block::genesis(8);
-        let (mined, _) = easy_pow.mine(genesis);
+        let genesis = Block::genesis();
+        let mut test_block = genesis.clone();
+        test_block.header.difficulty = 8;
+        let (mined, _) = easy_pow.mine(test_block);
 
         // Should fail validation with harder difficulty requirement
         assert!(!pow.validate(&mined));
@@ -230,7 +237,7 @@ mod tests {
 
         // Blocks mined too fast (5 minutes instead of 10)
         let actual_time = Duration::from_secs(300);
-        let new_difficulty = adjuster.adjust(16, actual_time);
+        let new_difficulty = adjuster.adjust(16, actual_time, 10);
 
         // Should increase difficulty
         assert!(new_difficulty > 16);
@@ -242,9 +249,33 @@ mod tests {
 
         // Blocks mined too slow (20 minutes instead of 10)
         let actual_time = Duration::from_secs(1200);
-        let new_difficulty = adjuster.adjust(16, actual_time);
+        let new_difficulty = adjuster.adjust(16, actual_time, 10);
 
         // Should decrease difficulty
         assert!(new_difficulty < 16);
+    }
+
+    #[test]
+    fn test_difficulty_adjustment_waits_for_interval() {
+        let adjuster = DifficultyAdjuster::new(60, 10);
+
+        // Only 5 blocks mined, should not adjust yet
+        let actual_time = Duration::from_secs(300);
+        let new_difficulty = adjuster.adjust(16, actual_time, 5);
+
+        // Should keep same difficulty
+        assert_eq!(new_difficulty, 16);
+    }
+
+    #[test]
+    fn test_difficulty_adjustment_clamped() {
+        let adjuster = DifficultyAdjuster::new(60, 10);
+
+        // Extremely fast blocks (should clamp to max 25% increase)
+        let actual_time = Duration::from_secs(10); // 10x faster
+        let new_difficulty = adjuster.adjust(16, actual_time, 10);
+
+        // Should not increase more than 25%
+        assert!(new_difficulty <= 20); // 16 * 1.25 = 20
     }
 }

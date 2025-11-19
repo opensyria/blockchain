@@ -13,6 +13,9 @@ pub enum PoolError {
     #[error("Duplicate share")]
     DuplicateShare,
 
+    #[error("Rate limit exceeded - too many shares submitted")]
+    RateLimitExceeded,
+
     #[error("Miner not found: {0}")]
     MinerNotFound(String),
 

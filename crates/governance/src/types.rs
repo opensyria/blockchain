@@ -441,3 +441,64 @@ mod tests {
         assert_eq!(text.required_threshold, 50);
     }
 }
+
+impl ProposalType {
+    /// Validate proposal parameters are within safe ranges
+    pub fn validate(&self) -> Result<(), &'static str> {
+        match self {
+            ProposalType::DifficultyAdjustment {
+                target_block_time,
+                adjustment_interval,
+            } => {
+                // Target block time must be between 10 seconds and 10 minutes
+                if *target_block_time < 10 || *target_block_time > 600 {
+                    return Err("target_block_time must be between 10 and 600 seconds");
+                }
+                // Adjustment interval must be at least 10 blocks
+                if *adjustment_interval < 10 {
+                    return Err("adjustment_interval must be at least 10 blocks");
+                }
+                Ok(())
+            }
+            ProposalType::MinimumFee { new_fee } => {
+                // Minimum fee must be at least 1000 (0.000001 tokens) and max 1M
+                if *new_fee < 1000 || *new_fee > 1_000_000 {
+                    return Err("new_fee must be between 1000 and 1000000");
+                }
+                Ok(())
+            }
+            ProposalType::BlockSizeLimit { new_limit } => {
+                // Block size must be between 1MB and 10MB
+                if *new_limit < 1_000_000 || *new_limit > 10_000_000 {
+                    return Err("new_limit must be between 1MB and 10MB");
+                }
+                Ok(())
+            }
+            ProposalType::BlockReward { new_reward } => {
+                // Block reward must be reasonable (max 100 tokens per block)
+                if *new_reward > 100_000_000_000 {
+                    return Err("new_reward must not exceed 100 tokens");
+                }
+                Ok(())
+            }
+            ProposalType::TreasurySpending { amount, .. } => {
+                // Treasury spending must not exceed 1000 tokens per proposal
+                if *amount > 1000_000_000_000 {
+                    return Err("amount must not exceed 1000 tokens");
+                }
+                Ok(())
+            }
+            ProposalType::ProtocolUpgrade { activation_height, .. } => {
+                // Activation height must be greater than 0
+                if *activation_height == 0 {
+                    return Err("activation_height must be greater than 0");
+                }
+                Ok(())
+            }
+            ProposalType::TextProposal { .. } => {
+                // Text proposals are non-binding, no validation needed
+                Ok(())
+            }
+        }
+    }
+}

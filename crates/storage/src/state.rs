@@ -1,11 +1,13 @@
 use crate::StorageError;
 use opensyria_core::crypto::PublicKey;
 use opensyria_core::multisig::MultisigAccount;
-use rocksdb::{Options, DB};
+use opensyria_core::Transaction;
+use rocksdb::{Options, WriteBatch, DB};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// State storage for account balances and metadata
+/// تخزين حالة أرصدة الحسابات والبيانات الوصفية
 pub struct StateStorage {
     db: DB,
 }
@@ -44,7 +46,10 @@ impl StateStorage {
     /// Add to account balance
     pub fn add_balance(&self, address: &PublicKey, amount: u64) -> Result<(), StorageError> {
         let current = self.get_balance(address)?;
-        let new_balance = current.saturating_add(amount);
+        // Use checked_add to detect overflow instead of silent saturation
+        let new_balance = current
+            .checked_add(amount)
+            .ok_or(StorageError::BalanceOverflow)?;
         self.set_balance(address, new_balance)
     }
 
@@ -188,6 +193,128 @@ impl StateStorage {
         let key = Self::multisig_key(address);
         Ok(self.db.get(&key)?.is_some())
     }
+
+    /// Apply block transactions atomically (all-or-nothing)
+    /// تطبيق معاملات الكتلة بشكل ذري (كل شيء أو لا شيء)
+    pub fn apply_block_atomic(&self, transactions: &[Transaction]) -> Result<(), StorageError> {
+        let mut batch = WriteBatch::default();
+        
+        // Track balance/nonce changes in memory before batching
+        let mut balance_changes: HashMap<PublicKey, i128> = HashMap::new();
+        let mut nonce_changes: HashMap<PublicKey, u64> = HashMap::new();
+
+        // Calculate all state changes
+        for tx in transactions {
+            // Skip coinbase transactions (miner rewards)
+            if tx.is_coinbase() {
+                *balance_changes.entry(tx.to).or_insert(0) += tx.amount as i128;
+                continue;
+            }
+
+            // Regular transactions: deduct from sender, add to receiver
+            let total_debit = tx
+                .amount
+                .checked_add(tx.fee)
+                .ok_or(StorageError::BalanceOverflow)?;
+
+            *balance_changes.entry(tx.from).or_insert(0) -= total_debit as i128;
+            *balance_changes.entry(tx.to).or_insert(0) += tx.amount as i128;
+            
+            // Track nonce increment
+            *nonce_changes.entry(tx.from).or_insert(0) += 1;
+        }
+
+        // Validate all balances are sufficient
+        for (address, change) in &balance_changes {
+            let current_balance = self.get_balance(address)?;
+            let new_balance = (current_balance as i128) + change;
+            
+            if new_balance < 0 {
+                return Err(StorageError::InsufficientBalance);
+            }
+        }
+
+        // Apply balance changes to batch
+        for (address, change) in balance_changes {
+            let current_balance = self.get_balance(&address)?;
+            let new_balance = ((current_balance as i128) + change) as u64;
+            
+            let key = Self::balance_key(&address);
+            batch.put(&key, new_balance.to_le_bytes());
+        }
+
+        // Apply nonce changes to batch
+        for (address, increment) in nonce_changes {
+            let current_nonce = self.get_nonce(&address)?;
+            let new_nonce = current_nonce + increment;
+            
+            let key = Self::nonce_key(&address);
+            batch.put(&key, new_nonce.to_le_bytes());
+        }
+
+        // Atomic commit - ALL or NOTHING
+        self.db.write(batch)?;
+
+        Ok(())
+    }
+
+    /// Revert block transactions atomically (for chain reorgs)
+    /// عكس معاملات الكتلة بشكل ذري (لإعادة تنظيم السلسلة)
+    pub fn revert_block_atomic(&self, transactions: &[Transaction]) -> Result<(), StorageError> {
+        let mut batch = WriteBatch::default();
+
+        // Reverse all operations in reverse order
+        for tx in transactions.iter().rev() {
+            // Skip coinbase transactions
+            if tx.is_coinbase() {
+                let receiver_balance = self.get_balance(&tx.to)?;
+                if receiver_balance < tx.amount {
+                    return Err(StorageError::InsufficientBalance);
+                }
+                let new_receiver_balance = receiver_balance - tx.amount;
+
+                let receiver_key = Self::balance_key(&tx.to);
+                batch.put(&receiver_key, new_receiver_balance.to_le_bytes());
+                continue;
+            }
+
+            // Return funds to sender
+            let sender_balance = self.get_balance(&tx.from)?;
+            let total_credit = tx
+                .amount
+                .checked_add(tx.fee)
+                .ok_or(StorageError::BalanceOverflow)?;
+            let new_sender_balance = sender_balance
+                .checked_add(total_credit)
+                .ok_or(StorageError::BalanceOverflow)?;
+
+            let sender_key = Self::balance_key(&tx.from);
+            batch.put(&sender_key, new_sender_balance.to_le_bytes());
+
+            // Deduct from receiver
+            let receiver_balance = self.get_balance(&tx.to)?;
+            if receiver_balance < tx.amount {
+                return Err(StorageError::InsufficientBalance);
+            }
+            let new_receiver_balance = receiver_balance - tx.amount;
+
+            let receiver_key = Self::balance_key(&tx.to);
+            batch.put(&receiver_key, new_receiver_balance.to_le_bytes());
+
+            // Decrement sender nonce
+            let sender_nonce = self.get_nonce(&tx.from)?;
+            if sender_nonce == 0 {
+                return Err(StorageError::InvalidChain);
+            }
+            let nonce_key = Self::nonce_key(&tx.from);
+            batch.put(&nonce_key, (sender_nonce - 1).to_le_bytes());
+        }
+
+        // Atomic commit
+        self.db.write(batch)?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -272,7 +399,85 @@ mod tests {
         let balances = storage.get_all_balances().unwrap();
 
         assert_eq!(balances.len(), 2);
-        assert_eq!(balances.get(&alice), Some(&1_000_000));
-        assert_eq!(balances.get(&bob), Some(&2_000_000));
+        assert_eq!(*balances.get(&alice).unwrap(), 1_000_000);
+        assert_eq!(*balances.get(&bob).unwrap(), 2_000_000);
+    }
+
+    #[test]
+    fn test_atomic_block_apply() {
+        let dir = tempdir().unwrap();
+        let storage = StateStorage::open(dir.path().to_path_buf()).unwrap();
+
+        let alice_kp = KeyPair::generate();
+        let bob_kp = KeyPair::generate();
+        let charlie_kp = KeyPair::generate();
+
+        let alice = alice_kp.public_key();
+        let bob = bob_kp.public_key();
+        let charlie = charlie_kp.public_key();
+
+        // Give Alice initial balance
+        storage.set_balance(&alice, 2_000_000).unwrap();
+
+        // Create transactions: (from, to, amount, fee, nonce)
+        let tx1 = Transaction::new(alice, bob, 1_000_000, 500, 0); // 500 fee, nonce 0
+        let tx2 = Transaction::new(alice, charlie, 500_000, 500, 1); // 500 fee, nonce 1
+
+        let transactions = vec![tx1, tx2];
+
+        // Apply atomically
+        storage.apply_block_atomic(&transactions).unwrap();
+
+        // Verify all changes applied
+        // Alice: 2M - (1M + 500) - (500K + 500) = 499,000
+        assert_eq!(storage.get_balance(&alice).unwrap(), 499_000); 
+        assert_eq!(storage.get_balance(&bob).unwrap(), 1_000_000);
+        assert_eq!(storage.get_balance(&charlie).unwrap(), 500_000);
+        assert_eq!(storage.get_nonce(&alice).unwrap(), 2);
+    }
+
+    #[test]
+    fn test_atomic_block_revert() {
+        let dir = tempdir().unwrap();
+        let storage = StateStorage::open(dir.path().to_path_buf()).unwrap();
+
+        let alice_kp = KeyPair::generate();
+        let bob_kp = KeyPair::generate();
+
+        let alice = alice_kp.public_key();
+        let bob = bob_kp.public_key();
+
+        // Setup: Alice sends to Bob
+        storage.set_balance(&alice, 2_000_000).unwrap();
+        storage.set_nonce(&alice, 0).unwrap();
+
+        let tx = Transaction::new(alice, bob, 1_000_000, 1_000, 0); // 1K fee
+        storage.apply_block_atomic(&vec![tx.clone()]).unwrap();
+
+        // Verify applied: Alice pays 1M + 1K fee
+        assert_eq!(storage.get_balance(&alice).unwrap(), 999_000); // 2M - 1M - 1K
+        assert_eq!(storage.get_balance(&bob).unwrap(), 1_000_000);
+        assert_eq!(storage.get_nonce(&alice).unwrap(), 1);
+
+        // Revert transaction
+        storage.revert_block_atomic(&vec![tx]).unwrap();
+
+        // Verify reverted
+        assert_eq!(storage.get_balance(&alice).unwrap(), 2_000_000);
+        assert_eq!(storage.get_balance(&bob).unwrap(), 0);
+        assert_eq!(storage.get_nonce(&alice).unwrap(), 0);
+    }
+
+    #[test]
+    fn test_balance_overflow_protection() {
+        let dir = tempdir().unwrap();
+        let storage = StateStorage::open(dir.path().to_path_buf()).unwrap();
+
+        let alice = KeyPair::generate().public_key();
+
+        storage.set_balance(&alice, u64::MAX - 100).unwrap();
+
+        // Should error on overflow instead of saturating
+        assert!(storage.add_balance(&alice, 200).is_err());
     }
 }

@@ -3,14 +3,22 @@ use axum::{
         ws::{Message, WebSocket, WebSocketUpgrade},
         State,
     },
-    response::Response,
+    http::StatusCode,
+    response::{IntoResponse, Response},
 };
 use futures::{sink::SinkExt, stream::StreamExt};
 use opensyria_storage::{BlockchainStorage, StateStorage};
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tokio::time::{interval, Duration};
+use tokio::time::{interval, timeout, Duration};
+
+/// Maximum concurrent WebSocket connections
+const MAX_WS_CONNECTIONS: usize = 1000;
+
+/// Global connection counter
+static WS_CONNECTIONS: AtomicUsize = AtomicUsize::new(0);
 
 /// WebSocket message types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,12 +63,29 @@ pub struct WsState {
     pub state: Arc<RwLock<StateStorage>>,
 }
 
-/// WebSocket handler
+/// WebSocket handler with connection limiting
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     State(state): State<WsState>,
 ) -> Response {
-    ws.on_upgrade(|socket| handle_socket(socket, state))
+    // Check connection limit
+    let current_connections = WS_CONNECTIONS.load(Ordering::Relaxed);
+    if current_connections >= MAX_WS_CONNECTIONS {
+        return (
+            StatusCode::TOO_MANY_REQUESTS,
+            "Too many WebSocket connections. Please try again later.",
+        )
+            .into_response();
+    }
+
+    // Increment connection count
+    WS_CONNECTIONS.fetch_add(1, Ordering::Relaxed);
+
+    ws.on_upgrade(|socket| async move {
+        handle_socket(socket, state).await;
+        // Decrement on disconnect
+        WS_CONNECTIONS.fetch_sub(1, Ordering::Relaxed);
+    })
 }
 
 async fn handle_socket(socket: WebSocket, state: WsState) {
@@ -72,6 +97,11 @@ async fn handle_socket(socket: WebSocket, state: WsState) {
             .send(Message::Text(serde_json::to_string(&msg).unwrap()))
             .await;
     }
+
+    // Idle timeout: 5 minutes
+    const IDLE_TIMEOUT: Duration = Duration::from_secs(300);
+    let mut idle_ticks = 0;
+    const MAX_IDLE_TICKS: u32 = 30; // 30 ticks * 10 sec = 5 min
 
     // Spawn task to send periodic updates
     let mut update_interval = interval(Duration::from_secs(10));
@@ -85,9 +115,18 @@ async fn handle_socket(socket: WebSocket, state: WsState) {
             if let Ok(msg) = get_stats_message(&sender_state).await {
                 if let Ok(json) = serde_json::to_string(&msg) {
                     if sender.send(Message::Text(json)).await.is_err() {
-                        break;
+                        break; // Connection closed
                     }
+                } else {
+                    idle_ticks += 1;
                 }
+            } else {
+                idle_ticks += 1;
+            }
+
+            // Close connection if idle too long
+            if idle_ticks > MAX_IDLE_TICKS {
+                break;
             }
         }
     });

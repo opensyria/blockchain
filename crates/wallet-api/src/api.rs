@@ -1,6 +1,7 @@
 use axum::{
     extract::State,
     http::StatusCode,
+    middleware,
     response::{IntoResponse, Json},
     routing::{get, post},
     Router,
@@ -12,24 +13,33 @@ use opensyria_core::{
     transaction::Transaction,
 };
 
-use crate::{models::*, AppState};
+use crate::{auth, models::*, rate_limit, AppState};
 
-/// Create API router
+/// Create API router with authentication and rate limiting
 pub fn create_router(state: Arc<AppState>) -> Router {
-    Router::new()
-        // Transaction endpoints
+    // Create protected routes that require authentication
+    let protected_routes = Router::new()
         .route("/api/v1/transaction/submit", post(submit_transaction))
-        .route(
-            "/api/v1/transaction/create",
-            post(create_and_sign_transaction),
-        )
-        // Account endpoints
-        .route("/api/v1/account/{address}/balance", get(get_balance))
-        // Blockchain endpoints
-        .route("/api/v1/blockchain/info", get(get_blockchain_info))
         .route("/api/v1/mempool/status", get(get_mempool_status))
-        // Health check
-        .route("/health", get(health_check))
+        .layer(middleware::from_fn_with_state(
+            state.api_key_manager.clone(),
+            auth::auth_middleware,
+        ));
+
+    // Public routes (read-only)
+    let public_routes = Router::new()
+        .route("/api/v1/account/{address}/balance", get(get_balance))
+        .route("/api/v1/blockchain/info", get(get_blockchain_info))
+        .route("/health", get(health_check));
+
+    // Combine routes and apply rate limiting to all
+    Router::new()
+        .merge(protected_routes)
+        .merge(public_routes)
+        .layer(middleware::from_fn_with_state(
+            state.rate_limiter.clone(),
+            rate_limit::rate_limit_middleware,
+        ))
         .with_state(state)
 }
 
@@ -108,105 +118,6 @@ async fn submit_transaction(
             success: true,
             tx_hash: Some(tx_hash),
             message: "Transaction submitted successfully".to_string(),
-        })),
-        Err(e) => Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: format!("Failed to submit transaction: {}", e),
-            }),
-        )),
-    }
-}
-
-/// Create and sign a transaction
-async fn create_and_sign_transaction(
-    State(state): State<Arc<AppState>>,
-    Json(request): Json<CreateTransactionRequest>,
-) -> Result<Json<TransactionResponse>, (StatusCode, Json<ErrorResponse>)> {
-    // Parse private key (must be exactly 32 bytes)
-    let private_key_bytes = hex::decode(&request.private_key).map_err(|_| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: "Invalid private key format".to_string(),
-            }),
-        )
-    })?;
-
-    if private_key_bytes.len() != 32 {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: "Private key must be 32 bytes".to_string(),
-            }),
-        ));
-    }
-
-    let mut key_array = [0u8; 32];
-    key_array.copy_from_slice(&private_key_bytes);
-
-    let keypair = KeyPair::from_bytes(&key_array).map_err(|_| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: "Invalid private key".to_string(),
-            }),
-        )
-    })?;
-
-    // Verify sender matches private key
-    let from = PublicKey::from_hex(&request.from).map_err(|_| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: "Invalid sender address".to_string(),
-            }),
-        )
-    })?;
-
-    if keypair.public_key() != from {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: "Private key does not match sender address".to_string(),
-            }),
-        ));
-    }
-
-    // Parse recipient
-    let to = PublicKey::from_hex(&request.to).map_err(|_| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: "Invalid recipient address".to_string(),
-            }),
-        )
-    })?;
-
-    // Get current nonce
-    let node = state.node.read().await;
-    let state_storage = node.get_state();
-    let nonce = state_storage.get_nonce(&from).unwrap_or(0);
-
-    // Create and sign transaction
-    let mut transaction = Transaction::new(from, to, request.amount, request.fee, nonce);
-
-    // Sign the transaction
-    let signing_hash = transaction.signing_hash();
-    let signature = keypair.sign(&signing_hash);
-    transaction = transaction.with_signature(signature);
-
-    let tx_hash = hex::encode(transaction.hash());
-
-    // Add to mempool
-    drop(node); // Release read lock
-    let mut node = state.node.write().await;
-
-    match node.add_transaction_to_mempool(transaction) {
-        Ok(_) => Ok(Json(TransactionResponse {
-            success: true,
-            tx_hash: Some(tx_hash),
-            message: "Transaction created and submitted successfully".to_string(),
         })),
         Err(e) => Err((
             StatusCode::BAD_REQUEST,

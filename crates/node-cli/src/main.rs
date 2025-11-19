@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "opensyria-node")]
-#[command(about = "Open Syria Blockchain Node | عقدة بلوكتشين سوريا المفتوحة", long_about = None)]
+#[command(about = "OpenSyria Blockchain Node | عقدة بلوكتشين أوبن سيريا", long_about = None)]
 struct Cli {
     /// Node data directory
     #[arg(short, long, default_value = "~/.opensyria/node")]

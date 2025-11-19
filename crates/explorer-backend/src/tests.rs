@@ -1,9 +1,10 @@
 #[cfg(test)]
 use opensyria_consensus::ProofOfWork;
 use opensyria_core::Block;
-use opensyria_storage::{BlockchainStorage, StateStorage};
+use opensyria_storage::{BlockchainIndexer, BlockchainStorage, StateStorage};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -24,7 +25,7 @@ fn setup_test_blockchain() -> PathBuf {
     let pow = ProofOfWork::new(16);
 
     // Mine genesis
-    let genesis = Block::genesis(16);
+    let genesis = Block::genesis();
     let (mined_genesis, _) = pow.mine(genesis);
     blockchain.append_block(&mined_genesis).unwrap();
 
@@ -53,10 +54,12 @@ async fn test_explorer_stats() {
 
     let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
     let state = StateStorage::open(test_dir.join("state")).unwrap();
+    let indexer = BlockchainIndexer::open(test_dir.join("index")).unwrap();
 
     let app_state = AppState {
         blockchain: Arc::new(RwLock::new(blockchain)),
         state: Arc::new(RwLock::new(state)),
+        indexer: Arc::new(indexer),
     };
 
     let result = get_chain_stats(State(app_state)).await;
@@ -81,10 +84,12 @@ async fn test_get_block_by_height() {
 
     let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
     let state = StateStorage::open(test_dir.join("state")).unwrap();
+    let indexer = BlockchainIndexer::open(test_dir.join("index")).unwrap();
 
     let app_state = AppState {
         blockchain: Arc::new(RwLock::new(blockchain)),
         state: Arc::new(RwLock::new(state)),
+        indexer: Arc::new(indexer),
     };
 
     // Test genesis block (height 1)
@@ -114,10 +119,12 @@ async fn test_get_recent_blocks() {
 
     let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
     let state = StateStorage::open(test_dir.join("state")).unwrap();
+    let indexer = BlockchainIndexer::open(test_dir.join("index")).unwrap();
 
     let app_state = AppState {
         blockchain: Arc::new(RwLock::new(blockchain)),
         state: Arc::new(RwLock::new(state)),
+        indexer: Arc::new(indexer),
     };
 
     let pagination = Pagination {

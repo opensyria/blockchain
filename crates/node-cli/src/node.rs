@@ -40,7 +40,7 @@ impl Node {
         }
 
         // Create and store genesis block
-        let genesis = Block::genesis(difficulty);
+        let genesis = Block::genesis();
         storage
             .blockchain
             .append_block(&genesis)

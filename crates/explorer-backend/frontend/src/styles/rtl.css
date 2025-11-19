@@ -1,0 +1,405 @@
+/**
+ * RTL (Right-to-Left) CSS overrides for Arabic language support
+ * These styles apply when html[dir="rtl"] is set
+ */
+
+/* ========================================
+   TEXT ALIGNMENT
+   ======================================== */
+
+[dir="rtl"] .stat-card,
+[dir="rtl"] .card,
+[dir="rtl"] .detail-row,
+[dir="rtl"] .info-panel,
+[dir="rtl"] .description,
+[dir="rtl"] p,
+[dir="rtl"] li {
+  text-align: right;
+}
+
+[dir="rtl"] .stat-value,
+[dir="rtl"] .number {
+  text-align: left; /* Numbers stay left-aligned */
+}
+
+/* ========================================
+   PADDING & MARGIN FLIP
+   ======================================== */
+
+[dir="rtl"] .stat-card {
+  padding-right: 20px;
+  padding-left: 0;
+}
+
+[dir="rtl"] .icon {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+[dir="rtl"] .badge {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+[dir="rtl"] .button-icon {
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+/* ========================================
+   TECHNICAL CONTENT - KEEP LTR
+   ======================================== */
+
+/* Hashes, addresses, signatures must stay LTR */
+[dir="rtl"] .hash,
+[dir="rtl"] .address,
+[dir="rtl"] .signature,
+[dir="rtl"] .block-hash,
+[dir="rtl"] .tx-hash,
+[dir="rtl"] .public-key,
+[dir="rtl"] code,
+[dir="rtl"] pre,
+[dir="rtl"] .monospace {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: embed; /* Isolate from RTL context */
+  font-family: 'Courier New', 'Consolas', monospace;
+}
+
+/* ========================================
+   FLEXBOX DIRECTION
+   ======================================== */
+
+[dir="rtl"] .nav,
+[dir="rtl"] .breadcrumb,
+[dir="rtl"] .pagination,
+[dir="rtl"] .tabs,
+[dir="rtl"] .toolbar,
+[dir="rtl"] .button-group {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .stat-grid {
+  direction: rtl;
+}
+
+/* ========================================
+   BORDERS
+   ======================================== */
+
+[dir="rtl"] .sidebar {
+  border-left: 1px solid var(--border);
+  border-right: none;
+}
+
+[dir="rtl"] .divider-left {
+  border-left: none;
+  border-right: 1px solid var(--border);
+}
+
+[dir="rtl"] .border-l {
+  border-left: none;
+  border-right: 1px solid currentColor;
+}
+
+/* ========================================
+   POSITIONING
+   ======================================== */
+
+[dir="rtl"] .close-button,
+[dir="rtl"] .modal-close {
+  left: 16px;
+  right: auto;
+}
+
+[dir="rtl"] .dropdown-menu {
+  left: auto;
+  right: 0;
+}
+
+[dir="rtl"] .tooltip {
+  text-align: right;
+}
+
+/* ========================================
+   FORM INPUTS
+   ======================================== */
+
+[dir="rtl"] input[type="text"],
+[dir="rtl"] input[type="search"],
+[dir="rtl"] input[type="email"],
+[dir="rtl"] textarea {
+  padding-right: 40px;
+  padding-left: 12px;
+  text-align: right;
+}
+
+/* Search icon positioning */
+[dir="rtl"] .search-icon {
+  left: auto;
+  right: 12px;
+}
+
+[dir="rtl"] .input-prefix {
+  left: auto;
+  right: 12px;
+}
+
+[dir="rtl"] .input-suffix {
+  right: auto;
+  left: 12px;
+}
+
+/* ========================================
+   ARROWS & ICONS
+   ======================================== */
+
+/* Flip directional arrows */
+[dir="rtl"] .arrow-right,
+[dir="rtl"] .chevron-right,
+[dir="rtl"] .icon-next {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .arrow-left,
+[dir="rtl"] .chevron-left,
+[dir="rtl"] .icon-previous {
+  transform: scaleX(-1);
+}
+
+/* Transaction flow arrows */
+[dir="rtl"] .tx-flow::before {
+  content: "←";
+}
+
+[dir="rtl"] .tx-arrow::after {
+  content: "←";
+}
+
+/* ========================================
+   TABLES
+   ======================================== */
+
+[dir="rtl"] table {
+  direction: rtl;
+}
+
+[dir="rtl"] th,
+[dir="rtl"] td {
+  text-align: right;
+}
+
+/* Keep numeric columns left-aligned */
+[dir="rtl"] .col-number,
+[dir="rtl"] .col-amount,
+[dir="rtl"] .col-height,
+[dir="rtl"] .col-count {
+  text-align: left;
+}
+
+/* ========================================
+   LISTS
+   ======================================== */
+
+[dir="rtl"] ul,
+[dir="rtl"] ol {
+  padding-right: 20px;
+  padding-left: 0;
+}
+
+[dir="rtl"] .list-item {
+  text-align: right;
+}
+
+/* ========================================
+   MODALS & DIALOGS
+   ======================================== */
+
+[dir="rtl"] .modal-header,
+[dir="rtl"] .modal-body,
+[dir="rtl"] .modal-footer {
+  text-align: right;
+}
+
+[dir="rtl"] .dialog-actions {
+  flex-direction: row-reverse;
+}
+
+/* ========================================
+   TOOLTIPS & POPOVERS
+   ======================================== */
+
+[dir="rtl"] .tooltip {
+  text-align: right;
+}
+
+[dir="rtl"] .tooltip-arrow {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .popover {
+  text-align: right;
+}
+
+/* ========================================
+   CARDS & PANELS
+   ======================================== */
+
+[dir="rtl"] .card-header {
+  text-align: right;
+}
+
+[dir="rtl"] .card-body {
+  text-align: right;
+}
+
+[dir="rtl"] .panel-title {
+  text-align: right;
+}
+
+/* ========================================
+   NAVIGATION
+   ======================================== */
+
+[dir="rtl"] .nav-item {
+  margin-left: 16px;
+  margin-right: 0;
+}
+
+[dir="rtl"] .nav-link {
+  text-align: right;
+}
+
+/* ========================================
+   BADGES & LABELS
+   ======================================== */
+
+[dir="rtl"] .badge {
+  margin-left: 4px;
+  margin-right: 0;
+}
+
+[dir="rtl"] .label {
+  text-align: right;
+}
+
+/* ========================================
+   PROGRESS BARS
+   ======================================== */
+
+[dir="rtl"] .progress {
+  direction: rtl;
+}
+
+[dir="rtl"] .progress-bar {
+  /* Progress fills from right to left in RTL */
+  direction: ltr; /* But keep inner fill LTR for visual consistency */
+}
+
+/* ========================================
+   SCROLLBARS
+   ======================================== */
+
+[dir="rtl"] .horizontal-scroll {
+  direction: rtl;
+}
+
+/* ========================================
+   GRID LAYOUTS
+   ======================================== */
+
+[dir="rtl"] .grid {
+  direction: rtl;
+}
+
+/* ========================================
+   SPECIFIC COMPONENT OVERRIDES
+   ======================================== */
+
+/* Block explorer specific */
+[dir="rtl"] .block-detail-label {
+  text-align: right;
+}
+
+[dir="rtl"] .block-detail-value {
+  text-align: left; /* Keep hashes/numbers LTR */
+}
+
+/* Transaction list */
+[dir="rtl"] .tx-from-to {
+  flex-direction: row-reverse;
+}
+
+/* Stats dashboard */
+[dir="rtl"] .stat-label {
+  text-align: right;
+}
+
+[dir="rtl"] .stat-number {
+  text-align: left;
+}
+
+/* Address display */
+[dir="rtl"] .address-display {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Timestamp */
+[dir="rtl"] .timestamp {
+  text-align: right;
+}
+
+/* Copy button */
+[dir="rtl"] .copy-button {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+/* Slide animations should reverse in RTL */
+@keyframes slideInRightRTL {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeftRTL {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+[dir="rtl"] .slide-in-right {
+  animation-name: slideInRightRTL;
+}
+
+[dir="rtl"] .slide-in-left {
+  animation-name: slideInLeftRTL;
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
+@media print {
+  [dir="rtl"] body {
+    direction: rtl;
+    text-align: right;
+  }
+  
+  [dir="rtl"] .hash,
+  [dir="rtl"] .address {
+    direction: ltr;
+    text-align: left;
+  }
+}

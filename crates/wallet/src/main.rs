@@ -6,7 +6,7 @@ use opensyria_wallet::WalletStorage;
 
 #[derive(Parser)]
 #[command(name = "wallet")]
-#[command(about = "Open Syria Digital Lira Wallet | محفظة الليرة الرقمية السورية", long_about = None)]
+#[command(about = "Syrian Digital Lira Wallet (OpenSyria) | محفظة الليرة الرقمية السورية (أوبن سيريا)", long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,

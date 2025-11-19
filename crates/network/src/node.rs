@@ -1,6 +1,8 @@
 use crate::{
     behaviour::{NetworkRequest, NetworkResponse, OpenSyriaBehaviour},
     protocol::NetworkMessage,
+    rate_limiter::{MessageType, RateLimiter},
+    reputation::PeerReputation,
 };
 use anyhow::Result;
 use futures::StreamExt;
@@ -47,6 +49,12 @@ pub struct NetworkNode {
 
     /// Event sender
     event_tx: mpsc::UnboundedSender<NetworkEvent>,
+
+    /// Peer reputation system
+    reputation: Arc<RwLock<PeerReputation>>,
+
+    /// Message rate limiter
+    rate_limiter: Arc<RwLock<RateLimiter>>,
 }
 
 /// Network events
@@ -89,12 +97,29 @@ pub struct NodeConfig {
 
 impl Default for NodeConfig {
     fn default() -> Self {
+        Self::with_network_type(crate::bootstrap::NetworkType::Mainnet)
+    }
+}
+
+impl NodeConfig {
+    /// Create configuration for specific network type
+    pub fn with_network_type(network: crate::bootstrap::NetworkType) -> Self {
         Self {
             listen_addr: "/ip4/0.0.0.0/tcp/9000".parse().unwrap(),
-            bootstrap_peers: Vec::new(),
+            bootstrap_peers: crate::bootstrap::get_bootstrap_peers(network),
             data_dir: PathBuf::from("~/.opensyria/network"),
             enable_mdns: true,
         }
+    }
+
+    /// Create configuration for testnet
+    pub fn testnet() -> Self {
+        Self::with_network_type(crate::bootstrap::NetworkType::Testnet)
+    }
+
+    /// Create configuration for mainnet
+    pub fn mainnet() -> Self {
+        Self::with_network_type(crate::bootstrap::NetworkType::Mainnet)
     }
 }
 
@@ -149,6 +174,8 @@ impl NetworkNode {
             peers: Arc::new(RwLock::new(HashSet::new())),
             pending_blocks: Arc::new(RwLock::new(HashMap::new())),
             event_tx,
+            reputation: Arc::new(RwLock::new(PeerReputation::new())),
+            rate_limiter: Arc::new(RwLock::new(RateLimiter::new())),
         };
 
         Ok((node, event_rx))
@@ -386,7 +413,51 @@ impl NetworkNode {
 
     /// Handle gossipsub messages
     async fn handle_gossipsub_message(&mut self, message: gossipsub::Message) -> Result<()> {
-        let network_msg = NetworkMessage::from_bytes(&message.data)?;
+        let peer_id = message.source.unwrap_or(self.local_peer_id);
+
+        // Check if peer is banned (requires write lock because it cleans up expired bans)
+        {
+            let mut reputation = self.reputation.write().await;
+            if reputation.is_banned(&peer_id) {
+                warn!("Ignoring message from banned peer: {}", peer_id);
+                return Ok(());
+            }
+        }
+
+        // Deserialize and validate message size
+        let network_msg = match NetworkMessage::from_bytes(&message.data) {
+            Ok(msg) => msg,
+            Err(e) => {
+                warn!("Failed to deserialize message from {}: {}", peer_id, e);
+                // Penalize for oversized message
+                if message.data.len() > 2 * 1024 * 1024 {
+                    let mut reputation = self.reputation.write().await;
+                    reputation.penalize_oversized_msg(&peer_id);
+                }
+                return Ok(());
+            }
+        };
+
+        // Determine message type for rate limiting
+        let msg_type = match &network_msg {
+            NetworkMessage::NewBlock { .. } => MessageType::Block,
+            NetworkMessage::NewTransaction { .. } => MessageType::Transaction,
+            _ => {
+                warn!("Unexpected message type in gossipsub from {}", peer_id);
+                return Ok(());
+            }
+        };
+
+        // Check rate limit
+        {
+            let mut rate_limiter = self.rate_limiter.write().await;
+            if !rate_limiter.check_rate_limit(&peer_id, msg_type) {
+                warn!("Rate limit exceeded for peer {}", peer_id);
+                let mut reputation = self.reputation.write().await;
+                reputation.penalize_rate_limit(&peer_id);
+                return Ok(());
+            }
+        }
 
         match network_msg {
             NetworkMessage::NewBlock { block } => {
@@ -403,10 +474,19 @@ impl NetworkNode {
                     Ok(()) => {
                         let new_height = blockchain.get_chain_height()?;
                         info!("Added new block at height {}", new_height);
+                        
+                        // Reward peer for valid block
+                        let mut reputation = self.reputation.write().await;
+                        reputation.reward_valid_block(&peer_id);
+                        
                         let _ = self.event_tx.send(NetworkEvent::NewBlock(block));
                     }
                     Err(e) => {
                         debug!("Failed to append block: {:?}", e);
+                        
+                        // Penalize for invalid block
+                        let mut reputation = self.reputation.write().await;
+                        reputation.penalize_invalid_block(&peer_id);
                     }
                 }
             }
@@ -419,12 +499,21 @@ impl NetworkNode {
                 match mempool.add_transaction(transaction.clone()).await {
                     Ok(_) => {
                         info!("Added transaction to mempool from network");
+                        
+                        // Reward peer for valid transaction
+                        let mut reputation = self.reputation.write().await;
+                        reputation.reward_valid_tx(&peer_id);
+                        
                         let _ = self
                             .event_tx
                             .send(NetworkEvent::NewTransaction(transaction));
                     }
                     Err(e) => {
                         warn!("Failed to add transaction to mempool: {}", e);
+                        
+                        // Penalize for invalid transaction
+                        let mut reputation = self.reputation.write().await;
+                        reputation.penalize_invalid_tx(&peer_id);
                     }
                 }
             }

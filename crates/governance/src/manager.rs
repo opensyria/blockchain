@@ -3,6 +3,7 @@ use crate::types::{
     GovernanceConfig, Proposal, ProposalId, ProposalStatus, ProposalType, Vote, VoteRecord,
 };
 use opensyria_core::crypto::PublicKey;
+use opensyria_storage::StateStorage;
 use serde::{Deserialize, Serialize};
 
 /// Main governance manager
@@ -47,6 +48,11 @@ impl GovernanceManager {
             return Err(GovernanceError::InvalidProposal);
         }
 
+        // Validate proposal parameters
+        proposal_type
+            .validate()
+            .map_err(|_| GovernanceError::InvalidProposal)?;
+
         let proposal = Proposal::new(
             self.state.next_proposal_id(),
             proposer,
@@ -69,7 +75,7 @@ impl GovernanceManager {
         proposal_id: ProposalId,
         voter: PublicKey,
         vote: Vote,
-        voting_power: u64,
+        state_storage: &StateStorage,
         current_height: u64,
     ) -> Result<(), GovernanceError> {
         let proposal = self
@@ -86,10 +92,20 @@ impl GovernanceManager {
             }
         }
 
+        // Validate voting power against blockchain state
+        // Use balance at proposal creation height (snapshot voting)
+        let actual_voting_power = state_storage
+            .get_balance(&voter)
+            .map_err(|_| GovernanceError::InvalidProposal)?;
+        
+        // For now, use current balance as voting power
+        // TODO: Implement historical balance snapshots for true snapshot voting
+        let validated_power = actual_voting_power;
+
         let vote_record = VoteRecord {
             voter,
             vote,
-            voting_power,
+            voting_power: validated_power,
             timestamp: current_height,
         };
 
@@ -108,10 +124,28 @@ impl GovernanceManager {
     }
 
     /// Execute a proposal (mark as executed, actual execution happens externally)
+    /// This method requires the caller to verify execution occurred
     pub fn mark_proposal_executed(
         &mut self,
         proposal_id: ProposalId,
+        current_height: u64,
     ) -> Result<(), GovernanceError> {
+        // Get proposal to verify it's ready for execution
+        let proposal = self
+            .state
+            .get_proposal(proposal_id)
+            .ok_or(GovernanceError::ProposalNotFound(proposal_id))?;
+
+        // Verify proposal is in passed state
+        if proposal.status != ProposalStatus::Passed {
+            return Err(GovernanceError::NotReadyForExecution);
+        }
+
+        // Verify execution delay has passed
+        if !proposal.ready_for_execution(current_height) {
+            return Err(GovernanceError::NotReadyForExecution);
+        }
+
         self.state.mark_executed(proposal_id)
     }
 
@@ -224,6 +258,18 @@ impl GovernanceManager {
 mod tests {
     use super::*;
     use opensyria_core::crypto::KeyPair;
+    use opensyria_storage::StateStorage;
+
+    // Helper to create a test StateStorage
+    fn create_test_state() -> StateStorage {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let temp_dir = std::env::temp_dir().join(format!("test_gov_{}", nanos));
+        StateStorage::open(temp_dir).unwrap()
+    }
 
     #[test]
     fn test_create_proposal() {
@@ -277,9 +323,13 @@ mod tests {
     fn test_voting() {
         let config = GovernanceConfig::default();
         let mut manager = GovernanceManager::new(config);
+        let state = create_test_state();
 
         let proposer = KeyPair::generate();
         let voter = KeyPair::generate();
+        
+        // Set voter balance for voting power
+        state.set_balance(&voter.public_key(), 500_000).unwrap();
 
         let proposal_id = manager
             .create_proposal(
@@ -296,22 +346,25 @@ mod tests {
             .unwrap();
 
         // Vote during active period
-        let result = manager.vote(proposal_id, voter.public_key(), Vote::Yes, 500_000, 150);
+        let result = manager.vote(proposal_id, voter.public_key(), Vote::Yes, &state, 150);
         assert!(result.is_ok());
 
         // Check vote was recorded
         let vote = manager.get_vote(proposal_id, &voter.public_key());
         assert!(vote.is_some());
         assert_eq!(vote.unwrap().vote, Vote::Yes);
+        assert_eq!(vote.unwrap().voting_power, 500_000); // Validated power
     }
 
     #[test]
     fn test_voting_before_start() {
         let config = GovernanceConfig::default();
         let mut manager = GovernanceManager::new(config);
+        let state = create_test_state();
 
         let proposer = KeyPair::generate();
         let voter = KeyPair::generate();
+        state.set_balance(&voter.public_key(), 500_000).unwrap();
 
         let proposal_id = manager
             .create_proposal(
@@ -328,7 +381,7 @@ mod tests {
             .unwrap();
 
         // Try to vote before voting starts (at height 50, voting starts at 100)
-        let result = manager.vote(proposal_id, voter.public_key(), Vote::Yes, 500_000, 50);
+        let result = manager.vote(proposal_id, voter.public_key(), Vote::Yes, &state, 50);
         assert!(result.is_err());
     }
 
@@ -336,9 +389,11 @@ mod tests {
     fn test_voting_after_end() {
         let config = GovernanceConfig::default();
         let mut manager = GovernanceManager::new(config);
+        let state = create_test_state();
 
         let proposer = KeyPair::generate();
         let voter = KeyPair::generate();
+        state.set_balance(&voter.public_key(), 500_000).unwrap();
 
         let proposal_id = manager
             .create_proposal(
@@ -355,7 +410,7 @@ mod tests {
             .unwrap();
 
         // Try to vote after voting ends (voting ends at 100 + 10080 = 10180)
-        let result = manager.vote(proposal_id, voter.public_key(), Vote::Yes, 500_000, 20000);
+        let result = manager.vote(proposal_id, voter.public_key(), Vote::Yes, &state, 20000);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), GovernanceError::VotingEnded));
     }
@@ -364,6 +419,7 @@ mod tests {
     fn test_proposal_finalization() {
         let config = GovernanceConfig::default();
         let mut manager = GovernanceManager::new(config);
+        let state = create_test_state();
 
         let proposer = KeyPair::generate();
         let total_power = 10_000_000_000;
@@ -372,9 +428,9 @@ mod tests {
             .create_proposal(
                 proposer.public_key(),
                 2_000_000_000,
-                ProposalType::MinimumFee { new_fee: 200 },
+                ProposalType::MinimumFee { new_fee: 5000 },
                 "Increase Fee".to_string(),
-                "Double the minimum fee".to_string(),
+                "Increase the minimum fee".to_string(),
                 100,
                 total_power,
             )
@@ -383,12 +439,14 @@ mod tests {
         // Cast votes (need 30% quorum, 60% threshold)
         for i in 0..4 {
             let voter = KeyPair::generate();
+            let voter_power = total_power / 10; // 10% each
+            state.set_balance(&voter.public_key(), voter_power).unwrap();
             manager
                 .vote(
                     proposal_id,
                     voter.public_key(),
                     Vote::Yes,
-                    total_power / 10, // 10% each
+                    &state,
                     150 + i,
                 )
                 .unwrap();
@@ -405,6 +463,7 @@ mod tests {
     fn test_snapshot_and_restore() {
         let config = GovernanceConfig::default();
         let mut manager = GovernanceManager::new(config);
+        let state = create_test_state();
 
         let proposer = KeyPair::generate();
         let proposal_id = manager
@@ -422,8 +481,9 @@ mod tests {
             .unwrap();
 
         let voter = KeyPair::generate();
+        state.set_balance(&voter.public_key(), 500_000).unwrap();
         manager
-            .vote(proposal_id, voter.public_key(), Vote::Yes, 500_000, 150)
+            .vote(proposal_id, voter.public_key(), Vote::Yes, &state, 150)
             .unwrap();
 
         // Create snapshot

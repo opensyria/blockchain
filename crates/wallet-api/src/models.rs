@@ -15,21 +15,6 @@ pub struct SubmitTransactionRequest {
     pub signature: String,
 }
 
-/// Request to create and sign a transaction
-#[derive(Debug, Deserialize)]
-pub struct CreateTransactionRequest {
-    /// Hex-encoded sender public key
-    pub from: String,
-    /// Hex-encoded recipient public key
-    pub to: String,
-    /// Amount in smallest units
-    pub amount: u64,
-    /// Transaction fee
-    pub fee: u64,
-    /// Hex-encoded private key (for signing)
-    pub private_key: String,
-}
-
 /// Response after submitting a transaction
 #[derive(Debug, Serialize)]
 pub struct TransactionResponse {

@@ -1,4 +1,5 @@
-# Open Syria Blockchain | بلوكتشين سوريا المفتوحة
+# OpenSyria: Digital Lira Blockchain
+## أوبن سيريا: بلوكتشين الليرة الرقمية السورية
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -6,7 +7,11 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![Tests](https://img.shields.io/badge/tests-72%20passing-success.svg)]()
 
-A sovereign, Rust-based blockchain for the Digital Lira (الليرة الرقمية).
+**For ALL Syrians, wherever they are.**
+
+OpenSyria is a decentralized blockchain platform powering the **Syrian Digital Lira (SYL)** - an independent cryptocurrency for Syrians inside Syria and across the diaspora. Built on Rust, it combines secure digital payments with Syrian cultural heritage preservation through NFTs and community governance.
+
+> **⚠️ Independent Project:** OpenSyria is not affiliated with any Syrian government entity. It's a community-driven, permissionless blockchain open to all Syrians regardless of location or political affiliation.
 
 **🚀 [Getting Started](docs/GETTING_STARTED.md)** | **📚 [Documentation](docs/README.md)** | **❓ [FAQ](docs/FAQ.md)** | **🤝 [Contributing](CONTRIBUTING.md)**
 
