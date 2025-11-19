@@ -9,6 +9,7 @@ license.workspace = true
 opensyria-core = { path = "../core" }
 opensyria-storage = { path = "../storage" }
 opensyria-consensus = { path = "../consensus" }
+opensyria-mempool = { path = "../mempool" }
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true

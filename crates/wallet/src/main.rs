@@ -2,7 +2,8 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::*;
 use opensyria_core::transaction::Transaction;
-use opensyria_wallet::WalletStorage;
+use opensyria_wallet::{EncryptedWalletStorage, WalletStorage};
+use rpassword::read_password;
 
 #[derive(Parser)]
 #[command(name = "wallet")]
@@ -14,10 +15,33 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Create a new wallet account | إنشاء حساب جديد
+    /// Create a new encrypted wallet account | إنشاء حساب مشفر جديد
     Create {
         /// Account name | اسم الحساب
         #[arg(short, long)]
+        name: String,
+    },
+
+    /// Create HD wallet from mnemonic | إنشاء محفظة HD من العبارة الاحتياطية
+    CreateHd {
+        /// Account name | اسم الحساب
+        #[arg(short, long)]
+        name: String,
+
+        /// 12 or 24 word mnemonic phrase | عبارة احتياطية 12 أو 24 كلمة
+        #[arg(short, long)]
+        mnemonic: Option<String>,
+    },
+
+    /// Display QR code for account address | عرض رمز QR لعنوان الحساب
+    Qr {
+        /// Account name | اسم الحساب
+        name: String,
+    },
+
+    /// Migrate plaintext wallet to encrypted | ترحيل محفظة نصية إلى مشفرة
+    Migrate {
+        /// Account name | اسم الحساب
         name: String,
     },
 
@@ -62,16 +86,32 @@ enum Commands {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let storage = WalletStorage::new()?;
+    let encrypted_storage = EncryptedWalletStorage::new()?;
 
     match cli.command {
         Commands::Create { name } => {
-            let account = opensyria_wallet::storage::Account::new(name.clone());
-            storage.save_account(&account)?;
+            println!("{}", "Enter password | أدخل كلمة المرور: ".cyan());
+            let password = read_password()?;
+            
+            println!("{}", "Confirm password | تأكيد كلمة المرور: ".cyan());
+            let confirm = read_password()?;
+            
+            if password != confirm {
+                println!("{}", "✗ Passwords don't match | كلمات المرور غير متطابقة".red());
+                return Ok(());
+            }
+            
+            if password.len() < 8 {
+                println!("{}", "✗ Password must be at least 8 characters | يجب أن تكون كلمة المرور 8 أحرف على الأقل".red());
+                return Ok(());
+            }
+
+            let account = opensyria_wallet::encrypted::EncryptedAccount::new(name.clone(), &password)?;
+            encrypted_storage.save_account(&account)?;
 
             println!(
                 "{}",
-                "✓ Account created successfully | تم إنشاء الحساب بنجاح".green()
+                "✓ Encrypted account created successfully | تم إنشاء الحساب المشفر بنجاح".green()
             );
             println!();
             println!("{}: {}", "Name | الاسم".cyan(), name);
@@ -83,12 +123,117 @@ fn main() -> Result<()> {
             println!();
             println!(
                 "{}",
-                "⚠ Keep your wallet files secure | احفظ ملفات المحفظة بأمان".yellow()
+                "🔐 Your wallet is encrypted with AES-256-GCM | محفظتك مشفرة بـ AES-256-GCM".green()
+            );
+            println!(
+                "{}",
+                "⚠ NEVER share your password | لا تشارك كلمة المرور أبداً".yellow()
             );
         }
 
+        Commands::CreateHd { name, mnemonic } => {
+            println!("{}", "Enter password | أدخل كلمة المرور: ".cyan());
+            let password = read_password()?;
+            
+            let hd_wallet = if let Some(phrase) = mnemonic {
+                opensyria_wallet::HDWallet::from_phrase(&phrase)?
+            } else {
+                let wallet = opensyria_wallet::HDWallet::generate(12)?;
+                println!();
+                println!("{}", "📝 BACKUP YOUR MNEMONIC PHRASE | احفظ العبارة الاحتياطية".yellow().bold());
+                println!("{}", "═".repeat(60).yellow());
+                opensyria_wallet::display_mnemonic_warning();
+                println!();
+                println!("{}", wallet.get_phrase()?.cyan().bold());
+                println!();
+                println!("{}", "═".repeat(60).yellow());
+                println!("{}", "⚠ Write this down on paper and store it safely | اكتب هذه العبارة على ورقة واحفظها بأمان".yellow());
+                println!();
+                wallet
+            };
+            
+            let keypair = hd_wallet.derive_account(0)?;
+            let private_key = keypair.private_key_bytes();
+            
+            // Create encrypted account from HD wallet
+            let account = opensyria_wallet::encrypted::EncryptedAccount::from_private_key(
+                name.clone(),
+                &private_key,
+                &password
+            )?;
+            encrypted_storage.save_account(&account)?;
+
+            println!(
+                "{}",
+                "✓ HD wallet account created | تم إنشاء حساب محفظة HD".green()
+            );
+            println!();
+            println!("{}: {}", "Name | الاسم".cyan(), name);
+            println!(
+                "{}: {}",
+                "Address | العنوان".cyan(),
+                account.address.to_hex()
+            );
+        }
+
+        Commands::Qr { name } => {
+            let account = encrypted_storage.load_account(&name)?;
+            let address = account.address.to_hex();
+            
+            println!();
+            println!("{}", format!("QR Code for {} | رمز QR لـ {}", name, name).cyan().bold());
+            println!("{}", "─".repeat(50).dimmed());
+            println!();
+            
+            match qr2term::print_qr(&address) {
+                Ok(_) => {
+                    println!();
+                    println!("{}: {}", "Address | العنوان".cyan(), address);
+                }
+                Err(e) => {
+                    println!("{}", format!("✗ Failed to generate QR code: {}", e).red());
+                    println!("{}: {}", "Address | العنوان".cyan(), address);
+                }
+            }
+        }
+
+        Commands::Migrate { name } => {
+            // Load from plaintext storage
+            let plaintext_storage = WalletStorage::new()?;
+            let old_account = plaintext_storage.load_account(&name)?;
+            
+            println!("{}", "⚠ Migrating to encrypted wallet | الترحيل إلى محفظة مشفرة".yellow().bold());
+            println!("{}", "Enter new password | أدخل كلمة المرور الجديدة: ".cyan());
+            let password = read_password()?;
+            
+            println!("{}", "Confirm password | تأكيد كلمة المرور: ".cyan());
+            let confirm = read_password()?;
+            
+            if password != confirm {
+                println!("{}", "✗ Passwords don't match | كلمات المرور غير متطابقة".red());
+                return Ok(());
+            }
+            
+            // Create encrypted account from plaintext
+            let private_key = old_account.keypair()?.private_key_bytes();
+            let encrypted_account = opensyria_wallet::encrypted::EncryptedAccount::from_private_key(
+                name.clone(),
+                &private_key,
+                &password
+            )?;
+            
+            encrypted_storage.save_account(&encrypted_account)?;
+            plaintext_storage.delete_account(&name)?;
+            
+            println!(
+                "{}",
+                "✓ Account migrated successfully | تم ترحيل الحساب بنجاح".green()
+            );
+            println!("{}", "🔐 Your wallet is now encrypted | محفظتك مشفرة الآن".green());
+        }
+
         Commands::List => {
-            let accounts = storage.list_accounts()?;
+            let accounts = encrypted_storage.list_accounts()?;
 
             if accounts.is_empty() {
                 println!("{}", "No accounts found | لا توجد حسابات".yellow());
@@ -101,7 +246,7 @@ fn main() -> Result<()> {
                 println!("{}", "─".repeat(50).dimmed());
 
                 for name in accounts {
-                    let account = storage.load_account(&name)?;
+                    let account = encrypted_storage.load_account(&name)?;
                     println!(
                         "{} {} {}",
                         "●".green(),
@@ -113,7 +258,7 @@ fn main() -> Result<()> {
         }
 
         Commands::Info { name } => {
-            let account = storage.load_account(&name)?;
+            let account = encrypted_storage.load_account(&name)?;
             let created = format_timestamp(account.created_at);
 
             println!("{}", "Account Information | معلومات الحساب".cyan().bold());
@@ -137,7 +282,12 @@ fn main() -> Result<()> {
             fee,
             nonce,
         } => {
-            let account = storage.load_account(&from)?;
+            let account = encrypted_storage.load_account(&from)?;
+            
+            println!("{}", "Enter password | أدخل كلمة المرور: ".cyan());
+            let password = read_password()?;
+            
+            let keypair = account.decrypt_keypair(&password)?;
             let recipient = opensyria_core::crypto::PublicKey::from_hex(&to)?;
 
             // Convert Lira to smallest unit (1 Lira = 1_000_000 units)
@@ -147,7 +297,6 @@ fn main() -> Result<()> {
             let mut tx =
                 Transaction::new(account.address, recipient, amount_units, fee_units, nonce);
 
-            let keypair = account.keypair()?;
             let sig_hash = tx.signing_hash();
             tx = tx.with_signature(keypair.sign(&sig_hash));
 
@@ -177,7 +326,7 @@ fn main() -> Result<()> {
         Commands::Delete { name } => {
             println!(
                 "{}",
-                format!("⚠ Delete account '{}'? This cannot be undone!", name).yellow()
+                format!("⚠ Delete encrypted account '{}'? This cannot be undone!", name).yellow()
             );
             println!("{}", "Type 'yes' to confirm: ".dimmed());
 
@@ -185,7 +334,7 @@ fn main() -> Result<()> {
             std::io::stdin().read_line(&mut input)?;
 
             if input.trim() == "yes" {
-                storage.delete_account(&name)?;
+                encrypted_storage.delete_account(&name)?;
                 println!("{}", "✓ Account deleted | تم حذف الحساب".green());
             } else {
                 println!("{}", "Cancelled | تم الإلغاء".yellow());

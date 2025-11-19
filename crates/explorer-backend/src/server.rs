@@ -3,14 +3,17 @@
 use crate::api::create_router;
 use crate::handlers::AppState;
 use crate::rate_limit::ExplorerRateLimiter;
-use axum::{middleware, routing::Router};
+use axum::{http::{header, HeaderValue}, middleware, routing::Router};
+use opensyria_mempool::Mempool;
 use opensyria_storage::{BlockchainIndexer, BlockchainStorage, StateStorage};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tower::ServiceBuilder;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::services::ServeDir;
+use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
 
 /// Block Explorer Server
@@ -18,6 +21,7 @@ pub struct ExplorerServer {
     blockchain: Arc<RwLock<BlockchainStorage>>,
     state: Arc<RwLock<StateStorage>>,
     indexer: Arc<BlockchainIndexer>,
+    mempool: Arc<RwLock<Mempool>>,
     addr: SocketAddr,
     static_dir: Option<PathBuf>,
     allowed_origins: Vec<String>,
@@ -33,6 +37,7 @@ impl ExplorerServer {
         let blockchain = BlockchainStorage::open(blockchain_dir)?;
         let state = StateStorage::open(state_dir)?;
         let indexer = BlockchainIndexer::open(index_dir)?;
+        let mempool = Mempool::new();
 
         // Build indexes if needed
         tracing::info!("Checking blockchain indexes...");
@@ -51,6 +56,7 @@ impl ExplorerServer {
             blockchain: Arc::new(RwLock::new(blockchain)),
             state: Arc::new(RwLock::new(state)),
             indexer: Arc::new(indexer),
+            mempool: Arc::new(RwLock::new(mempool)),
             addr,
             static_dir: None,
             allowed_origins: vec!["http://localhost:3000".to_string()],
@@ -77,6 +83,7 @@ impl ExplorerServer {
             blockchain: self.blockchain.clone(),
             state: self.state.clone(),
             indexer: self.indexer.clone(),
+            mempool: self.mempool.clone(),
         };
 
         let api_router = create_router(app_state);
@@ -103,12 +110,29 @@ impl ExplorerServer {
             AllowOrigin::list(origins)
         };
 
+        // Security headers
+        let security_headers = ServiceBuilder::new()
+            .layer(SetResponseHeaderLayer::if_not_present(
+                header::X_FRAME_OPTIONS,
+                HeaderValue::from_static("DENY"),
+            ))
+            .layer(SetResponseHeaderLayer::if_not_present(
+                header::X_CONTENT_TYPE_OPTIONS,
+                HeaderValue::from_static("nosniff"),
+            ))
+            .layer(SetResponseHeaderLayer::if_not_present(
+                header::HeaderName::from_static("x-xss-protection"),
+                HeaderValue::from_static("1; mode=block"),
+            ));
+
         app = app
             // Rate limiting (first layer - check before processing)
             .layer(middleware::from_fn(move |req, next| {
                 let limiter = rate_limiter.clone();
                 crate::rate_limit::rate_limit_middleware(limiter, req, next)
             }))
+            // Security headers
+            .layer(security_headers)
             // Enable CORS with specific origins
             .layer(
                 CorsLayer::new()
@@ -126,6 +150,7 @@ impl ExplorerServer {
         tracing::info!("📊 Rate limit: 60 requests per minute per IP");
         tracing::info!("🔐 CORS origins: {:?}", self.allowed_origins);
         tracing::info!("⚡ Indexes ready for fast lookups");
+        tracing::info!("🛡️  Security headers enabled: X-Frame-Options, X-Content-Type-Options");
 
         let listener = tokio::net::TcpListener::bind(self.addr).await?;
         axum::serve(listener, app).await?;

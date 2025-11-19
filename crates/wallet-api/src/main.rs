@@ -18,6 +18,18 @@ struct Cli {
     /// Port to bind to
     #[arg(short, long, default_value = "8080")]
     port: u16,
+
+    /// TLS certificate path (enables HTTPS)
+    #[arg(long)]
+    tls_cert: Option<PathBuf>,
+
+    /// TLS private key path (enables HTTPS)
+    #[arg(long)]
+    tls_key: Option<PathBuf>,
+
+    /// Require HTTPS (fails if TLS not configured)
+    #[arg(long, default_value = "false")]
+    require_tls: bool,
 }
 
 #[tokio::main]
@@ -45,8 +57,15 @@ async fn main() -> anyhow::Result<()> {
     // Create app state
     let state = AppState::new(node);
 
+    // Validate TLS configuration
+    if cli.require_tls && (cli.tls_cert.is_none() || cli.tls_key.is_none()) {
+        return Err(anyhow::anyhow!(
+            "TLS is required but certificate or key not provided. Use --tls-cert and --tls-key"
+        ));
+    }
+
     // Start server
-    start_server(state, &cli.host, cli.port).await?;
+    start_server(state, &cli.host, cli.port, cli.tls_cert, cli.tls_key).await?;
 
     Ok(())
 }

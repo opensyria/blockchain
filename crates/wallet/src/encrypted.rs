@@ -41,6 +41,14 @@ impl EncryptedAccount {
         let keypair = KeyPair::generate();
         let private_key = keypair.private_key_bytes();
         
+        Self::from_private_key(name, &private_key, password)
+    }
+
+    /// Create encrypted account from existing private key
+    /// إنشاء حساب مشفر من مفتاح خاص موجود
+    pub fn from_private_key(name: String, private_key: &[u8; 32], password: &str) -> Result<Self> {
+        let keypair = KeyPair::from_bytes(private_key)?;
+        
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()

@@ -96,6 +96,13 @@ pub struct AddressInfo {
     pub transaction_count: usize,
 }
 
+/// Mempool information response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MempoolInfo {
+    pub transaction_count: usize,
+    pub transactions: Vec<TransactionInfo>,
+}
+
 /// Search result
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]

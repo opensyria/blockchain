@@ -25,6 +25,8 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/transactions/:hash", get(get_transaction))
         // Address
         .route("/api/address/:address", get(get_address_info))
+        // Mempool
+        .route("/api/mempool", get(get_mempool))
         // Search
         .route("/api/search/:query", get(search))
         .with_state(state)

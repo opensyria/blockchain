@@ -1,0 +1,46 @@
+# OpenSyria Node Log Rotation Configuration
+# تكوين تناوب سجلات عقدة OpenSyria
+#
+# Install to: /etc/logrotate.d/opensyria-node
+# Test: sudo logrotate -d /etc/logrotate.d/opensyria-node
+# Force rotation: sudo logrotate -f /etc/logrotate.d/opensyria-node
+
+# Default log location (update if using custom path)
+/home/*/.opensyria/node/opensyria.log {
+    # Rotate daily
+    daily
+    
+    # Keep 7 days of logs
+    rotate 7
+    
+    # Compress old logs
+    compress
+    delaycompress
+    
+    # Don't error if log file is missing
+    missingok
+    
+    # Don't rotate if empty
+    notifempty
+    
+    # Max size before rotation (100MB)
+    size 100M
+    
+    # Create new log file with these permissions
+    create 0640 opensyria opensyria
+    
+    # Date extension format
+    dateext
+    dateformat -%Y%m%d
+    
+    # Post-rotation script
+    postrotate
+        # Send HUP signal to reopen log file
+        systemctl reload opensyria-node > /dev/null 2>&1 || true
+    endscript
+}
+
+# Alternative: systemd journal only (no log files)
+# If using journal, remove the above and rely on journalctl:
+#   journalctl -u opensyria-node --vacuum-time=7d
+#   journalctl -u opensyria-node --vacuum-size=500M

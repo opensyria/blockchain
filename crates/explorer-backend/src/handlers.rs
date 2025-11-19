@@ -7,6 +7,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use opensyria_mempool::Mempool;
 use opensyria_storage::{BlockchainIndexer, BlockchainStorage, StateStorage};
 use serde::Deserialize;
 use std::sync::Arc;
@@ -18,6 +19,7 @@ pub struct AppState {
     pub blockchain: Arc<RwLock<BlockchainStorage>>,
     pub state: Arc<RwLock<StateStorage>>,
     pub indexer: Arc<BlockchainIndexer>,
+    pub mempool: Arc<RwLock<Mempool>>,
 }
 
 /// Pagination query parameters
@@ -36,9 +38,25 @@ fn default_per_page() -> usize {
     20
 }
 
+const MAX_PER_PAGE: usize = 100;
+const MAX_ADDRESS_TX_HISTORY: usize = 100;
+
 impl Pagination {
     fn offset(&self) -> usize {
         (self.page.saturating_sub(1)) * self.per_page
+    }
+    
+    fn validate(&self) -> Result<(), ApiError> {
+        if self.per_page > MAX_PER_PAGE {
+            return Err(ApiError::bad_request(format!(
+                "per_page cannot exceed {} (requested: {})",
+                MAX_PER_PAGE, self.per_page
+            )));
+        }
+        if self.page == 0 {
+            return Err(ApiError::bad_request("page must be >= 1"));
+        }
+        Ok(())
     }
 }
 
@@ -177,26 +195,26 @@ pub async fn get_block_by_hash(
     Ok(Json(BlockInfo::from_block(&block, height)))
 }
 
-/// GET /api/blocks - Get recent blocks (paginated)
+/// GET /api/blocks - Get recent blocks with pagination
 pub async fn get_recent_blocks(
     Query(pagination): Query<Pagination>,
     State(state): State<AppState>,
 ) -> ApiResult<PaginatedResponse<BlockInfo>> {
+    pagination.validate()?;
+    
     let blockchain = state.blockchain.read().await;
 
-    let height = blockchain
+    let total = blockchain
         .get_chain_height()
         .map_err(|e| ApiError::internal_error(format!("Failed to get height: {}", e)))?;
 
-    let total = (height + 1) as usize;
-    let offset = pagination.offset();
-    let per_page = pagination.per_page.min(100); // Max 100 per page
+    let per_page = pagination.per_page.min(MAX_PER_PAGE);
+    let start_height = total.saturating_sub(pagination.offset() as u64);
+    let end_height = start_height.saturating_sub(per_page as u64);
 
-    // Get blocks in reverse order (newest first)
     let mut blocks = Vec::new();
-    for i in 0..per_page {
-        let block_height = height.saturating_sub((offset + i) as u64);
-        if block_height > height {
+    for block_height in (end_height..start_height).rev() {
+        if blocks.len() >= per_page {
             break;
         }
 
@@ -211,7 +229,6 @@ pub async fn get_recent_blocks(
         pagination.page,
         per_page,
     )))
-}
 
 /// GET /api/transactions/:hash - Get transaction by hash
 pub async fn get_transaction(
@@ -253,8 +270,11 @@ pub async fn get_transaction(
 /// GET /api/address/:address - Get address information
 pub async fn get_address_info(
     Path(address_str): Path<String>,
+    Query(pagination): Query<Pagination>,
     State(state): State<AppState>,
 ) -> ApiResult<AddressInfo> {
+    pagination.validate()?;
+    
     let address_bytes =
         hex::decode(&address_str).map_err(|_| ApiError::bad_request("Invalid address format"))?;
 
@@ -283,7 +303,7 @@ pub async fn get_address_info(
         .get_address_tx_hashes(&public_key)
         .map_err(|e| ApiError::internal_error(format!("Index error: {}", e)))?;
 
-    let transaction_count = tx_hashes.len();
+    let transaction_count = tx_hashes.len().min(MAX_ADDRESS_TX_HISTORY);
 
     Ok(Json(AddressInfo {
         address: address_str,
@@ -293,12 +313,43 @@ pub async fn get_address_info(
     }))
 }
 
-/// GET /api/search/:query - Search for block/transaction/address
+/// GET /api/search/:query - Search for block/transaction/address (supports partial hash)
 pub async fn search(
     Path(query): Path<String>,
     State(state): State<AppState>,
 ) -> ApiResult<SearchResult> {
-    // Try to decode as hash
+    // Support partial hash search (minimum 8 characters)
+    if query.len() >= 8 && query.len() < 64 {
+        // Partial hash - search all possibilities
+        let prefix_lower = query.to_lowercase();
+        
+        // Try blocks
+        let blockchain = state.blockchain.read().await;
+        let height = blockchain.get_chain_height().unwrap_or(0);
+        
+        for block_height in (0..=height).rev().take(100) {
+            if let Ok(Some(block)) = blockchain.get_block_by_height(block_height) {
+                let block_hash = hex::encode(block.hash());
+                if block_hash.starts_with(&prefix_lower) {
+                    return Ok(Json(SearchResult::Block {
+                        info: BlockInfo::from_block(&block, block_height),
+                    }));
+                }
+                
+                // Check transactions in this block
+                for (tx_index, tx) in block.transactions.iter().enumerate() {
+                    let tx_hash = hex::encode(tx.hash());
+                    if tx_hash.starts_with(&prefix_lower) {
+                        let info = TransactionInfo::from_transaction(tx)
+                            .with_block_info(&block, block_height);
+                        return Ok(Json(SearchResult::Transaction { info }));
+                    }
+                }
+            }
+        }
+    }
+    
+    // Try to decode as full hash
     if let Ok(hash_bytes) = hex::decode(&query) {
         if hash_bytes.len() == 32 {
             let mut hash = [0u8; 32];
@@ -356,3 +407,22 @@ pub async fn search(
 
     Ok(Json(SearchResult::NotFound))
 }
+
+/// GET /api/mempool - Get mempool status and pending transactions
+pub async fn get_mempool(State(state): State<AppState>) -> ApiResult<MempoolInfo> {
+    let mempool = state.mempool.read().await;
+    
+    let pending_txs = mempool.get_all_transactions();
+    let transaction_count = pending_txs.len();
+    
+    // Convert to TransactionInfo
+    let transactions: Vec<TransactionInfo> = pending_txs
+        .into_iter()
+        .take(50) // Limit to 50 most recent
+        .map(TransactionInfo::from_transaction)
+        .collect();
+    
+    Ok(Json(MempoolInfo {
+        transaction_count,
+        transactions,
+    }))

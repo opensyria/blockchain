@@ -349,6 +349,90 @@ jobs:
 
 ---
 
+## System Service & Deployment | خدمة النظام والنشر
+
+### Systemd Service Installation (Linux)
+
+Install OpenSyria node as a system service:
+
+```bash
+# Interactive setup
+./scripts/setup-systemd.sh
+
+# Manual installation
+sudo cp opensyria-node.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable opensyria-node
+sudo systemctl start opensyria-node
+```
+
+**Service Management:**
+```bash
+# Start/Stop/Restart
+sudo systemctl start opensyria-node
+sudo systemctl stop opensyria-node
+sudo systemctl restart opensyria-node
+
+# Check status
+sudo systemctl status opensyria-node
+
+# View logs
+sudo journalctl -u opensyria-node -f
+```
+
+### Log Rotation
+
+Install automatic log rotation:
+
+```bash
+# Install logrotate config
+sudo cp scripts/opensyria-node.logrotate /etc/logrotate.d/opensyria-node
+
+# Test
+sudo logrotate -d /etc/logrotate.d/opensyria-node
+```
+
+**Settings:**
+- Daily rotation
+- Keep 7 days
+- Max 100MB per file
+- Compress old logs
+
+### Configuration File
+
+Generate config file:
+
+```bash
+# Create example config
+mkdir -p ~/.opensyria
+cat > ~/.opensyria/config.toml << 'EOF'
+data_dir = "~/.opensyria/node"
+
+[network]
+port = 9000
+bootstrap_nodes = []
+max_peers = 50
+
+[mining]
+difficulty = 16
+threads = 4
+
+[daemon]
+auto_mine = false
+log_file = "~/.opensyria/node/opensyria.log"
+log_max_size_mb = 100
+log_backups = 7
+EOF
+```
+
+**Usage:**
+```bash
+# Run with config
+opensyria-node daemon --config ~/.opensyria/config.toml
+```
+
+---
+
 ## Performance Benchmarks
 
 Some scripts include performance measurements:
