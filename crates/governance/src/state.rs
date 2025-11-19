@@ -92,8 +92,35 @@ impl GovernanceState {
         self.active_proposals.push(id);
         self.proposals.insert(id, proposal);
         self.votes.insert(id, HashMap::new());
+        self.balance_snapshots.insert(id, HashMap::new()); // Initialize snapshot storage
         self.next_proposal_id = id + 1;
         id
+    }
+
+    /// Store balance snapshot for a proposal
+    pub fn store_snapshot(&mut self, proposal_id: ProposalId, address: &PublicKey, balance: u64) {
+        self.balance_snapshots
+            .entry(proposal_id)
+            .or_insert_with(HashMap::new)
+            .insert(*address, balance);
+    }
+
+    /// Get snapshot balance for an address at proposal creation
+    pub fn get_snapshot_balance(&self, proposal_id: ProposalId, address: &PublicKey) -> Option<u64> {
+        self.balance_snapshots
+            .get(&proposal_id)
+            .and_then(|snapshots| snapshots.get(address).copied())
+    }
+
+    /// Get all balance snapshots (for persistence)
+    pub fn get_all_snapshots(&self) -> Vec<(ProposalId, PublicKey, u64)> {
+        let mut snapshots = Vec::new();
+        for (proposal_id, balances) in &self.balance_snapshots {
+            for (address, balance) in balances {
+                snapshots.push((*proposal_id, *address, *balance));
+            }
+        }
+        snapshots
     }
 
     /// Get proposal by ID

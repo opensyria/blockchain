@@ -1,6 +1,5 @@
 use opensyria_core::crypto::PublicKey;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Treasury management for governance spending proposals
 #[derive(Debug, Clone, Serialize, Deserialize)]

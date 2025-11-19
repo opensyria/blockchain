@@ -63,12 +63,34 @@ impl Account {
 }
 
 /// Wallet storage manager
+/// 
+/// ⚠️  SECURITY WARNING: This storage saves private keys in PLAINTEXT!
+/// ⚠️  تحذير أمني: هذا التخزين يحفظ المفاتيح الخاصة كنص عادي!
+/// 
+/// DO NOT USE IN PRODUCTION! Use EncryptedWalletStorage instead.
+/// لا تستخدم في الإنتاج! استخدم EncryptedWalletStorage بدلاً من ذلك.
+/// 
+/// This type is deprecated and will be removed in a future version.
+/// For secure wallet storage, use `opensyria_wallet::EncryptedWalletStorage`.
+#[deprecated(
+    since = "0.2.0",
+    note = "Use EncryptedWalletStorage instead - plaintext keys are a security risk"
+)]
 pub struct WalletStorage {
     wallet_dir: PathBuf,
 }
 
 impl WalletStorage {
     /// Initialize wallet storage in default directory
+    /// 
+    /// ⚠️  CRITICAL SECURITY WARNING ⚠️
+    /// This creates an UNENCRYPTED wallet that stores private keys in plaintext!
+    /// Private keys saved with this method can be stolen if an attacker gains
+    /// file system access. Use EncryptedWalletStorage::new() instead for production.
+    #[deprecated(
+        since = "0.2.0",
+        note = "SECURITY RISK: Creates plaintext wallet. Use EncryptedWalletStorage::new() instead"
+    )]
     pub fn new() -> Result<Self> {
         let wallet_dir = dirs::home_dir()
             .context("Could not find home directory")?

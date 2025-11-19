@@ -181,6 +181,17 @@ impl EncryptedAccount {
 
 /// Encrypted wallet storage manager
 /// مدير تخزين المحفظة المشفرة
+/// 
+/// ✅ RECOMMENDED FOR PRODUCTION USE
+/// This is the SECURE wallet storage implementation that should be used
+/// for all production deployments. Private keys are encrypted with AES-256-GCM
+/// and protected by Argon2-hashed passwords.
+/// 
+/// Security Features:
+/// - AES-256-GCM authenticated encryption (prevents tampering)
+/// - Argon2 password hashing (resistant to GPU/ASIC cracking)
+/// - Random nonces per encryption (prevents replay)
+/// - Salt generation with OsRng (proper entropy)
 pub struct EncryptedWalletStorage {
     wallet_dir: PathBuf,
 }

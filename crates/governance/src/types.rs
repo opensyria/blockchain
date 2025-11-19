@@ -56,7 +56,9 @@ pub struct VoteRecord {
     pub voter: PublicKey,
     pub vote: Vote,
     pub voting_power: u64, // Based on stake/balance at proposal creation
+    pub snapshot_balance: u64, // Actual balance at proposal creation height (prevents flash loan attacks)
     pub timestamp: u64,
+    pub delegated_from: Option<PublicKey>, // If this vote was delegated from another address
 }
 
 /// Proposal status

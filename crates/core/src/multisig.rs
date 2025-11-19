@@ -9,8 +9,7 @@ pub struct MultisigAccount {
     pub signers: Vec<PublicKey>,
     /// Minimum signatures required (M-of-N)
     pub threshold: u8,
-    /// Account nonce for replay protection
-    pub nonce: u64,
+    // NOTE: Nonce is now tracked in StateStorage, not here (prevents replay attacks)
 }
 
 impl MultisigAccount {
@@ -42,7 +41,6 @@ impl MultisigAccount {
         Ok(Self {
             signers,
             threshold,
-            nonce: 0,
         })
     }
 
@@ -75,6 +73,10 @@ impl MultisigAccount {
 }
 
 /// Multi-signature transaction with multiple signatures
+/// 
+/// SECURITY NOTE: Nonce must be validated against StateStorage before execution
+/// to prevent replay attacks. The nonce field here is included in signatures but
+/// MUST be checked against the persistent state during transaction validation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MultisigTransaction {
     /// Multisig account configuration
@@ -85,7 +87,7 @@ pub struct MultisigTransaction {
     pub amount: u64,
     /// Transaction fee
     pub fee: u64,
-    /// Account nonce
+    /// Account nonce (MUST be validated against StateStorage)
     pub nonce: u64,
     /// List of signatures from different signers
     pub signatures: Vec<SignatureEntry>,

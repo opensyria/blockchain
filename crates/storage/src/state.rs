@@ -258,6 +258,77 @@ impl StateStorage {
         self.increment_nonce(address)
     }
 
+    /// Validate and execute a multisig transaction with nonce checking
+    /// SECURITY: This prevents replay attacks by checking and incrementing nonce atomically
+    pub fn execute_multisig_transaction(
+        &self,
+        multisig_tx: &opensyria_core::MultisigTransaction,
+    ) -> Result<(), StorageError> {
+        use opensyria_core::MultisigError;
+
+        let multisig_address = multisig_tx.account.address();
+
+        // 1. Verify multisig account exists
+        let stored_account = self
+            .get_multisig_account(&multisig_address)?
+            .ok_or(StorageError::InvalidTransaction)?;
+
+        // Verify configuration matches
+        if stored_account != multisig_tx.account {
+            return Err(StorageError::InvalidTransaction);
+        }
+
+        // 2. CRITICAL: Verify nonce to prevent replay attacks
+        let current_nonce = self.get_nonce(&multisig_address)?;
+        if multisig_tx.nonce != current_nonce {
+            return Err(StorageError::InvalidTransaction);
+        }
+
+        // 3. Verify signatures meet threshold
+        if let Err(e) = multisig_tx.verify() {
+            return Err(StorageError::InvalidTransaction);
+        }
+
+        // 4. Check expiry if set
+        // Note: This requires block height context, handled by caller
+
+        // 5. Check balance (total = amount + fee)
+        let balance = self.get_balance(&multisig_address)?;
+        let total_required = multisig_tx
+            .amount
+            .checked_add(multisig_tx.fee)
+            .ok_or(StorageError::BalanceOverflow)?;
+
+        if balance < total_required {
+            return Err(StorageError::InsufficientBalance);
+        }
+
+        // 6. Execute atomically: transfer + increment nonce
+        let mut batch = WriteBatch::default();
+
+        // Deduct from multisig account
+        let new_balance = balance - total_required;
+        let balance_key = Self::balance_key(&multisig_address);
+        batch.put(&balance_key, new_balance.to_le_bytes());
+
+        // Credit recipient
+        let recipient_balance = self.get_balance(&multisig_tx.to)?;
+        let new_recipient_balance = recipient_balance
+            .checked_add(multisig_tx.amount)
+            .ok_or(StorageError::BalanceOverflow)?;
+        let recipient_key = Self::balance_key(&multisig_tx.to);
+        batch.put(&recipient_key, new_recipient_balance.to_le_bytes());
+
+        // CRITICAL: Increment nonce to prevent replay
+        let nonce_key = Self::nonce_key(&multisig_address);
+        batch.put(&nonce_key, (current_nonce + 1).to_le_bytes());
+
+        // Atomic commit
+        self.db.write(batch)?;
+
+        Ok(())
+    }
+
     /// Store partial multisig transaction (for incremental signing)
     pub fn store_partial_multisig(
         &self,

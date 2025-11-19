@@ -222,20 +222,20 @@ impl NetworkNode {
         use opensyria_core::block::BlockError;
 
         // Check proof of work
-        if !block.meets_difficulty_target() {
+        if !block.header.meets_difficulty() {
             return Err(anyhow::anyhow!("Block does not meet difficulty target"));
         }
 
         // Verify merkle root
-        if let Err(e) = block.verify_merkle_root() {
-            return Err(anyhow::anyhow!("Invalid merkle root: {:?}", e));
+        if !block.verify_merkle_root() {
+            return Err(anyhow::anyhow!("Invalid merkle root"));
         }
 
         // Verify all transaction signatures
         for tx in &block.transactions {
             if !tx.is_coinbase() {
-                if !tx.verify_signature() {
-                    return Err(anyhow::anyhow!("Invalid transaction signature"));
+                if let Err(e) = tx.verify() {
+                    return Err(anyhow::anyhow!("Invalid transaction signature: {}", e));
                 }
             }
         }
@@ -509,12 +509,29 @@ impl NetworkNode {
             NetworkMessage::NewBlock { block } => {
                 debug!("Received new block from gossipsub");
 
+                // SECURITY FIX: Validate PoW BEFORE accepting block to prevent DoS
+                // This prevents malicious peers from flooding network with invalid blocks
+                if !block.header.meets_difficulty() {
+                    warn!("Received block with invalid PoW from peer {}", peer_id);
+                    let mut reputation = self.reputation.write().await;
+                    reputation.penalize_invalid_block(&peer_id);
+                    return Ok(());
+                }
+
+                // Verify merkle root before processing
+                if !block.verify_merkle_root() {
+                    warn!("Received block with invalid merkle root from peer {}", peer_id);
+                    let mut reputation = self.reputation.write().await;
+                    reputation.penalize_invalid_block(&peer_id);
+                    return Ok(());
+                }
+
                 // Validate and store block
                 let blockchain = self.blockchain.read().await;
                 let _current_height = blockchain.get_chain_height()?;
                 drop(blockchain);
 
-                // Try to append block
+                // Try to append block (additional validation happens here)
                 let blockchain = self.blockchain.write().await;
                 match blockchain.append_block(&block) {
                     Ok(()) => {

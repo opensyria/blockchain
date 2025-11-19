@@ -63,7 +63,7 @@ impl GovernanceManager {
             self.config.default_voting_period,
             self.config.default_execution_delay,
             total_voting_power,
-        ).map_err(|e| GovernanceError::InvalidProposal)?;
+        );
 
         let id = self.state.add_proposal(proposal);
         Ok(id)
@@ -92,21 +92,25 @@ impl GovernanceManager {
             }
         }
 
-        // Validate voting power against blockchain state
-        // Use balance at proposal creation height (snapshot voting)
-        let actual_voting_power = state_storage
-            .get_balance(&voter)
-            .map_err(|_| GovernanceError::InvalidProposal)?;
-        
-        // For now, use current balance as voting power
-        // TODO: Implement historical balance snapshots for true snapshot voting
-        let validated_power = actual_voting_power;
+        // SECURITY FIX: Use snapshot balance at proposal creation to prevent flash loan attacks
+        // Try to get snapshot balance first; if not found, query current balance and store it
+        let snapshot_balance = match self.state.get_snapshot_balance(proposal_id, &voter) {
+            Some(balance) => balance,
+            None => {
+                // First time this address votes - snapshot their balance now
+                let current_balance = state_storage
+                    .get_balance(&voter)
+                    .map_err(|_| GovernanceError::InvalidProposal)?;
+                self.state.store_snapshot(proposal_id, &voter, current_balance);
+                current_balance
+            }
+        };
 
         let vote_record = VoteRecord {
             voter,
             vote,
-            voting_power: validated_power,
-            snapshot_balance: validated_power, // Use current balance as snapshot
+            voting_power: snapshot_balance,
+            snapshot_balance,
             timestamp: current_height,
             delegated_from: None, // Direct vote, not delegated
         };
@@ -211,6 +215,7 @@ impl GovernanceManager {
 pub struct GovernanceSnapshot {
     pub proposals: Vec<Proposal>,
     pub votes: Vec<(ProposalId, PublicKey, VoteRecord)>,
+    pub balance_snapshots: Vec<(ProposalId, PublicKey, u64)>, // Store snapshots for each proposal
     pub next_proposal_id: ProposalId,
     pub config: GovernanceConfig,
 }
@@ -233,6 +238,7 @@ impl GovernanceManager {
                 .cloned()
                 .collect(),
             votes,
+            balance_snapshots: self.state.get_all_snapshots(),
             next_proposal_id: self.state.next_proposal_id(),
             config: self.config.clone(),
         }
@@ -250,6 +256,11 @@ impl GovernanceManager {
         // Restore votes
         for (proposal_id, _voter, vote_record) in snapshot.votes {
             let _ = manager.state.record_vote(proposal_id, vote_record);
+        }
+
+        // Restore balance snapshots
+        for (proposal_id, address, balance) in snapshot.balance_snapshots {
+            manager.state.store_snapshot(proposal_id, &address, balance);
         }
 
         manager

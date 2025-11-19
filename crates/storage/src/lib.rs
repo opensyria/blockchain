@@ -22,6 +22,51 @@ impl Storage {
 
         Ok(Self { blockchain, state })
     }
+
+    /// Validate and apply block with full state validation (defense-in-depth)
+    /// 
+    /// SECURITY: This method provides an additional layer of validation beyond
+    /// what BlockchainStorage.append_block() does. It verifies that all transactions
+    /// are economically valid (sufficient balances, correct nonces) before applying
+    /// state changes. This prevents invalid states from corrupted storage.
+    pub fn validate_and_apply_block(&self, block: &opensyria_core::Block) -> Result<(), StorageError> {
+        // First, validate block structure (PoW, merkle root, etc.)
+        self.blockchain.append_block(block)?;
+
+        // Then, validate and apply state transitions atomically
+        // This catches any inconsistencies if blockchain storage was corrupted
+        self.state.apply_block_atomic(&block.transactions)?;
+
+        Ok(())
+    }
+
+    /// Validate block without applying (for testing/validation)
+    pub fn validate_block_state(&self, block: &opensyria_core::Block) -> Result<(), StorageError> {
+        // Verify all non-coinbase transactions have sufficient balance
+        for tx in &block.transactions {
+            if tx.is_coinbase() {
+                continue;
+            }
+
+            // Check sender balance
+            let balance = self.state.get_balance(&tx.from)?;
+            let required = tx.amount
+                .checked_add(tx.fee)
+                .ok_or(StorageError::BalanceOverflow)?;
+
+            if balance < required {
+                return Err(StorageError::InsufficientBalance);
+            }
+
+            // Check nonce matches expected
+            let current_nonce = self.state.get_nonce(&tx.from)?;
+            if tx.nonce != current_nonce {
+                return Err(StorageError::InvalidTransaction);
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug)]

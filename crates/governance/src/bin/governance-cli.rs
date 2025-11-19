@@ -344,7 +344,7 @@ fn vote_on_proposal(data_dir: &PathBuf, proposal_id: u64, choice: String) {
 
     // Open state storage
     let state_dir = data_dir.join("state");
-    let state_storage = opensyria_storage::StateStorage::open(&state_dir)
+    let state_storage = opensyria_storage::StateStorage::open(state_dir)
         .expect("Failed to open state storage");
 
     match manager.vote(

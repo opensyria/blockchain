@@ -113,6 +113,7 @@ mod tests {
         let snapshot = GovernanceSnapshot {
             proposals: vec![proposal],
             votes: vec![],
+            balance_snapshots: vec![],
             next_proposal_id: 2,
             config: GovernanceConfig::default(),
         };
@@ -138,7 +139,8 @@ mod tests {
         let snapshot = GovernanceSnapshot {
             proposals: vec![],
             votes: vec![],
-            next_proposal_id: 1,
+            balance_snapshots: vec![],
+            next_proposal_id: 2,
             config: GovernanceConfig::default(),
         };
 
@@ -158,6 +160,7 @@ mod tests {
         let snapshot = GovernanceSnapshot {
             proposals: vec![],
             votes: vec![],
+            balance_snapshots: vec![],
             next_proposal_id: 1,
             config: GovernanceConfig::default(),
         };

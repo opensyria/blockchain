@@ -256,6 +256,13 @@ impl Mempool {
                     });
                 }
 
+                // Clone fee for logging before removing
+                let old_fee = old_tx.fee;
+                let new_fee = new_tx.fee;
+
+                // Drop immutable borrow before calling remove_transaction
+                drop(old_tx);
+
                 // Remove old transaction
                 self.remove_transaction(&old_hash);
 
@@ -263,8 +270,8 @@ impl Mempool {
                     "Replaced transaction {} with {} (fee: {} -> {})",
                     hex::encode(&old_hash[..8]),
                     hex::encode(&new_hash[..8]),
-                    old_tx.fee,
-                    new_tx.fee
+                    old_fee,
+                    new_fee
                 );
             }
         }
