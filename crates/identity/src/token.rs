@@ -2,7 +2,7 @@ use opensyria_core::crypto::PublicKey;
 use serde::{Deserialize, Serialize};
 
 /// Cultural identity token representing Syrian heritage
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub struct IdentityToken {
     /// Unique token identifier
     pub id: String,
@@ -42,7 +42,7 @@ pub struct IdentityToken {
 }
 
 /// Transfer record for provenance tracking
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub struct Transfer {
     pub from: PublicKey,
     pub to: PublicKey,
@@ -53,7 +53,7 @@ pub struct Transfer {
 }
 
 /// Type of identity token
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub enum TokenType {
     /// Cultural heritage site or monument
     HeritageSite,
@@ -87,7 +87,7 @@ pub enum TokenType {
 }
 
 /// Cultural category classification
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub enum CulturalCategory {
     /// Ancient history (pre-Islamic)
     Ancient,
@@ -130,9 +130,9 @@ impl IdentityToken {
         metadata: crate::metadata::HeritageMetadata,
         royalty_percentage: u8,
         block_height: u64,
-    ) -> Result<Self, &'static str> {
+    ) -> Result<Self, String> {
         if royalty_percentage > 50 {
-            return Err("Royalty percentage cannot exceed 50%");
+            return Err("Royalty percentage cannot exceed 50%".to_string());
         }
 
         let created_at = std::time::SystemTime::now()

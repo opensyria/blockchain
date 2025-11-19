@@ -107,6 +107,43 @@ impl GovernanceState {
             .insert(*address, balance);
     }
 
+    /// Snapshot all account balances for a proposal (flash loan attack prevention)
+    /// 
+    /// This method captures the balance of every account at proposal creation time.
+    /// Votes are weighted by these snapshot balances, not current balances.
+    /// This prevents flash loan attacks where attackers:
+    /// 1. Borrow large token amounts
+    /// 2. Vote with inflated balance
+    /// 3. Return tokens in same block
+    pub fn snapshot_balances(
+        &mut self, 
+        proposal_id: ProposalId, 
+        state_storage: &opensyria_storage::StateStorage
+    ) -> Result<(), GovernanceError> {
+        const PAGE_SIZE: usize = 1000;
+        let mut start_key: Option<PublicKey> = None;
+        
+        loop {
+            // Get paginated balances to avoid OOM with large account sets
+            let (balances, last_key) = state_storage
+                .get_balances_paginated(start_key.as_ref(), PAGE_SIZE)
+                .map_err(|_| GovernanceError::InvalidProposal)?;
+            
+            // Store snapshots for this page
+            for (address, balance) in balances {
+                self.store_snapshot(proposal_id, &address, balance);
+            }
+            
+            // Check if we're done
+            if last_key.is_none() {
+                break;
+            }
+            start_key = last_key;
+        }
+        
+        Ok(())
+    }
+
     /// Get snapshot balance for an address at proposal creation
     pub fn get_snapshot_balance(&self, proposal_id: ProposalId, address: &PublicKey) -> Option<u64> {
         self.balance_snapshots

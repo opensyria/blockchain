@@ -137,7 +137,8 @@ impl Mempool {
         );
 
         // Calculate fee density (fee per byte) for priority
-        let tx_size = bincode::serialize(&tx).map_err(|_| MempoolError::InvalidTransaction)?.len();
+        let config = bincode::config::standard();
+        let tx_size = bincode::encode_to_vec(&tx, config).map_err(|_| MempoolError::InvalidTransaction)?.len();
         let fee_density = (tx.fee as f64 / tx_size as f64 * 1000.0) as u64; // fee per KB
 
         // Add to priority queue (higher fee density = higher priority)
@@ -174,8 +175,9 @@ impl Mempool {
             
             if let Some(lowest_tx) = self.transactions.get(&lowest_hash) {
                 // Calculate fee densities
-                let new_tx_size = bincode::serialize(new_tx).unwrap_or_default().len().max(1);
-                let lowest_tx_size = bincode::serialize(lowest_tx).unwrap_or_default().len().max(1);
+                let config = bincode::config::standard();
+                let new_tx_size = bincode::encode_to_vec(new_tx, config).unwrap_or_default().len().max(1);
+                let lowest_tx_size = bincode::encode_to_vec(lowest_tx, config).unwrap_or_default().len().max(1);
                 
                 let new_fee_density = new_tx.fee as f64 / new_tx_size as f64;
                 let lowest_fee_density = lowest_tx.fee as f64 / lowest_tx_size as f64;
@@ -199,7 +201,8 @@ impl Mempool {
     pub fn remove_transaction(&mut self, tx_hash: &[u8; 32]) -> Option<Transaction> {
         if let Some(tx) = self.transactions.remove(tx_hash) {
             // Remove from priority queue
-            let tx_size = bincode::serialize(&tx).unwrap_or_default().len().max(1);
+            let config = bincode::config::standard();
+            let tx_size = bincode::encode_to_vec(&tx, config).unwrap_or_default().len().max(1);
             let fee_density = (tx.fee as f64 / tx_size as f64 * 1000.0) as u64;
             let priority_key = (u64::MAX - fee_density, *tx_hash);
             self.priority_queue.remove(&priority_key);
@@ -242,8 +245,9 @@ impl Mempool {
         if let Some(old_hash) = existing_tx_hash {
             if let Some(old_tx) = self.transactions.get(&old_hash) {
                 // Calculate fee densities
-                let old_size = bincode::serialize(old_tx).unwrap_or_default().len().max(1);
-                let new_size = bincode::serialize(&new_tx).unwrap_or_default().len().max(1);
+                let config = bincode::config::standard();
+                let old_size = bincode::encode_to_vec(old_tx, config).unwrap_or_default().len().max(1);
+                let new_size = bincode::encode_to_vec(&new_tx, config).unwrap_or_default().len().max(1);
                 
                 let old_fee_density = old_tx.fee as f64 / old_size as f64;
                 let new_fee_density = new_tx.fee as f64 / new_size as f64;

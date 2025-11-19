@@ -4,6 +4,7 @@ use opensyria_core::crypto::KeyPair;
 use opensyria_governance::{
     GovernanceConfig, GovernanceManager, GovernanceStorage, ProposalType, Vote,
 };
+use opensyria_storage::StateStorage;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -148,6 +149,17 @@ fn create_proposal(data_dir: &PathBuf, title: String, description: String, type_
     let proposer = KeyPair::generate(); // In real use, load from wallet
     let current_height = 1000; // In real use, get from blockchain
     let total_voting_power = 100_000_000_000; // In real use, get from state
+    
+    // Create a temporary state storage for snapshots
+    // In production, this should be passed from the main storage
+    let state_dir = data_dir.join("state");
+    let state_storage = match StateStorage::open(state_dir) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("{} Failed to open state storage: {}", "Error:".red(), e);
+            return;
+        }
+    };
 
     match manager.create_proposal(
         proposer.public_key(),
@@ -157,6 +169,7 @@ fn create_proposal(data_dir: &PathBuf, title: String, description: String, type_
         description,
         current_height,
         total_voting_power,
+        &state_storage,
     ) {
         Ok(id) => {
             println!("{}", "✓ Proposal created successfully".green());

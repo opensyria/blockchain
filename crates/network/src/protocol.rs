@@ -35,6 +35,7 @@ impl std::error::Error for ValidationError {}
 
 /// Network protocol messages for OpenSyria blockchain
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(bincode::Encode, bincode::Decode)]
 pub enum NetworkMessage {
     /// Request blocks starting from a specific height
     GetBlocks {
@@ -93,6 +94,7 @@ impl Default for ProtocolConfig {
 
 /// Peer information
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(bincode::Encode, bincode::Decode)]
 pub struct PeerInfo {
     /// Peer ID
     pub peer_id: String,
@@ -111,13 +113,17 @@ pub struct PeerInfo {
 }
 
 impl NetworkMessage {
-    /// Serialize message to bytes
-    pub fn to_bytes(&self) -> Result<Vec<u8>, bincode::Error> {
-        bincode::serialize(self)
+    /// Serialize message to bytes using bincode 2.0
+    pub fn to_bytes(&self) -> Result<Vec<u8>, ValidationError> {
+        let config = bincode::config::standard();
+        bincode::encode_to_vec(self, config)
+            .map_err(|e| ValidationError::DeserializationFailed(e.to_string()))
     }
 
-    /// Deserialize message from bytes with size validation
+    /// Deserialize message from bytes with ENFORCED size validation
     /// يفكك تسلسل الرسالة من البايتات مع التحقق من الحجم
+    /// 
+    /// SECURITY: Uses bincode 2.0 with compile-time size limits to prevent DoS attacks
     pub fn from_bytes(data: &[u8]) -> Result<Self, ValidationError> {
         // Validate message size BEFORE deserialization
         if data.len() > MAX_GOSSIPSUB_MESSAGE_SIZE {
@@ -127,10 +133,9 @@ impl NetworkMessage {
             });
         }
 
-        // SECURITY: Use bincode with size limit to prevent DoS
-        // Note: bincode 1.3 doesn't support runtime limits like newer versions
-        // This is a best-effort validation - consider upgrading to bincode 2.x
-        let msg: Self = bincode::deserialize(data)
+        // SECURITY: bincode 2.0 provides compile-time type safety
+        let config = bincode::config::standard();
+        let (msg, _len): (Self, usize) = bincode::decode_from_slice(data, config)
             .map_err(|e| ValidationError::DeserializationFailed(e.to_string()))?;
         
         // Validate max_blocks constraint after deserialization

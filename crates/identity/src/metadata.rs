@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Heritage metadata for cultural tokens
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub struct HeritageMetadata {
     /// Primary name (English/transliterated)
     pub name: String,
@@ -44,7 +44,7 @@ pub struct HeritageMetadata {
 }
 
 /// Geographic location
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub struct Location {
     /// City
     pub city: String,
@@ -63,7 +63,7 @@ pub struct Location {
 }
 
 /// UNESCO heritage status
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub enum UNESCOStatus {
     /// World Heritage Site
     WorldHeritage,
@@ -82,7 +82,7 @@ pub enum UNESCOStatus {
 }
 
 /// Language classification
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub enum Language {
     /// Modern Standard Arabic
     Arabic,

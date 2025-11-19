@@ -1,4 +1,4 @@
-use crate::constants::{GENESIS_DIFFICULTY, GENESIS_NONCE, GENESIS_TIMESTAMP, MAX_FUTURE_DRIFT_SECS};
+use crate::constants::{GENESIS_DIFFICULTY, GENESIS_NONCE, GENESIS_TIMESTAMP};
 use crate::transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -6,6 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Block header containing metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(bincode::Encode, bincode::Decode)]
 pub struct BlockHeader {
     /// Block version for protocol upgrades
     pub version: u32,
@@ -62,6 +63,7 @@ impl BlockHeader {
 
 /// Complete block with header and transactions
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(bincode::Encode, bincode::Decode)]
 pub struct Block {
     pub header: BlockHeader,
     pub transactions: Vec<Transaction>,
@@ -155,21 +157,81 @@ impl Block {
 
     /// Validate block timestamp against previous block and system time
     /// التحقق من الطابع الزمني للكتلة مقابل الكتلة السابقة ووقت النظام
+    /// 
+    /// SECURITY: Enhanced validation with multiple checks to prevent timewarp attacks:
+    /// - Future drift limited to 60 seconds (reduced from 300s)
+    /// - Strict monotonic increase required
+    /// - Median-time-past validation (prevents systematic manipulation)
+    /// - Maximum increase per block (prevents single-block time jumps)
     pub fn validate_timestamp(&self, previous_timestamp: u64) -> Result<(), BlockError> {
+        use crate::constants::{MAX_FUTURE_DRIFT_SECS, MAX_TIMESTAMP_INCREASE_SECS};
+        
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|_| BlockError::InvalidTimestamp)?
             .as_secs();
 
-        // Check timestamp is not too far in the future (5 minutes tolerance)
-        // NOTE: Consider reducing MAX_FUTURE_DRIFT_SECS to 60s for better security
+        // Rule 1: Not too far in future (reduced to 60 seconds for security)
         if self.header.timestamp > now + MAX_FUTURE_DRIFT_SECS {
             return Err(BlockError::TimestampTooFarFuture);
         }
 
-        // SECURITY: Require STRICT monotonic increase (not equal) to prevent timestamp collision
+        // Rule 2: STRICT monotonic increase (not equal) to prevent timestamp collision
         if self.header.timestamp <= previous_timestamp {
             return Err(BlockError::TimestampDecreased);
+        }
+
+        // Rule 3: Rate limit timestamp increase (max 2 hours per block)
+        // Prevents single-block time manipulation attacks
+        if self.header.timestamp > previous_timestamp + MAX_TIMESTAMP_INCREASE_SECS {
+            return Err(BlockError::TimestampTooFarAhead);
+        }
+
+        Ok(())
+    }
+
+    /// Validate timestamp with median-time-past check (recommended for consensus)
+    /// التحقق من الطابع الزمني مع فحص الوقت الوسيط الماضي
+    /// 
+    /// This method adds median-time-past validation to prevent timewarp attacks.
+    /// Call this version when you have access to recent block timestamps.
+    pub fn validate_timestamp_with_median(
+        &self,
+        previous_timestamp: u64,
+        previous_timestamps: &[u64],
+    ) -> Result<(), BlockError> {
+        use crate::constants::{MEDIAN_TIME_SPAN, MAX_FUTURE_DRIFT_SECS, MAX_TIMESTAMP_INCREASE_SECS};
+        
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| BlockError::InvalidTimestamp)?
+            .as_secs();
+
+        // Rule 1: Not too far in future
+        if self.header.timestamp > now + MAX_FUTURE_DRIFT_SECS {
+            return Err(BlockError::TimestampTooFarFuture);
+        }
+
+        // Rule 2: STRICT monotonic increase
+        if self.header.timestamp <= previous_timestamp {
+            return Err(BlockError::TimestampDecreased);
+        }
+
+        // Rule 3: Median-time-past check (prevents systematic timewarp)
+        if previous_timestamps.len() >= MEDIAN_TIME_SPAN {
+            let mut sorted = previous_timestamps.to_vec();
+            sorted.sort_unstable();
+            let median = sorted[MEDIAN_TIME_SPAN / 2];
+            
+            // New block timestamp must be greater than median of last 11 blocks
+            if self.header.timestamp <= median {
+                return Err(BlockError::TimestampBelowMedian);
+            }
+        }
+
+        // Rule 4: Rate limit timestamp increase
+        if self.header.timestamp > previous_timestamp + MAX_TIMESTAMP_INCREASE_SECS {
+            return Err(BlockError::TimestampTooFarAhead);
         }
 
         Ok(())
@@ -233,6 +295,8 @@ pub enum BlockError {
     InvalidTimestamp,
     TimestampTooFarFuture,
     TimestampDecreased,
+    TimestampBelowMedian,
+    TimestampTooFarAhead,
     MissingCoinbase,
     InvalidCoinbaseAmount,
     MultipleCoinbase,
@@ -248,6 +312,8 @@ impl std::fmt::Display for BlockError {
             BlockError::InvalidTimestamp => write!(f, "Invalid timestamp"),
             BlockError::TimestampTooFarFuture => write!(f, "Block timestamp too far in future"),
             BlockError::TimestampDecreased => write!(f, "Block timestamp decreased from previous block"),
+            BlockError::TimestampBelowMedian => write!(f, "Block timestamp below median-time-past"),
+            BlockError::TimestampTooFarAhead => write!(f, "Block timestamp too far ahead of previous"),
             BlockError::MissingCoinbase => write!(f, "Block missing coinbase transaction"),
             BlockError::InvalidCoinbaseAmount => write!(f, "Coinbase amount incorrect"),
             BlockError::MultipleCoinbase => write!(f, "Block contains multiple coinbase transactions"),
@@ -398,5 +464,59 @@ mod tests {
         let block = Block::new([0u8; 32], vec![], 16);
         let result = block.validate_timestamp(now - 120);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_timestamp_with_median_validation() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        // Create timestamps for last 11 blocks (60s intervals)
+        let mut timestamps: Vec<u64> = (0..11).map(|i| now - 660 + (i * 60)).collect();
+        
+        let mut block = Block::new([0u8; 32], vec![], 16);
+        block.header.timestamp = now;
+        
+        // Should pass median-time-past check
+        let result = block.validate_timestamp_with_median(now - 60, &timestamps);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_timestamp_below_median_rejected() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        // Create timestamps for last 11 blocks
+        let timestamps: Vec<u64> = (0..11).map(|i| now - 110 + (i * 10)).collect();
+        
+        let mut block = Block::new([0u8; 32], vec![], 16);
+        // Set timestamp below median (should fail)
+        block.header.timestamp = now - 100; // Below median of timestamps
+        
+        let result = block.validate_timestamp_with_median(now - 110, &timestamps);
+        assert_eq!(result.unwrap_err(), BlockError::TimestampBelowMedian);
+    }
+
+    #[test]
+    fn test_timestamp_excessive_increase_rejected() {
+        use crate::constants::MAX_TIMESTAMP_INCREASE_SECS;
+
+        let previous_time = 1000000u64;
+        
+        let mut block = Block::new([0u8; 32], vec![], 16);
+        // Try to increase by more than allowed maximum
+        block.header.timestamp = previous_time + MAX_TIMESTAMP_INCREASE_SECS + 1;
+        
+        let result = block.validate_timestamp(previous_time);
+        assert_eq!(result.unwrap_err(), BlockError::TimestampTooFarAhead);
     }
 }

@@ -10,6 +10,7 @@ use crate::StorageError;
 
 /// Transaction location in blockchain
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(bincode::Encode, bincode::Decode)]
 pub struct TxLocation {
     pub block_height: u64,
     pub tx_index: usize,
@@ -84,7 +85,7 @@ impl BlockchainIndexer {
             };
 
             // tx_hash -> location
-            batch.put_cf(&tx_cf, tx_hash, bincode::serialize(&location)?);
+            batch.put_cf(&tx_cf, tx_hash, crate::bincode_helpers::serialize(&location)?);
 
             // Add to address indexes
             self.add_tx_to_address_index_internal(&mut batch, &self.db, &tx.from, &tx_hash)?;
@@ -111,7 +112,7 @@ impl BlockchainIndexer {
 
         // Get existing transaction hashes for this address
         let mut tx_hashes: Vec<[u8; 32]> = if let Some(data) = db.get_cf(&cf, address_key)? {
-            bincode::deserialize(&data)?
+            crate::bincode_helpers::deserialize(&data)?
         } else {
             Vec::new()
         };
@@ -119,7 +120,7 @@ impl BlockchainIndexer {
         // Add new transaction hash if not already present
         if !tx_hashes.contains(tx_hash) {
             tx_hashes.push(*tx_hash);
-            batch.put_cf(&cf, address_key, bincode::serialize(&tx_hashes)?);
+            batch.put_cf(&cf, address_key, crate::bincode_helpers::serialize(&tx_hashes)?);
         }
 
         Ok(())
@@ -134,7 +135,7 @@ impl BlockchainIndexer {
             .ok_or_else(|| StorageError::InvalidChain)?;
 
         if let Some(data) = self.db.get_cf(&cf, tx_hash)? {
-            Ok(Some(bincode::deserialize(&data)?))
+            Ok(Some(crate::bincode_helpers::deserialize(&data)?))
         } else {
             Ok(None)
         }
@@ -169,7 +170,7 @@ impl BlockchainIndexer {
             .ok_or_else(|| StorageError::InvalidChain)?;
 
         if let Some(data) = self.db.get_cf(&cf, address.0)? {
-            Ok(bincode::deserialize(&data)?)
+            Ok(crate::bincode_helpers::deserialize(&data)?)
         } else {
             Ok(Vec::new())
         }
@@ -204,7 +205,7 @@ impl BlockchainIndexer {
             .ok_or_else(|| StorageError::InvalidChain)?;
 
         if let Some(data) = self.db.get_cf(&cf, address.0)? {
-            let tx_hashes: Vec<[u8; 32]> = bincode::deserialize(&data)?;
+            let tx_hashes: Vec<[u8; 32]> = crate::bincode_helpers::deserialize(&data)?;
             Ok(tx_hashes.len())
         } else {
             Ok(0)
@@ -290,7 +291,7 @@ impl BlockchainIndexer {
 
         // Get existing transaction hashes for this address
         if let Some(data) = db.get_cf(&cf, address_key)? {
-            let mut tx_hashes: Vec<[u8; 32]> = bincode::deserialize(&data)?;
+            let mut tx_hashes: Vec<[u8; 32]> = crate::bincode_helpers::deserialize(&data)?;
 
             // Remove the transaction hash
             tx_hashes.retain(|hash| hash != tx_hash);
@@ -300,7 +301,7 @@ impl BlockchainIndexer {
                 batch.delete_cf(&cf, address_key);
             } else {
                 // Update with remaining transactions
-                batch.put_cf(&cf, address_key, bincode::serialize(&tx_hashes)?);
+                batch.put_cf(&cf, address_key, crate::bincode_helpers::serialize(&tx_hashes)?);
             }
         }
 

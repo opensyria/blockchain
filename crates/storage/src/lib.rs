@@ -8,6 +8,25 @@ pub use state::StateStorage;
 
 use std::path::PathBuf;
 
+/// Bincode 2.0 serialization helpers with standard configuration  
+pub(crate) mod bincode_helpers {
+    use bincode::config;
+    
+    /// Serialize using bincode 2.0 with standard config
+    pub fn serialize<T: bincode::Encode>(value: &T) -> Result<Vec<u8>, bincode::error::EncodeError> {
+        bincode::encode_to_vec(value, config::standard())
+    }
+    
+    /// Deserialize using bincode 2.0 with standard config
+    pub fn deserialize<T>(bytes: &[u8]) -> Result<T, bincode::error::DecodeError>
+    where
+        T: bincode::de::Decode<()>,
+    {
+        bincode::decode_from_slice::<T, _>(bytes, config::standard())
+            .map(|(decoded, _len)| decoded)
+    }
+}
+
 /// Combined storage manager for blockchain and state
 pub struct Storage {
     pub blockchain: BlockchainStorage,
@@ -72,7 +91,7 @@ impl Storage {
 #[derive(Debug)]
 pub enum StorageError {
     DatabaseError(rocksdb::Error),
-    SerializationError(bincode::Error),
+    SerializationError(String),
     BlockNotFound,
     InvalidChain,
     InsufficientBalance,
@@ -126,8 +145,14 @@ impl From<rocksdb::Error> for StorageError {
     }
 }
 
-impl From<bincode::Error> for StorageError {
-    fn from(e: bincode::Error) -> Self {
-        StorageError::SerializationError(e)
+impl From<bincode::error::EncodeError> for StorageError {
+    fn from(e: bincode::error::EncodeError) -> Self {
+        StorageError::SerializationError(format!("Encode error: {}", e))
+    }
+}
+
+impl From<bincode::error::DecodeError> for StorageError {
+    fn from(e: bincode::error::DecodeError) -> Self {
+        StorageError::SerializationError(format!("Decode error: {}", e))
     }
 }

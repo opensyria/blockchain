@@ -52,7 +52,8 @@ impl IdentityStorage {
         }
 
         let key = Self::token_key(&token.id);
-        let value = bincode::serialize(token)
+        let config = bincode::config::standard();
+        let value = bincode::encode_to_vec(token, config)
             .map_err(|e| StorageError::SerializationError(e.to_string()))?;
 
         self.db
@@ -71,7 +72,8 @@ impl IdentityStorage {
     /// Update an existing token (for transfers)
     pub fn update_token(&self, token: &IdentityToken) -> Result<(), StorageError> {
         let key = Self::token_key(&token.id);
-        let value = bincode::serialize(token)
+        let config = bincode::config::standard();
+        let value = bincode::encode_to_vec(token, config)
             .map_err(|e| StorageError::SerializationError(e.to_string()))?;
 
         self.db
@@ -90,7 +92,8 @@ impl IdentityStorage {
         
         match self.db.get(&key) {
             Ok(Some(value)) => {
-                let token = bincode::deserialize(&value)
+                let config = bincode::config::standard();
+                let (token, _): (IdentityToken, _) = bincode::decode_from_slice(&value, config)
                     .map_err(|e| StorageError::SerializationError(e.to_string()))?;
                 Ok(Some(token))
             }

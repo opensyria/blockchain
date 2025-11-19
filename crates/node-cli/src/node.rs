@@ -352,6 +352,7 @@ impl Node {
             description,
             current_height,
             total_voting_power,
+            &self.storage.state,
         )?;
 
         self.save_governance(&manager)?;

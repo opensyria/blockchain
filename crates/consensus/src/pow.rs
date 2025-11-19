@@ -184,6 +184,8 @@ impl DifficultyAdjuster {
     /// Calculate new difficulty based on actual mining times
     /// Uses integer arithmetic to prevent floating-point accumulation errors
     /// حساب الصعوبة الجديدة بناءً على أوقات التعدين الفعلية
+    /// 
+    /// SECURITY: Includes overflow protection and bounds checking
     pub fn adjust(&self, current_difficulty: u32, actual_time: Duration, block_count: u32) -> u32 {
         // Wait for full adjustment interval before adjusting
         if block_count < self.adjustment_interval {
@@ -201,8 +203,20 @@ impl DifficultyAdjuster {
 
         // Integer-only calculation (Bitcoin-style) to avoid floating-point errors
         // Use u128 to prevent overflow during multiplication
-        let new_difficulty = (current_difficulty as u128 * target_total as u128 
-                             / actual_total as u128) as u32;
+        let new_difficulty_u128 = (current_difficulty as u128 * target_total as u128) 
+                                  / actual_total as u128;
+
+        // SECURITY FIX: Check for overflow before casting to u32
+        // If result exceeds u32::MAX, clamp to MAX_DIFFICULTY
+        let new_difficulty = if new_difficulty_u128 > u32::MAX as u128 {
+            tracing::warn!(
+                "Difficulty calculation overflow: {} > u32::MAX, clamping to MAX_DIFFICULTY",
+                new_difficulty_u128
+            );
+            MAX_DIFFICULTY
+        } else {
+            new_difficulty_u128 as u32
+        };
 
         // SECURITY: Use integer-only clamping to avoid float precision issues
         // Clamp adjustment to ±25% (MAX_DIFFICULTY_ADJUSTMENT)
@@ -324,5 +338,35 @@ mod tests {
 
         // Should not increase more than 25%
         assert!(new_difficulty <= 20); // 16 * 1.25 = 20
+    }
+
+    #[test]
+    fn test_difficulty_overflow_protection() {
+        let adjuster = DifficultyAdjuster::new(60, 10);
+
+        // Extreme case: try to cause overflow with very high difficulty and very fast blocks
+        let very_high_difficulty = u32::MAX / 2;
+        let actual_time = Duration::from_secs(1); // Very fast
+        
+        let new_difficulty = adjuster.adjust(very_high_difficulty, actual_time, 10);
+
+        // Should be clamped to MAX_DIFFICULTY, not overflow
+        assert!(new_difficulty <= MAX_DIFFICULTY);
+        assert!(new_difficulty > 0); // Should not wrap to 0
+    }
+
+    #[test]
+    fn test_difficulty_extreme_values() {
+        let adjuster = DifficultyAdjuster::new(60, 10);
+
+        // Test with difficulty near MAX_DIFFICULTY
+        let near_max = MAX_DIFFICULTY - 10;
+        let actual_time = Duration::from_secs(30); // 2x faster than target
+        
+        let new_difficulty = adjuster.adjust(near_max, actual_time, 10);
+
+        // Should be clamped within valid range
+        assert!(new_difficulty >= MIN_DIFFICULTY);
+        assert!(new_difficulty <= MAX_DIFFICULTY);
     }
 }

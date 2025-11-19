@@ -38,7 +38,7 @@ impl BlockchainStorage {
     /// Save block to storage
     pub fn put_block(&self, block: &Block) -> Result<(), StorageError> {
         let hash = block.hash();
-        let data = bincode::serialize(block)?;
+        let data = crate::bincode_helpers::serialize(block)?;
 
         self.db.put(hash, &data)?;
 
@@ -52,7 +52,7 @@ impl BlockchainStorage {
     pub fn get_block(&self, hash: &[u8; 32]) -> Result<Option<Block>, StorageError> {
         match self.db.get(hash)? {
             Some(data) => {
-                let block: Block = bincode::deserialize(&data)?;
+                let block: Block = crate::bincode_helpers::deserialize(&data)?;
                 Ok(Some(block))
             }
             None => Ok(None),
@@ -128,8 +128,8 @@ impl BlockchainStorage {
             .ok_or(StorageError::ColumnFamilyNotFound)?;
         
         // Store: tx_hash → (block_height, tx_index)
-        let location = bincode::serialize(&(block_height, tx_index))?;
-        self.db.put_cf(tx_cf, tx_hash, location)?;
+        let location = crate::bincode_helpers::serialize(&(block_height, tx_index))?;
+        self.db.put_cf(&tx_cf, tx_hash, location)?;
         
         Ok(())
     }
@@ -144,15 +144,15 @@ impl BlockchainStorage {
         
         // Get existing transaction hashes for this address
         let mut tx_hashes: Vec<[u8; 32]> = self.db
-            .get_cf(addr_cf, addr_key.as_bytes())?
-            .map(|data| bincode::deserialize(&data).unwrap_or_default())
+            .get_cf(&addr_cf, addr_key.as_bytes())?
+            .map(|data| crate::bincode_helpers::deserialize(&data).unwrap_or_default())
             .unwrap_or_default();
         
         // Append new transaction hash
         tx_hashes.push(*tx_hash);
         
         // Store updated list
-        self.db.put_cf(addr_cf, addr_key.as_bytes(), bincode::serialize(&tx_hashes)?)?;
+        self.db.put_cf(&addr_cf, addr_key.as_bytes(), crate::bincode_helpers::serialize(&tx_hashes)?)?;
         
         Ok(())
     }
@@ -163,7 +163,7 @@ impl BlockchainStorage {
         let block_cf = self.db.cf_handle(CF_BLOCK_HASH_INDEX)
             .ok_or(StorageError::ColumnFamilyNotFound)?;
         
-        self.db.put_cf(block_cf, block_hash, height.to_le_bytes())?;
+        self.db.put_cf(&block_cf, block_hash, height.to_le_bytes())?;
         Ok(())
     }
 
@@ -174,8 +174,8 @@ impl BlockchainStorage {
             .ok_or(StorageError::ColumnFamilyNotFound)?;
         
         // O(1) index lookup
-        if let Some(location_data) = self.db.get_cf(tx_cf, tx_hash)? {
-            let (block_height, tx_index): (u64, usize) = bincode::deserialize(&location_data)?;
+        if let Some(location_data) = self.db.get_cf(&tx_cf, tx_hash)? {
+            let (block_height, tx_index): (u64, usize) = crate::bincode_helpers::deserialize(&location_data)?;
             
             // Fetch block and extract transaction
             if let Some(block) = self.get_block_by_height(block_height)? {
@@ -197,8 +197,8 @@ impl BlockchainStorage {
         let addr_key = format!("addr_{}", hex::encode(address));
         
         let tx_hashes: Vec<[u8; 32]> = self.db
-            .get_cf(addr_cf, addr_key.as_bytes())?
-            .map(|data| bincode::deserialize(&data).unwrap_or_default())
+            .get_cf(&addr_cf, addr_key.as_bytes())?
+            .map(|data| crate::bincode_helpers::deserialize(&data).unwrap_or_default())
             .unwrap_or_default();
         
         Ok(tx_hashes)
@@ -235,7 +235,7 @@ impl BlockchainStorage {
         let block_cf = self.db.cf_handle(CF_BLOCK_HASH_INDEX)
             .ok_or(StorageError::ColumnFamilyNotFound)?;
         
-        if let Some(height_data) = self.db.get_cf(block_cf, block_hash)? {
+        if let Some(height_data) = self.db.get_cf(&block_cf, block_hash)? {
             let bytes: [u8; 8] = height_data.try_into()
                 .map_err(|_| StorageError::InvalidChain)?;
             Ok(Some(u64::from_le_bytes(bytes)))
@@ -348,7 +348,7 @@ impl BlockchainStorage {
         let block_hash = block.hash();
 
         // Store block
-        let block_data = bincode::serialize(block)?;
+        let block_data = crate::bincode_helpers::serialize(block)?;
         batch.put(block_hash, &block_data);
 
         // Update height mapping
@@ -364,7 +364,7 @@ impl BlockchainStorage {
         // Index block hash
         let cf_block_hash = self.db.cf_handle(CF_BLOCK_HASH_INDEX)
             .ok_or(StorageError::ColumnFamilyNotFound)?;
-        batch.put_cf(cf_block_hash, block_hash, new_height.to_le_bytes());
+        batch.put_cf(&cf_block_hash, block_hash, new_height.to_le_bytes());
 
         // Index transactions
         for (tx_idx, tx) in block.transactions.iter().enumerate() {
@@ -373,8 +373,8 @@ impl BlockchainStorage {
             // Index: tx_hash → (block_height, tx_index)
             let cf_tx = self.db.cf_handle(CF_TX_INDEX)
                 .ok_or(StorageError::ColumnFamilyNotFound)?;
-            let tx_location = bincode::serialize(&(new_height, tx_idx))?;
-            batch.put_cf(cf_tx, tx_hash, tx_location);
+            let tx_location = crate::bincode_helpers::serialize(&(new_height, tx_idx))?;
+            batch.put_cf(&cf_tx, tx_hash, tx_location);
             
             // Index: from_address → append tx_hash
             if !tx.is_coinbase() {
@@ -383,14 +383,14 @@ impl BlockchainStorage {
                 let addr_key = tx.from.0;
                 
                 // Get existing txs for address
-                let mut tx_list: Vec<[u8; 32]> = if let Some(data) = self.db.get_cf(cf_addr, addr_key)? {
-                    bincode::deserialize(&data)?
+                let mut tx_list: Vec<[u8; 32]> = if let Some(data) = self.db.get_cf(&cf_addr, addr_key)? {
+                    crate::bincode_helpers::deserialize(&data)?
                 } else {
                     Vec::new()
                 };
                 
                 tx_list.push(tx_hash);
-                batch.put_cf(cf_addr, addr_key, bincode::serialize(&tx_list)?);
+                batch.put_cf(&cf_addr, addr_key, crate::bincode_helpers::serialize(&tx_list)?);
             }
             
             // Index: to_address → append tx_hash
@@ -398,14 +398,14 @@ impl BlockchainStorage {
                 .ok_or(StorageError::ColumnFamilyNotFound)?;
             let addr_key = tx.to.0;
             
-            let mut tx_list: Vec<[u8; 32]> = if let Some(data) = self.db.get_cf(cf_addr, addr_key)? {
-                bincode::deserialize(&data)?
+            let mut tx_list: Vec<[u8; 32]> = if let Some(data) = self.db.get_cf(&cf_addr, addr_key)? {
+                crate::bincode_helpers::deserialize(&data)?
             } else {
                 Vec::new()
             };
             
             tx_list.push(tx_hash);
-            batch.put_cf(cf_addr, addr_key, bincode::serialize(&tx_list)?);
+            batch.put_cf(&cf_addr, addr_key, crate::bincode_helpers::serialize(&tx_list)?);
         }
 
         // Commit atomic batch

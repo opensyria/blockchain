@@ -5,11 +5,20 @@ use opensyria_core::Transaction;
 use rocksdb::{Options, WriteBatch, DB};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
+use dashmap::DashMap;
+use tokio::sync::Mutex;
 
 /// State storage for account balances and metadata
 /// تخزين حالة أرصدة الحسابات والبيانات الوصفية
+/// 
+/// SECURITY: Uses per-address locking to prevent TOCTOU race conditions
+/// in concurrent multisig transaction execution
 pub struct StateStorage {
     db: DB,
+    /// Per-address locks for atomic multisig operations
+    /// Prevents double-spend via concurrent execution with same nonce
+    address_locks: Arc<DashMap<[u8; 32], Arc<Mutex<()>>>>,
 }
 
 const TOTAL_SUPPLY_KEY: &[u8] = b"total_supply";
@@ -22,7 +31,10 @@ impl StateStorage {
 
         let db = DB::open(&opts, path)?;
 
-        Ok(Self { db })
+        Ok(Self {
+            db,
+            address_locks: Arc::new(DashMap::new()),
+        })
     }
 
     /// Get account balance
@@ -172,14 +184,17 @@ impl StateStorage {
 
     /// Get all account balances (for debugging/inspection)
     /// 
-    /// ⚠️  CRITICAL WARNING: This loads ALL balances into memory.
-    /// Can cause OOM with millions of accounts. Use ONLY for:
-    /// - Debug/development environments
-    /// - Admin tools with pagination
-    /// - System diagnostics
+    /// ⚠️  DEPRECATED: This loads ALL balances into memory and will cause OOM
+    /// with millions of accounts.
     /// 
-    /// DO NOT use in block validation or regular transaction processing.
-    /// Consider adding pagination or using streaming iterators for production.
+    /// USE get_balances_paginated() INSTEAD for production systems.
+    /// 
+    /// This method is kept only for backward compatibility and should only be
+    /// used in test environments with limited account counts.
+    #[deprecated(
+        since = "0.2.0",
+        note = "Use get_balances_paginated() to avoid OOM with large account sets"
+    )]
     pub fn get_all_balances(&self) -> Result<HashMap<PublicKey, u64>, StorageError> {
         let mut balances = HashMap::new();
         let prefix = b"balance_";
@@ -213,6 +228,90 @@ impl StateStorage {
         Ok(balances)
     }
 
+    /// Get account balances with pagination (RECOMMENDED)
+    /// 
+    /// Returns up to `limit` balances starting from `start_key`.
+    /// Use the last returned key as the next `start_key` for pagination.
+    /// 
+    /// # Example
+    /// ```ignore
+    /// let mut start_key = None;
+    /// loop {
+    ///     let (balances, last_key) = storage.get_balances_paginated(start_key.as_ref(), 1000)?;
+    ///     if balances.is_empty() {
+    ///         break;
+    ///     }
+    ///     // Process balances...
+    ///     start_key = last_key;
+    /// }
+    /// ```
+    pub fn get_balances_paginated(
+        &self,
+        start_key: Option<&PublicKey>,
+        limit: usize,
+    ) -> Result<(Vec<(PublicKey, u64)>, Option<PublicKey>), StorageError> {
+        let mut balances = Vec::with_capacity(limit.min(1000));
+        let prefix = b"balance_";
+
+        let iter = if let Some(start) = start_key {
+            let start_key = Self::balance_key(start);
+            self.db.iterator(rocksdb::IteratorMode::From(&start_key, rocksdb::Direction::Forward))
+        } else {
+            self.db.prefix_iterator(prefix)
+        };
+
+        let mut last_key = None;
+
+        for item in iter.take(limit) {
+            let (key, value) = item?;
+
+            // Stop if we've left the balance prefix
+            if !key.starts_with(prefix) {
+                break;
+            }
+
+            // Extract public key from key
+            if key.len() == prefix.len() + 32 {
+                let mut pk_bytes = [0u8; 32];
+                pk_bytes.copy_from_slice(&key[prefix.len()..]);
+                let pk = PublicKey(pk_bytes);
+
+                // Parse balance
+                if value.len() == 8 {
+                    let mut balance_bytes = [0u8; 8];
+                    balance_bytes.copy_from_slice(&value);
+                    let balance = u64::from_le_bytes(balance_bytes);
+                    balances.push((pk, balance));
+                    last_key = Some(pk);
+                }
+            }
+        }
+
+        Ok((balances, last_key))
+    }
+
+    /// Count total number of accounts (efficient - doesn't load balances)
+    /// 
+    /// Returns the count of accounts with non-zero balances.
+    /// This is more memory-efficient than get_all_balances().len()
+    pub fn count_accounts(&self) -> Result<usize, StorageError> {
+        let prefix = b"balance_";
+        let iter = self.db.prefix_iterator(prefix);
+
+        let mut count = 0;
+        for item in iter {
+            let (key, _) = item?;
+            if !key.starts_with(prefix) {
+                break;
+            }
+            if key.len() == prefix.len() + 32 {
+                count += 1;
+            }
+        }
+
+        Ok(count)
+    }
+
     // Helper functions
     fn balance_key(address: &PublicKey) -> Vec<u8> {
         let mut key = Vec::with_capacity(40);
@@ -241,7 +340,7 @@ impl StateStorage {
         let key = Self::multisig_key(&address);
 
         // Serialize multisig account using bincode
-        let serialized = bincode::serialize(account).map_err(|_e| StorageError::InvalidChain)?;
+        let serialized = crate::bincode_helpers::serialize(account).map_err(|_e| StorageError::InvalidChain)?;
 
         self.db.put(&key, &serialized)?;
         Ok(())
@@ -257,7 +356,7 @@ impl StateStorage {
         match self.db.get(&key)? {
             Some(data) => {
                 let account: MultisigAccount =
-                    bincode::deserialize(&data).map_err(|_| StorageError::InvalidChain)?;
+                    crate::bincode_helpers::deserialize(&data).map_err(|_| StorageError::InvalidChain)?;
                 Ok(Some(account))
             }
             None => Ok(None),
@@ -283,30 +382,32 @@ impl StateStorage {
 
     /// Validate and execute a multisig transaction with nonce checking
     /// 
-    /// ⚠️  CRITICAL SECURITY WARNING: This function has a TOCTOU race condition
-    /// that can lead to double-spend attacks in concurrent scenarios.
+    /// ✅  SECURITY FIX: Uses per-address mutex to prevent TOCTOU race conditions.
+    /// The lock ensures that nonce check and state update are atomic operations.
     /// 
-    /// VULNERABILITY: The nonce check (line ~286) and WriteBatch commit (line ~333)
-    /// are not atomic. Two concurrent transactions with the same nonce can both
-    /// pass the check and execute.
+    /// This prevents double-spend attacks where two concurrent transactions
+    /// with the same nonce could both pass validation and execute.
     /// 
-    /// REQUIRED FIX: Replace WriteBatch with RocksDB Transaction API for atomic
-    /// read-modify-write operations. This requires:
-    /// 1. Enable 'multi-threaded-cf' feature in rocksdb dependency
-    /// 2. Use db.transaction() instead of WriteBatch
-    /// 3. Read nonce within transaction scope
-    /// 
-    /// TEMPORARY MITIGATION: Ensure this function is called with external locking
-    /// (e.g., per-address mutex) at the application layer until fixed.
-    /// 
-    /// See: https://github.com/opensyria/blockchain/issues/SECURITY-001
-    pub fn execute_multisig_transaction(
+    /// THREAD-SAFE: Multiple threads can execute multisig transactions concurrently,
+    /// but transactions for the same address are serialized.
+    pub async fn execute_multisig_transaction(
         &self,
         multisig_tx: &opensyria_core::MultisigTransaction,
     ) -> Result<(), StorageError> {
         use opensyria_core::MultisigError;
 
         let multisig_address = multisig_tx.account.address();
+
+        // SECURITY FIX: Acquire per-address lock before any checks
+        // This prevents concurrent execution of transactions for same address
+        let lock = self.address_locks
+            .entry(multisig_address.0)
+            .or_insert_with(|| Arc::new(Mutex::new(())))
+            .clone();
+        
+        let _guard = lock.lock().await;
+
+        // Now all operations are atomic within the lock scope
 
         // 1. Verify multisig account exists
         let stored_account = self
@@ -319,13 +420,14 @@ impl StateStorage {
         }
 
         // 2. CRITICAL: Verify nonce to prevent replay attacks
+        // This read is now protected by the mutex
         let current_nonce = self.get_nonce(&multisig_address)?;
         if multisig_tx.nonce != current_nonce {
             return Err(StorageError::InvalidTransaction);
         }
 
         // 3. Verify signatures meet threshold
-        if let Err(e) = multisig_tx.verify() {
+        if let Err(_) = multisig_tx.verify() {
             return Err(StorageError::InvalidTransaction);
         }
 
@@ -344,6 +446,8 @@ impl StateStorage {
         }
 
         // 6. Execute atomically: transfer + increment nonce
+        // While WriteBatch itself is atomic, the protection comes from the mutex
+        // preventing concurrent access to the same address
         let mut batch = WriteBatch::default();
 
         // Deduct from multisig account
@@ -365,6 +469,8 @@ impl StateStorage {
 
         // Atomic commit
         self.db.write(batch)?;
+
+        // Lock released here when _guard drops
 
         Ok(())
     }
@@ -579,6 +685,7 @@ impl StateStorage {
 mod tests {
     use super::*;
     use opensyria_core::crypto::KeyPair;
+    use std::sync::Arc;
     use tempfile::tempdir;
 
     #[test]
@@ -724,6 +831,89 @@ mod tests {
         assert_eq!(storage.get_balance(&alice).unwrap(), 2_000_000);
         assert_eq!(storage.get_balance(&bob).unwrap(), 0);
         assert_eq!(storage.get_nonce(&alice).unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_multisig_double_spend_prevention() {
+        use opensyria_core::multisig::{MultisigAccount, MultisigTransaction};
+        
+        let dir = tempdir().unwrap();
+        let storage = Arc::new(StateStorage::open(dir.path().to_path_buf()).unwrap());
+
+        // Create multisig account (2-of-3)
+        let signer1 = KeyPair::generate();
+        let signer2 = KeyPair::generate();
+        let signer3 = KeyPair::generate();
+        let recipient = KeyPair::generate();
+
+        let account = MultisigAccount::new(
+            vec![
+                signer1.public_key(),
+                signer2.public_key(),
+                signer3.public_key(),
+            ],
+            2,
+        )
+        .unwrap();
+
+        let multisig_addr = account.address();
+
+        // Setup multisig account with balance
+        storage.store_multisig_account(&account).unwrap();
+        storage.set_balance(&multisig_addr, 2_000_000).unwrap();
+        storage.set_nonce(&multisig_addr, 0).unwrap();
+
+        // Create transaction with nonce = 0
+        let mut tx = MultisigTransaction::new(
+            account.clone(),
+            recipient.public_key(),
+            1_000_000,
+            100,
+            0, // Nonce 0
+        );
+
+        // Sign with 2 signatures (meets threshold)
+        let msg = tx.signing_hash();
+        tx.add_signature(signer1.public_key(), signer1.sign(&msg)).unwrap();
+        tx.add_signature(signer2.public_key(), signer2.sign(&msg)).unwrap();
+
+        // Attempt concurrent execution (same transaction, same nonce)
+        let storage1 = storage.clone();
+        let storage2 = storage.clone();
+        let tx1 = tx.clone();
+        let tx2 = tx.clone();
+
+        let handle1 = tokio::spawn(async move {
+            storage1.execute_multisig_transaction(&tx1).await
+        });
+
+        let handle2 = tokio::spawn(async move {
+            storage2.execute_multisig_transaction(&tx2).await
+        });
+
+        let (result1, result2) = tokio::join!(handle1, handle2);
+
+        // ONE must succeed, ONE must fail (not both succeed!)
+        let r1 = result1.unwrap();
+        let r2 = result2.unwrap();
+        
+        assert!(
+            (r1.is_ok() && r2.is_err()) || (r1.is_err() && r2.is_ok()),
+            "Double-spend detected! Both transactions succeeded: r1={:?}, r2={:?}",
+            r1, r2
+        );
+
+        // Verify balance only deducted once
+        let final_balance = storage.get_balance(&multisig_addr).unwrap();
+        assert_eq!(
+            final_balance,
+            2_000_000 - 1_000_100, // Only one TX executed (1M + 100 fee)
+            "Balance incorrect, suggests double-spend"
+        );
+
+        // Verify nonce incremented only once
+        let final_nonce = storage.get_nonce(&multisig_addr).unwrap();
+        assert_eq!(final_nonce, 1, "Nonce should be 1 (only one TX)");
     }
 
     #[test]

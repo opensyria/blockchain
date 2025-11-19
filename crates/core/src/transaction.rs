@@ -6,6 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Transaction transferring Digital Lira
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(bincode::Encode, bincode::Decode)]
 pub struct Transaction {
     /// Chain identifier for replay protection (963 = mainnet, 963000 = testnet)
     pub chain_id: u32,
@@ -151,8 +152,11 @@ impl Transaction {
 
     /// Validate transaction size to prevent DoS attacks
     pub fn validate_size(&self) -> Result<(), TransactionError> {
-        let size = bincode::serialized_size(self).map_err(|_| TransactionError::InvalidSize)?;
-        if size > MAX_TRANSACTION_SIZE as u64 {
+        // Bincode 2.0: encode and check size
+        let config = bincode::config::standard();
+        let encoded = bincode::encode_to_vec(self, config)
+            .map_err(|_| TransactionError::InvalidSize)?;
+        if encoded.len() > MAX_TRANSACTION_SIZE {
             return Err(TransactionError::TooLarge);
         }
         Ok(())

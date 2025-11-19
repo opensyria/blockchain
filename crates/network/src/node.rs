@@ -629,7 +629,8 @@ impl NetworkNode {
 
                 for height in start_height..start_height + max_blocks as u64 {
                     if let Ok(Some(block)) = blockchain.get_block_by_height(height) {
-                        if let Ok(serialized) = bincode::serialize(&block) {
+                        let config = bincode::config::standard();
+                        if let Ok(serialized) = bincode::encode_to_vec(&block, config) {
                             blocks.push(serialized);
                         }
                     } else {
@@ -683,7 +684,8 @@ impl NetworkNode {
                 let mut added = 0;
 
                 for block_data in blocks {
-                    if let Ok(block) = bincode::deserialize::<Block>(&block_data) {
+                    let config = bincode::config::standard();
+                    if let Ok((block, _)) = bincode::decode_from_slice::<Block, _>(&block_data, config) {
                         if let Ok(()) = blockchain.append_block(&block) {
                             added += 1;
                         }

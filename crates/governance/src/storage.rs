@@ -7,7 +7,7 @@ use std::path::Path;
 #[derive(Debug)]
 pub enum StorageError {
     DatabaseError(rocksdb::Error),
-    SerializationError(bincode::Error),
+    SerializationError(String),
     NotFound,
 }
 
@@ -29,9 +29,15 @@ impl From<rocksdb::Error> for StorageError {
     }
 }
 
-impl From<bincode::Error> for StorageError {
-    fn from(err: bincode::Error) -> Self {
-        Self::SerializationError(err)
+impl From<bincode::error::EncodeError> for StorageError {
+    fn from(err: bincode::error::EncodeError) -> Self {
+        Self::SerializationError(err.to_string())
+    }
+}
+
+impl From<bincode::error::DecodeError> for StorageError {
+    fn from(err: bincode::error::DecodeError) -> Self {
+        Self::SerializationError(err.to_string())
     }
 }
 
@@ -53,7 +59,8 @@ impl GovernanceStorage {
 
     /// Save governance snapshot
     pub fn save_snapshot(&self, snapshot: &GovernanceSnapshot) -> Result<(), StorageError> {
-        let encoded = bincode::serialize(snapshot)?;
+        let config = bincode::config::standard();
+        let encoded = bincode::encode_to_vec(snapshot, config)?;
         self.db.put(b"governance_snapshot", encoded)?;
         Ok(())
     }
@@ -65,7 +72,8 @@ impl GovernanceStorage {
             .get(b"governance_snapshot")?
             .ok_or(StorageError::NotFound)?;
 
-        let snapshot = bincode::deserialize(&data)?;
+        let config = bincode::config::standard();
+        let (snapshot, _): (GovernanceSnapshot, _) = bincode::decode_from_slice(&data, config)?;
         Ok(snapshot)
     }
 

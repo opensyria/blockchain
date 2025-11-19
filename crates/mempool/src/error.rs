@@ -19,6 +19,13 @@ pub enum MempoolError {
     #[error("Invalid nonce: expected {expected}, got {got}")]
     InvalidNonce { expected: u64, got: u64 },
 
+    #[error("Nonce too far ahead: current {current}, got {got}, max gap {max_gap}")]
+    NonceTooFar {
+        current: u64,
+        got: u64,
+        max_gap: u64,
+    },
+
     #[error("Transaction fee too low: minimum {min}, got {got}")]
     FeeTooLow { min: u64, got: u64 },
 

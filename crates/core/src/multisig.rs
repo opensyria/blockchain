@@ -4,6 +4,7 @@ use sha2::{Digest, Sha256};
 
 /// Multi-signature account configuration
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(bincode::Encode, bincode::Decode)]
 pub struct MultisigAccount {
     /// List of authorized signers
     pub signers: Vec<PublicKey>,
@@ -78,6 +79,7 @@ impl MultisigAccount {
 /// to prevent replay attacks. The nonce field here is included in signatures but
 /// MUST be checked against the persistent state during transaction validation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+
 pub struct MultisigTransaction {
     /// Multisig account configuration
     pub account: MultisigAccount,
@@ -99,6 +101,7 @@ pub struct MultisigTransaction {
 
 /// Single signature entry with signer identification
 #[derive(Debug, Clone, Serialize, Deserialize)]
+
 pub struct SignatureEntry {
     /// Public key of the signer
     pub signer: PublicKey,

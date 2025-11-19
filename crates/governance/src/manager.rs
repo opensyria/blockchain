@@ -32,6 +32,7 @@ impl GovernanceManager {
         description: String,
         current_height: u64,
         total_voting_power: u64,
+        state_storage: &StateStorage,
     ) -> Result<ProposalId, GovernanceError> {
         // Check if governance is enabled
         if !self.config.enabled {
@@ -66,6 +67,12 @@ impl GovernanceManager {
         );
 
         let id = self.state.add_proposal(proposal);
+        
+        // SECURITY: Snapshot all account balances at proposal creation time
+        // This prevents flash loan attacks where attackers borrow tokens,
+        // vote with inflated balance, then return tokens in same block
+        self.state.snapshot_balances(id, state_storage)?;
+        
         Ok(id)
     }
 
@@ -202,7 +209,7 @@ impl GovernanceManager {
 }
 
 /// Serializable governance snapshot for storage
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub struct GovernanceSnapshot {
     pub proposals: Vec<Proposal>,
     pub votes: Vec<(ProposalId, PublicKey, VoteRecord)>,
@@ -279,6 +286,7 @@ mod tests {
     fn test_create_proposal() {
         let config = GovernanceConfig::default();
         let mut manager = GovernanceManager::new(config);
+        let state = create_test_state();
 
         let proposer = KeyPair::generate();
         let result = manager.create_proposal(
@@ -291,6 +299,7 @@ mod tests {
             "This is a test".to_string(),
             100,
             10_000_000_000,
+            &state,
         );
 
         assert!(result.is_ok());
@@ -302,6 +311,7 @@ mod tests {
     fn test_insufficient_stake() {
         let config = GovernanceConfig::default();
         let mut manager = GovernanceManager::new(config);
+        let state = create_test_state();
 
         let proposer = KeyPair::generate();
         let result = manager.create_proposal(
@@ -314,6 +324,7 @@ mod tests {
             "Desc".to_string(),
             100,
             10_000_000_000,
+            &state,
         );
 
         assert!(result.is_err());
@@ -346,6 +357,7 @@ mod tests {
                 "Desc".to_string(),
                 100,
                 10_000_000_000,
+                &state,
             )
             .unwrap();
 
@@ -381,6 +393,7 @@ mod tests {
                 "Desc".to_string(),
                 100,
                 10_000_000_000,
+                &state,
             )
             .unwrap();
 
@@ -410,6 +423,7 @@ mod tests {
                 "Desc".to_string(),
                 100,
                 10_000_000_000,
+                &state,
             )
             .unwrap();
 
@@ -437,6 +451,7 @@ mod tests {
                 "Increase the minimum fee".to_string(),
                 100,
                 total_power,
+                &state,
             )
             .unwrap();
 
@@ -481,6 +496,7 @@ mod tests {
                 "Desc".to_string(),
                 100,
                 10_000_000_000,
+                &state,
             )
             .unwrap();
 
@@ -504,5 +520,110 @@ mod tests {
         assert!(restored
             .get_vote(proposal_id, &voter.public_key())
             .is_some());
+    }
+
+    #[test]
+    fn test_flash_loan_attack_prevented() {
+        // SECURITY TEST: Verify that flash loan attacks are prevented by balance snapshots
+        // 
+        // Attack scenario:
+        // 1. Attacker has 100 tokens initially
+        // 2. Proposal is created (snapshot taken: attacker=100, victim=900)
+        // 3. Attacker borrows 10,000 tokens via flash loan (balance now 10,100)
+        // 4. Attacker votes with 10,100 voting power (SHOULD FAIL - only 100 allowed)
+        // 5. Attacker returns flash loan (balance back to 100)
+        //
+        // This test verifies that voting power is determined by snapshot balance,
+        // not current balance, preventing flash loan manipulation.
+        
+        let config = GovernanceConfig::default();
+        let mut manager = GovernanceManager::new(config);
+        let state = create_test_state();
+
+        let proposer = KeyPair::generate();
+        let attacker = KeyPair::generate();
+        let victim = KeyPair::generate();
+        
+        // Initial state: attacker has 100, victim has 900
+        state.set_balance(&attacker.public_key(), 100).unwrap();
+        state.set_balance(&victim.public_key(), 900).unwrap();
+        
+        // Create proposal - this takes a snapshot of all balances
+        let proposal_id = manager
+            .create_proposal(
+                proposer.public_key(),
+                2_000_000_000,
+                ProposalType::TextProposal {
+                    description: "Test flash loan attack".to_string(),
+                },
+                "Flash Loan Test".to_string(),
+                "Testing flash loan prevention".to_string(),
+                100,
+                10_000_000_000,
+                &state,
+            )
+            .unwrap();
+        
+        // Verify snapshots were created correctly
+        let attacker_snapshot = manager.state.get_snapshot_balance(proposal_id, &attacker.public_key());
+        let victim_snapshot = manager.state.get_snapshot_balance(proposal_id, &victim.public_key());
+        assert_eq!(attacker_snapshot, Some(100), "Attacker snapshot should be 100");
+        assert_eq!(victim_snapshot, Some(900), "Victim snapshot should be 900");
+        
+        // ATTACK: Simulate flash loan - attacker borrows 10,000 tokens
+        state.set_balance(&attacker.public_key(), 10_100).unwrap();
+        
+        // Verify current balance is inflated
+        let current_balance = state.get_balance(&attacker.public_key()).unwrap();
+        assert_eq!(current_balance, 10_100, "Current balance should be inflated by flash loan");
+        
+        // Attacker tries to vote with inflated balance
+        let vote_result = manager.vote(
+            proposal_id, 
+            attacker.public_key(), 
+            Vote::Yes, 
+            &state, 
+            150
+        );
+        
+        // Vote should succeed (can vote with any balance)
+        assert!(vote_result.is_ok(), "Vote should be allowed");
+        
+        // CRITICAL CHECK: Voting power should be based on SNAPSHOT, not current balance
+        let attacker_voting_power = manager.get_vote(proposal_id, &attacker.public_key()).unwrap().voting_power;
+        assert_eq!(
+            attacker_voting_power, 
+            100, 
+            "Voting power MUST be snapshot balance (100), not current balance (10,100)"
+        );
+        
+        // Victim votes with legitimate balance
+        let victim_vote = manager.vote(
+            proposal_id,
+            victim.public_key(),
+            Vote::No,
+            &state,
+            151,
+        );
+        assert!(victim_vote.is_ok());
+        
+        let victim_voting_power = manager.get_vote(proposal_id, &victim.public_key()).unwrap().voting_power;
+        assert_eq!(victim_voting_power, 900, "Victim voting power should be snapshot balance");
+        
+        // Simulate flash loan repayment - attacker returns tokens
+        state.set_balance(&attacker.public_key(), 100).unwrap();
+        
+        // Verify attack was prevented: victim has 9x voting power of attacker
+        assert_eq!(
+            victim_voting_power / attacker_voting_power,
+            9,
+            "Victim should have 9x voting power (900/100), preventing governance takeover"
+        );
+        
+        println!("✓ Flash loan attack prevented:");
+        println!("  - Attacker snapshot balance: 100");
+        println!("  - Attacker current balance (during attack): 10,100");
+        println!("  - Attacker voting power: {} (snapshot enforced)", attacker_voting_power);
+        println!("  - Attack prevented: voting power locked to snapshot");
     }
 }

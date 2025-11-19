@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 pub type ProposalId = u64;
 
 /// Governance proposal types
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, bincode::Encode, bincode::Decode)]
 pub enum ProposalType {
     /// Change block difficulty adjustment parameters
     DifficultyAdjustment {
@@ -43,7 +43,7 @@ pub enum ProposalType {
 }
 
 /// Voting choice
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, bincode::Encode, bincode::Decode)]
 pub enum Vote {
     Yes,
     No,
@@ -51,7 +51,7 @@ pub enum Vote {
 }
 
 /// Individual vote record
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub struct VoteRecord {
     pub voter: PublicKey,
     pub vote: Vote,
@@ -62,7 +62,7 @@ pub struct VoteRecord {
 }
 
 /// Proposal status
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, bincode::Encode, bincode::Decode)]
 pub enum ProposalStatus {
     /// Proposal is open for voting
     Active,
@@ -77,7 +77,7 @@ pub enum ProposalStatus {
 }
 
 /// Governance proposal
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub struct Proposal {
     pub id: ProposalId,
     pub proposer: PublicKey,
@@ -221,7 +221,7 @@ impl Proposal {
 }
 
 /// Governance configuration parameters
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub struct GovernanceConfig {
     /// Minimum stake required to create a proposal
     pub min_proposal_stake: u64,

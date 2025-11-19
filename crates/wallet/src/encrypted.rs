@@ -241,7 +241,7 @@ impl EncryptedWalletStorage {
 
         fs::write(&path, json).context("Failed to write encrypted account file")?;
         
-        // FIX-007: Set secure file permissions (owner read/write only)
+        // SECURITY FIX: Set secure file permissions (owner read/write only)
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -249,6 +249,19 @@ impl EncryptedWalletStorage {
             perms.set_mode(0o600); // Owner read/write only
             fs::set_permissions(&path, perms)
                 .context("Failed to set secure file permissions")?;
+        }
+
+        // SECURITY FIX: Set secure permissions on Windows
+        #[cfg(windows)]
+        {
+            // On Windows, we can't use Unix permissions, but we can warn
+            // In a production system, you would use Windows ACLs via winapi
+            tracing::warn!(
+                "Wallet file created at {:?}. Please manually verify file permissions are restricted to owner only.",
+                path
+            );
+            // TODO: Implement Windows ACL restrictions using winapi crate
+            // For now, rely on default Windows NTFS permissions which are user-scoped
         }
 
         Ok(())

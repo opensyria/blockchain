@@ -31,9 +31,18 @@ pub const GENESIS_DIFFICULTY: u32 = 16;
 /// Genesis block nonce (pre-mined)
 pub const GENESIS_NONCE: u64 = 0xDEADBEEF;
 
-/// Maximum future time drift allowed for block timestamps (5 minutes)
-/// الانحراف الزمني المستقبلي المسموح للطوابع الزمنية (5 دقائق)
-pub const MAX_FUTURE_DRIFT_SECS: u64 = 300;
+/// Maximum future time drift allowed for block timestamps (1 minute)
+/// الانحراف الزمني المستقبلي المسموح للطوابع الزمنية (دقيقة واحدة)
+/// Reduced from 5 minutes to prevent timewarp attacks
+pub const MAX_FUTURE_DRIFT_SECS: u64 = 60;
+
+/// Number of blocks for median-time-past calculation
+/// عدد الكتل لحساب الوقت الوسيط الماضي
+pub const MEDIAN_TIME_SPAN: usize = 11;
+
+/// Maximum timestamp increase per block (2 hours)
+/// الحد الأقصى لزيادة الطابع الزمني لكل كتلة
+pub const MAX_TIMESTAMP_INCREASE_SECS: u64 = 7200;
 
 /// Minimum difficulty (8 bits = 1 leading zero byte)
 pub const MIN_DIFFICULTY: u32 = 8;
