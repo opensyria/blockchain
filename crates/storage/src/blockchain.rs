@@ -244,6 +244,30 @@ impl BlockchainStorage {
         }
     }
 
+    /// Get median timestamp of last N blocks (for median-time-past validation)
+    /// الحصول على الطابع الزمني الوسيط لآخر N كتلة (للتحقق من الوقت الماضي الوسيط)
+    pub fn get_median_time_past(&self, current_height: u64) -> Result<u64, StorageError> {
+        const MTP_WINDOW: u64 = 11;
+        
+        let start_height = current_height.saturating_sub(MTP_WINDOW - 1);
+        let mut timestamps = Vec::new();
+        
+        for height in start_height..=current_height {
+            if let Some(block) = self.get_block_by_height(height)? {
+                timestamps.push(block.header.timestamp);
+            }
+        }
+        
+        if timestamps.is_empty() {
+            return Ok(0);
+        }
+        
+        // Sort timestamps and get median
+        timestamps.sort_unstable();
+        let median_idx = timestamps.len() / 2;
+        Ok(timestamps[median_idx])
+    }
+
     /// Append block to chain (validates and stores)
     pub fn append_block(&self, block: &Block) -> Result<(), StorageError> {
         // Get current tip
@@ -265,7 +289,7 @@ impl BlockchainStorage {
             return Err(StorageError::InvalidMerkleRoot);
         }
 
-        // 4. Validate timestamp against previous block (skip for genesis)
+        // 4. Validate timestamp against previous block and median-time-past (skip for genesis)
         if !is_genesis {
             if let Some(tip_hash) = current_tip {
                 if let Some(prev_block) = self.get_block(&tip_hash)? {
@@ -275,6 +299,14 @@ impl BlockchainStorage {
                             BlockError::TimestampDecreased => StorageError::TimestampDecreased,
                             _ => StorageError::InvalidChain,
                         })?;
+                }
+            }
+
+            // Median-time-past validation (prevents time warp attacks)
+            if current_height >= 11 {
+                let median_time = self.get_median_time_past(current_height)?;
+                if block.header.timestamp <= median_time {
+                    return Err(StorageError::TimestampDecreased);
                 }
             }
         }
@@ -291,36 +323,93 @@ impl BlockchainStorage {
             }
         }
 
-        // Store block
+        // Calculate new height
+        let new_height = current_height + 1;
+
+        // 6. Validate coinbase transaction
+        if !is_genesis {
+            block.validate_coinbase(new_height)
+                .map_err(|e| match e {
+                    BlockError::MissingCoinbase => StorageError::MissingCoinbase,
+                    BlockError::InvalidCoinbaseAmount => StorageError::InvalidCoinbaseAmount,
+                    BlockError::MultipleCoinbase => StorageError::MultipleCoinbase,
+                    _ => StorageError::InvalidTransaction,
+                })?;
+        }
+
+        // 7. Validate transaction fees
+        for tx in &block.transactions {
+            tx.validate_fee()
+                .map_err(|_| StorageError::InvalidTransaction)?;
+        }
+
+        // Use atomic batch for all storage operations
+        let mut batch = WriteBatch::default();
         let block_hash = block.hash();
-        self.put_block(block)?;
+
+        // Store block
+        let block_data = bincode::serialize(block)?;
+        batch.put(block_hash, &block_data);
 
         // Update height mapping
-        let new_height = current_height + 1;
-        self.set_block_height(new_height, &block_hash)?;
-        self.set_chain_height(new_height)?;
+        let height_key = format!("height_{}", new_height);
+        batch.put(height_key.as_bytes(), block_hash);
+
+        // Update chain height
+        batch.put(b"chain_height", new_height.to_le_bytes());
 
         // Update chain tip
-        self.set_chain_tip(&block_hash)?;
+        batch.put(b"chain_tip", block_hash);
 
-        // ✅ INDEX BLOCK HASH
-        self.index_block_hash(&block_hash, new_height)?;
+        // Index block hash
+        let cf_block_hash = self.db.cf_handle(CF_BLOCK_HASH_INDEX)
+            .ok_or(StorageError::ColumnFamilyNotFound)?;
+        batch.put_cf(cf_block_hash, block_hash, new_height.to_le_bytes());
 
-        // ✅ INDEX TRANSACTIONS
+        // Index transactions
         for (tx_idx, tx) in block.transactions.iter().enumerate() {
             let tx_hash = tx.hash();
             
             // Index: tx_hash → (block_height, tx_index)
-            self.index_transaction(tx, new_height, tx_idx)?;
+            let cf_tx = self.db.cf_handle(CF_TX_INDEX)
+                .ok_or(StorageError::ColumnFamilyNotFound)?;
+            let tx_location = bincode::serialize(&(new_height, tx_idx))?;
+            batch.put_cf(cf_tx, tx_hash, tx_location);
             
             // Index: from_address → append tx_hash
             if !tx.is_coinbase() {
-                self.index_address(&tx.from.0, &tx_hash)?;
+                let cf_addr = self.db.cf_handle(CF_ADDRESS_INDEX)
+                    .ok_or(StorageError::ColumnFamilyNotFound)?;
+                let addr_key = tx.from.0;
+                
+                // Get existing txs for address
+                let mut tx_list: Vec<[u8; 32]> = if let Some(data) = self.db.get_cf(cf_addr, addr_key)? {
+                    bincode::deserialize(&data)?
+                } else {
+                    Vec::new()
+                };
+                
+                tx_list.push(tx_hash);
+                batch.put_cf(cf_addr, addr_key, bincode::serialize(&tx_list)?);
             }
             
             // Index: to_address → append tx_hash
-            self.index_address(&tx.to.0, &tx_hash)?;
+            let cf_addr = self.db.cf_handle(CF_ADDRESS_INDEX)
+                .ok_or(StorageError::ColumnFamilyNotFound)?;
+            let addr_key = tx.to.0;
+            
+            let mut tx_list: Vec<[u8; 32]> = if let Some(data) = self.db.get_cf(cf_addr, addr_key)? {
+                bincode::deserialize(&data)?
+            } else {
+                Vec::new()
+            };
+            
+            tx_list.push(tx_hash);
+            batch.put_cf(cf_addr, addr_key, bincode::serialize(&tx_list)?);
         }
+
+        // Commit atomic batch
+        self.db.write(batch)?;
 
         Ok(())
     }
@@ -425,6 +514,19 @@ impl BlockchainStorage {
         fork_height: u64,
         new_blocks: Vec<Block>,
     ) -> Result<Vec<Block>, StorageError> {
+        use opensyria_core::MAX_REORG_DEPTH;
+        
+        let current_height = self.get_chain_height()?;
+        
+        // Enforce maximum reorganization depth
+        let reorg_depth = current_height.saturating_sub(fork_height);
+        if reorg_depth > MAX_REORG_DEPTH {
+            return Err(StorageError::ReorgTooDeep {
+                depth: reorg_depth,
+                max: MAX_REORG_DEPTH,
+            });
+        }
+
         // Step 1: Revert to fork point
         let reverted_blocks = self.revert_to_height(fork_height)?;
 

@@ -1,4 +1,4 @@
-use crate::constants::{calculate_block_reward, CHAIN_ID_MAINNET, MAX_TRANSACTION_SIZE};
+use crate::constants::{calculate_block_reward, CHAIN_ID_MAINNET, MAX_TRANSACTION_SIZE, MIN_TRANSACTION_FEE};
 use crate::crypto::PublicKey;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -74,6 +74,10 @@ impl Transaction {
         hasher.update(self.amount.to_le_bytes());
         hasher.update(self.fee.to_le_bytes());
         hasher.update(self.nonce.to_le_bytes());
+        // Include data field to prevent tampering
+        if let Some(ref data) = self.data {
+            hasher.update(data);
+        }
         hasher.finalize().into()
     }
 
@@ -146,6 +150,17 @@ impl Transaction {
         }
         Ok(())
     }
+
+    /// Validate minimum fee requirement (skip for coinbase)
+    pub fn validate_fee(&self) -> Result<(), TransactionError> {
+        if self.is_coinbase() {
+            return Ok(()); // Coinbase has no fee requirement
+        }
+        if self.fee < MIN_TRANSACTION_FEE {
+            return Err(TransactionError::FeeTooLow);
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -157,6 +172,7 @@ pub enum TransactionError {
     RewardOverflow,
     InvalidSize,
     TooLarge,
+    FeeTooLow,
 }
 
 impl std::fmt::Display for TransactionError {
@@ -169,6 +185,7 @@ impl std::fmt::Display for TransactionError {
             TransactionError::RewardOverflow => write!(f, "Block reward calculation overflow"),
             TransactionError::InvalidSize => write!(f, "Cannot calculate transaction size"),
             TransactionError::TooLarge => write!(f, "Transaction exceeds maximum size"),
+            TransactionError::FeeTooLow => write!(f, "Transaction fee below minimum"),
         }
     }
 }

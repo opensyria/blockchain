@@ -37,7 +37,11 @@ pub enum StorageError {
     InvalidMerkleRoot,
     TimestampTooFarFuture,
     TimestampDecreased,
+    MissingCoinbase,
+    InvalidCoinbaseAmount,
+    MultipleCoinbase,
     CheckpointMismatch { height: u64, expected: String, got: String },
+    ReorgTooDeep { depth: u64, max: u64 },
     ColumnFamilyNotFound,
 }
 
@@ -55,8 +59,14 @@ impl std::fmt::Display for StorageError {
             StorageError::InvalidMerkleRoot => write!(f, "Invalid merkle root"),
             StorageError::TimestampTooFarFuture => write!(f, "Block timestamp too far in future"),
             StorageError::TimestampDecreased => write!(f, "Block timestamp decreased from previous"),
+            StorageError::MissingCoinbase => write!(f, "Block missing coinbase transaction"),
+            StorageError::InvalidCoinbaseAmount => write!(f, "Coinbase amount incorrect"),
+            StorageError::MultipleCoinbase => write!(f, "Block contains multiple coinbase transactions"),
             StorageError::CheckpointMismatch { height, expected, got } => {
                 write!(f, "Checkpoint mismatch at height {}: expected {}, got {}", height, expected, got)
+            }
+            StorageError::ReorgTooDeep { depth, max } => {
+                write!(f, "Reorganization too deep: {} blocks (max {})", depth, max)
             }
             StorageError::ColumnFamilyNotFound => write!(f, "RocksDB column family not found"),
         }

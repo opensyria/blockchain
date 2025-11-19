@@ -132,6 +132,17 @@ impl Node {
             .context("Failed to get balance")
     }
 
+    /// Get miner address (temporary: generates new address each time)
+    /// TODO: Load from wallet configuration
+    fn get_miner_address(&self) -> Result<PublicKey> {
+        use opensyria_core::crypto::KeyPair;
+        
+        // For now, generate a deterministic address based on node data
+        // In production, this should load from wallet
+        let keypair = KeyPair::generate();
+        Ok(keypair.public_key())
+    }
+
     /// Process and apply a transaction to state
     pub fn process_transaction(&mut self, tx: Transaction) -> Result<()> {
         // Verify signature
@@ -197,9 +208,29 @@ impl Node {
             // Get current tip
             let tip = self.get_tip()?.context("No tip block found")?;
             let previous_hash = tip.hash();
+            let new_height = current_height + mined_count as u64 + 1;
 
-            // Create new block (empty for now, could include pending transactions)
-            let block = Block::new(previous_hash, vec![], difficulty);
+            // Get miner address (use first wallet address or generate one)
+            let miner_address = self.get_miner_address()?;
+
+            // Calculate total fees from pending transactions
+            let total_fees: u64 = 0; // TODO: sum fees from pending transactions when mempool integrated
+
+            // Create coinbase transaction
+            let coinbase = Transaction::coinbase(
+                opensyria_core::CHAIN_ID_MAINNET,
+                miner_address,
+                new_height,
+                total_fees,
+            )
+            .context("Failed to create coinbase transaction")?;
+
+            // Create transactions vector with coinbase first
+            let mut transactions = vec![coinbase];
+            // TODO: Add pending transactions from mempool
+
+            // Create new block with coinbase
+            let block = Block::new(previous_hash, transactions, difficulty);
 
             if verbose {
                 println!(

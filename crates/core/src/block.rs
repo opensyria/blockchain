@@ -173,6 +173,52 @@ impl Block {
 
         Ok(())
     }
+
+    /// Validate coinbase transaction (block reward)
+    /// التحقق من معاملة الكوين بيس (مكافأة الكتلة)
+    pub fn validate_coinbase(&self, block_height: u64) -> Result<(), BlockError> {
+        use crate::constants::calculate_block_reward;
+
+        // Genesis block has no coinbase
+        if block_height == 0 {
+            return Ok(());
+        }
+
+        // Block must have at least one transaction (coinbase)
+        if self.transactions.is_empty() {
+            return Err(BlockError::MissingCoinbase);
+        }
+
+        // First transaction must be coinbase
+        let coinbase = &self.transactions[0];
+        if !coinbase.is_coinbase() {
+            return Err(BlockError::MissingCoinbase);
+        }
+
+        // Calculate expected reward
+        let block_reward = calculate_block_reward(block_height);
+        let total_fees: u64 = self.transactions.iter()
+            .skip(1) // Skip coinbase itself
+            .map(|tx| tx.fee)
+            .sum();
+
+        let expected_reward = block_reward.checked_add(total_fees)
+            .ok_or(BlockError::InvalidCoinbaseAmount)?;
+
+        // Validate coinbase amount
+        if coinbase.amount != expected_reward {
+            return Err(BlockError::InvalidCoinbaseAmount);
+        }
+
+        // Ensure no other coinbase transactions
+        for tx in self.transactions.iter().skip(1) {
+            if tx.is_coinbase() {
+                return Err(BlockError::MultipleCoinbase);
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -184,6 +230,9 @@ pub enum BlockError {
     InvalidTimestamp,
     TimestampTooFarFuture,
     TimestampDecreased,
+    MissingCoinbase,
+    InvalidCoinbaseAmount,
+    MultipleCoinbase,
 }
 
 impl std::fmt::Display for BlockError {
@@ -196,6 +245,9 @@ impl std::fmt::Display for BlockError {
             BlockError::InvalidTimestamp => write!(f, "Invalid timestamp"),
             BlockError::TimestampTooFarFuture => write!(f, "Block timestamp too far in future"),
             BlockError::TimestampDecreased => write!(f, "Block timestamp decreased from previous block"),
+            BlockError::MissingCoinbase => write!(f, "Block missing coinbase transaction"),
+            BlockError::InvalidCoinbaseAmount => write!(f, "Coinbase amount incorrect"),
+            BlockError::MultipleCoinbase => write!(f, "Block contains multiple coinbase transactions"),
         }
     }
 }

@@ -13,7 +13,13 @@ pub const TARGET_BLOCK_TIME_SECS: u64 = 120;
 
 /// Number of blocks between difficulty adjustments
 /// عدد الكتل بين تعديلات الصعوبة
-pub const DIFFICULTY_ADJUSTMENT_INTERVAL: u32 = 10;
+/// Increased from 10 to 100 blocks to reduce difficulty oscillation (audit recommendation A1)
+pub const DIFFICULTY_ADJUSTMENT_INTERVAL: u32 = 100;
+
+/// Maximum reorganization depth (prevents deep chain rewrites)
+/// الحد الأقصى لعمق إعادة التنظيم (يمنع إعادة كتابة السلسلة العميقة)
+/// Prevents 51% attacks from rewriting entire blockchain history
+pub const MAX_REORG_DEPTH: u64 = 100;
 
 /// Genesis block timestamp (fixed for deterministic genesis)
 /// November 18, 2025 00:00:00 UTC - Official Launch Date

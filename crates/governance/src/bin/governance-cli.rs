@@ -340,21 +340,24 @@ fn vote_on_proposal(data_dir: &PathBuf, proposal_id: u64, choice: String) {
     };
 
     let voter = KeyPair::generate(); // In real use, load from wallet
-    let voting_power = 1_000_000; // In real use, get from state
     let current_height = 1500; // In real use, get from blockchain
+
+    // Open state storage
+    let state_dir = data_dir.join("state");
+    let state_storage = opensyria_storage::StateStorage::open(&state_dir)
+        .expect("Failed to open state storage");
 
     match manager.vote(
         proposal_id,
         voter.public_key(),
         vote,
-        voting_power,
+        &state_storage,
         current_height,
     ) {
         Ok(_) => {
             println!("{}", "✓ Vote recorded successfully".green());
             println!("Proposal ID: {}", proposal_id);
             println!("Vote: {:?}", vote);
-            println!("Voting power: {}", voting_power);
 
             // Save state
             let storage = GovernanceStorage::open(data_dir).unwrap();
