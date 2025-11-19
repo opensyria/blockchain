@@ -45,8 +45,46 @@ impl KeyPair {
     }
 
     /// Get private key bytes (use carefully!)
+    /// 
+    /// ⚠️  CRITICAL SECURITY WARNING: The returned bytes are NOT zeroized after use.
+    /// Caller MUST manually zeroize this data after use to prevent memory disclosure.
+    /// 
+    /// RECOMMENDED: Use zeroize crate:
+    /// ```ignore
+    /// use zeroize::Zeroize;
+    /// let mut key = keypair.private_key_bytes();
+    /// // ... use key ...
+    /// key.zeroize(); // Clear from memory
+    /// ```
+    /// 
+    /// BETTER ALTERNATIVE: Use with_private_key() closure pattern when possible
+    /// to ensure automatic cleanup.
     pub fn private_key_bytes(&self) -> [u8; 32] {
         self.signing_key.to_bytes()
+    }
+    
+    /// Execute a closure with temporary access to private key bytes
+    /// 
+    /// This is the RECOMMENDED way to access private keys as it ensures
+    /// the key material is zeroized immediately after use.
+    /// 
+    /// # Example
+    /// ```ignore
+    /// let signature = keypair.with_private_key(|key| {
+    ///     // Use key for signing
+    ///     sign_data(key)
+    /// }); // key is automatically zeroized here
+    /// ```
+    #[cfg(feature = "zeroize")]
+    pub fn with_private_key<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&[u8; 32]) -> T,
+    {
+        use zeroize::Zeroize;
+        let mut key = self.signing_key.to_bytes();
+        let result = f(&key);
+        key.zeroize();
+        result
     }
 }
 

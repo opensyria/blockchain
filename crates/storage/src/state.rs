@@ -77,13 +77,15 @@ impl StateStorage {
         use opensyria_core::MAX_SUPPLY;
         
         let current = self.get_total_supply()?;
+        
+        // SECURITY: Check against MAX_SUPPLY BEFORE addition to prevent overflow edge cases
+        if current > MAX_SUPPLY || amount > MAX_SUPPLY || current > MAX_SUPPLY - amount {
+            return Err(StorageError::InvalidChain); // Exceeds maximum supply
+        }
+        
         let new_supply = current
             .checked_add(amount)
             .ok_or(StorageError::BalanceOverflow)?;
-        
-        if new_supply > MAX_SUPPLY {
-            return Err(StorageError::InvalidChain); // Exceeds maximum supply
-        }
         
         self.set_total_supply(new_supply)
     }
@@ -91,17 +93,24 @@ impl StateStorage {
     /// Decrease total supply (for coin burns)
     pub fn decrease_supply(&self, amount: u64) -> Result<(), StorageError> {
         let current = self.get_total_supply()?;
-        if current < amount {
-            return Err(StorageError::InsufficientBalance);
-        }
-        self.set_total_supply(current - amount)
+        let new_supply = current
+            .checked_sub(amount)
+            .ok_or(StorageError::InsufficientBalance)?;
+        self.set_total_supply(new_supply)
     }
 
     /// Verify total supply matches sum of all balances (for validation)
+    /// 
+    /// ⚠️  WARNING: This is an O(n) operation that loads all balances into memory.
+    /// Should ONLY be called in debug/audit mode, not in production block validation.
     pub fn verify_total_supply(&self) -> Result<bool, StorageError> {
         let recorded_supply = self.get_total_supply()?;
         let balances = self.get_all_balances()?;
-        let computed_supply: u64 = balances.values().sum();
+        
+        // SECURITY: Use checked_add to prevent overflow in sum calculation
+        let computed_supply = balances.values()
+            .try_fold(0u64, |acc, &balance| acc.checked_add(balance))
+            .ok_or(StorageError::BalanceOverflow)?;
         
         Ok(recorded_supply == computed_supply)
     }
@@ -151,12 +160,26 @@ impl StateStorage {
     }
 
     /// Increment account nonce
+    /// 
+    /// ⚠️  Returns error if nonce would overflow (extremely rare but prevents wraparound)
     pub fn increment_nonce(&self, address: &PublicKey) -> Result<(), StorageError> {
         let current = self.get_nonce(address)?;
-        self.set_nonce(address, current + 1)
+        let new_nonce = current
+            .checked_add(1)
+            .ok_or(StorageError::InvalidChain)?; // Nonce overflow (would take billions of years)
+        self.set_nonce(address, new_nonce)
     }
 
     /// Get all account balances (for debugging/inspection)
+    /// 
+    /// ⚠️  CRITICAL WARNING: This loads ALL balances into memory.
+    /// Can cause OOM with millions of accounts. Use ONLY for:
+    /// - Debug/development environments
+    /// - Admin tools with pagination
+    /// - System diagnostics
+    /// 
+    /// DO NOT use in block validation or regular transaction processing.
+    /// Consider adding pagination or using streaming iterators for production.
     pub fn get_all_balances(&self) -> Result<HashMap<PublicKey, u64>, StorageError> {
         let mut balances = HashMap::new();
         let prefix = b"balance_";
@@ -259,7 +282,24 @@ impl StateStorage {
     }
 
     /// Validate and execute a multisig transaction with nonce checking
-    /// SECURITY: This prevents replay attacks by checking and incrementing nonce atomically
+    /// 
+    /// ⚠️  CRITICAL SECURITY WARNING: This function has a TOCTOU race condition
+    /// that can lead to double-spend attacks in concurrent scenarios.
+    /// 
+    /// VULNERABILITY: The nonce check (line ~286) and WriteBatch commit (line ~333)
+    /// are not atomic. Two concurrent transactions with the same nonce can both
+    /// pass the check and execute.
+    /// 
+    /// REQUIRED FIX: Replace WriteBatch with RocksDB Transaction API for atomic
+    /// read-modify-write operations. This requires:
+    /// 1. Enable 'multi-threaded-cf' feature in rocksdb dependency
+    /// 2. Use db.transaction() instead of WriteBatch
+    /// 3. Read nonce within transaction scope
+    /// 
+    /// TEMPORARY MITIGATION: Ensure this function is called with external locking
+    /// (e.g., per-address mutex) at the application layer until fixed.
+    /// 
+    /// See: https://github.com/opensyria/blockchain/issues/SECURITY-001
     pub fn execute_multisig_transaction(
         &self,
         multisig_tx: &opensyria_core::MultisigTransaction,

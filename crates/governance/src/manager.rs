@@ -92,19 +92,10 @@ impl GovernanceManager {
             }
         }
 
-        // SECURITY FIX: Use snapshot balance at proposal creation to prevent flash loan attacks
-        // Try to get snapshot balance first; if not found, query current balance and store it
-        let snapshot_balance = match self.state.get_snapshot_balance(proposal_id, &voter) {
-            Some(balance) => balance,
-            None => {
-                // First time this address votes - snapshot their balance now
-                let current_balance = state_storage
-                    .get_balance(&voter)
-                    .map_err(|_| GovernanceError::InvalidProposal)?;
-                self.state.store_snapshot(proposal_id, &voter, current_balance);
-                current_balance
-            }
-        };
+        // SECURITY FIX: Only allow voting with pre-snapshotted balances to prevent flash-loan attacks
+        // Snapshot must be taken at proposal creation time, not at vote time
+        let snapshot_balance = self.state.get_snapshot_balance(proposal_id, &voter)
+            .ok_or(GovernanceError::NotEligibleToVote)?;
 
         let vote_record = VoteRecord {
             voter,

@@ -74,9 +74,16 @@ impl Transaction {
         hasher.update(self.amount.to_le_bytes());
         hasher.update(self.fee.to_le_bytes());
         hasher.update(self.nonce.to_le_bytes());
-        // Include data field to prevent tampering
-        if let Some(ref data) = self.data {
-            hasher.update(data);
+        // SECURITY: Always include data field state to prevent post-signature tampering
+        match &self.data {
+            Some(data) => {
+                hasher.update(&[1u8]); // Marker for Some
+                hasher.update((data.len() as u64).to_le_bytes());
+                hasher.update(data);
+            }
+            None => {
+                hasher.update(&[0u8]); // Marker for None
+            }
         }
         hasher.finalize().into()
     }
@@ -123,7 +130,7 @@ impl Transaction {
 
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_else(|_| std::time::Duration::from_secs(0))
             .as_secs();
 
         let mut coinbase_data = Vec::new();
@@ -359,5 +366,66 @@ mod tests {
             tx.validate_size(),
             Err(TransactionError::TooLarge)
         ));
+    }
+
+    #[test]
+    fn test_data_field_authentication_prevents_tampering() {
+        // SECURITY TEST: Verify FIX-001 prevents post-signature data tampering
+        let sender = KeyPair::generate();
+        let receiver = KeyPair::generate();
+
+        // Create transaction without data
+        let mut tx = Transaction::new(
+            sender.public_key(),
+            receiver.public_key(),
+            1_000_000,
+            100,
+            0,
+        );
+
+        // Sign with data = None
+        let sig_hash = tx.signing_hash();
+        tx = tx.with_signature(sender.sign(&sig_hash));
+
+        // Verify signature is valid
+        assert!(tx.verify().is_ok());
+
+        // ATTACK: Try to add data after signing
+        tx.data = Some(vec![0xDE, 0xAD, 0xBE, 0xEF]);
+
+        // Verification MUST fail (data field now part of signature)
+        assert!(tx.verify().is_err(), "Post-signature data tampering should be detected!");
+    }
+
+    #[test]
+    fn test_data_field_none_vs_empty_vector() {
+        // SECURITY TEST: Ensure None and Some(vec![]) produce different signing hashes
+        let sender = KeyPair::generate();
+        let receiver = KeyPair::generate();
+
+        let tx_none = Transaction::new_with_chain_id(
+            963,
+            sender.public_key(),
+            receiver.public_key(),
+            1_000_000,
+            100,
+            0,
+        );
+
+        let tx_empty = Transaction::new_with_chain_id(
+            963,
+            sender.public_key(),
+            receiver.public_key(),
+            1_000_000,
+            100,
+            0,
+        ).with_data(vec![]);
+
+        // Different data states must produce different hashes
+        assert_ne!(
+            tx_none.signing_hash(),
+            tx_empty.signing_hash(),
+            "None and Some(vec![]) must have different signing hashes"
+        );
     }
 }

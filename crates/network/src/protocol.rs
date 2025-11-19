@@ -1,9 +1,15 @@
 use opensyria_core::{Block, Transaction};
 use serde::{Deserialize, Serialize};
 
-/// Maximum gossipsub message size: 2MB
-/// الحد الأقصى لحجم رسالة gossipsub: 2 ميغابايت
-pub const MAX_GOSSIPSUB_MESSAGE_SIZE: usize = 2 * 1024 * 1024;
+/// Maximum gossipsub message size: 512KB (reduced from 2MB for DoS protection)
+/// الحد الأقصى لحجم رسالة gossipsub: 512 كيلوبايت
+pub const MAX_GOSSIPSUB_MESSAGE_SIZE: usize = 512 * 1024;
+
+/// Maximum blocks that can be requested in a single message
+pub const MAX_BLOCKS_PER_REQUEST: usize = 50;
+
+/// Maximum bincode deserialization size (1MB)
+pub const MAX_BINCODE_SIZE: u64 = 1024 * 1024;
 
 /// Message size validation error
 #[derive(Debug, Clone)]
@@ -33,7 +39,7 @@ pub enum NetworkMessage {
     /// Request blocks starting from a specific height
     GetBlocks {
         start_height: u64,
-        max_blocks: usize,
+        max_blocks: usize, // Validated against MAX_BLOCKS_PER_REQUEST on deserialization
     },
 
     /// Response with requested blocks
@@ -77,7 +83,7 @@ pub struct ProtocolConfig {
 impl Default for ProtocolConfig {
     fn default() -> Self {
         Self {
-            max_blocks_per_request: 500,
+            max_blocks_per_request: MAX_BLOCKS_PER_REQUEST, // Use const for consistency
             max_pending_requests: 10,
             block_timeout: 30,
             tx_timeout: 10,
@@ -121,8 +127,22 @@ impl NetworkMessage {
             });
         }
 
-        // Deserialize message
-        bincode::deserialize(data).map_err(|e| ValidationError::DeserializationFailed(e.to_string()))
+        // SECURITY: Use bincode with size limit to prevent DoS
+        // Note: bincode 1.3 doesn't support runtime limits like newer versions
+        // This is a best-effort validation - consider upgrading to bincode 2.x
+        let msg: Self = bincode::deserialize(data)
+            .map_err(|e| ValidationError::DeserializationFailed(e.to_string()))?;
+        
+        // Validate max_blocks constraint after deserialization
+        if let NetworkMessage::GetBlocks { max_blocks, .. } = &msg {
+            if max_blocks > &MAX_BLOCKS_PER_REQUEST {
+                return Err(ValidationError::DeserializationFailed(
+                    format!("max_blocks {} exceeds limit {}", max_blocks, MAX_BLOCKS_PER_REQUEST)
+                ));
+            }
+        }
+        
+        Ok(msg)
     }
 }
 

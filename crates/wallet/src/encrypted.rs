@@ -218,13 +218,38 @@ impl EncryptedWalletStorage {
     /// Save encrypted account to disk
     /// حفظ الحساب المشفر على القرص
     pub fn save_account(&self, account: &EncryptedAccount) -> Result<()> {
+        // SECURITY: Validate account name to prevent path traversal attacks
+        if account.name.is_empty()
+            || account.name.contains('/')
+            || account.name.contains('\\')
+            || account.name.contains("..")
+            || account.name.starts_with('.')
+        {
+            return Err(anyhow!("Invalid account name: must not contain path separators or be empty"));
+        }
+
         let filename = format!("{}.enc.json", account.name);
-        let path = self.wallet_dir.join(filename);
+        let path = self.wallet_dir.join(&filename);
+        
+        // SECURITY: Verify the resolved path is within wallet_dir (defense in depth)
+        if !path.starts_with(&self.wallet_dir) {
+            return Err(anyhow!("Path traversal detected in account name"));
+        }
 
         let json = serde_json::to_string_pretty(account)
             .context("Failed to serialize encrypted account")?;
 
         fs::write(&path, json).context("Failed to write encrypted account file")?;
+        
+        // FIX-007: Set secure file permissions (owner read/write only)
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = fs::metadata(&path)?.permissions();
+            perms.set_mode(0o600); // Owner read/write only
+            fs::set_permissions(&path, perms)
+                .context("Failed to set secure file permissions")?;
+        }
 
         Ok(())
     }
@@ -232,8 +257,23 @@ impl EncryptedWalletStorage {
     /// Load encrypted account from disk
     /// تحميل الحساب المشفر من القرص
     pub fn load_account(&self, name: &str) -> Result<EncryptedAccount> {
+        // SECURITY: Validate account name to prevent path traversal
+        if name.is_empty()
+            || name.contains('/')
+            || name.contains('\\')
+            || name.contains("..")
+            || name.starts_with('.')
+        {
+            return Err(anyhow!("Invalid account name"));
+        }
+
         let filename = format!("{}.enc.json", name);
-        let path = self.wallet_dir.join(filename);
+        let path = self.wallet_dir.join(&filename);
+        
+        // SECURITY: Verify resolved path is within wallet_dir
+        if !path.starts_with(&self.wallet_dir) {
+            return Err(anyhow!("Path traversal detected"));
+        }
 
         let json = fs::read_to_string(&path)
             .context(format!("Encrypted account '{}' not found", name))?;
@@ -270,8 +310,23 @@ impl EncryptedWalletStorage {
     /// Delete encrypted account from disk
     /// حذف الحساب المشفر من القرص
     pub fn delete_account(&self, name: &str) -> Result<()> {
+        // SECURITY: Validate account name to prevent path traversal
+        if name.is_empty()
+            || name.contains('/')
+            || name.contains('\\')
+            || name.contains("..")
+            || name.starts_with('.')
+        {
+            return Err(anyhow!("Invalid account name"));
+        }
+
         let filename = format!("{}.enc.json", name);
-        let path = self.wallet_dir.join(filename);
+        let path = self.wallet_dir.join(&filename);
+        
+        // SECURITY: Verify resolved path is within wallet_dir
+        if !path.starts_with(&self.wallet_dir) {
+            return Err(anyhow!("Path traversal detected"));
+        }
 
         fs::remove_file(&path)
             .context(format!("Failed to delete encrypted account '{}'", name))?;

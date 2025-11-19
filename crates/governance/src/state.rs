@@ -19,6 +19,7 @@ pub enum GovernanceError {
     InvalidParameters(String),
     DelegationLoop,
     DelegationToSelf,
+    NotEligibleToVote, // Address not snapshotted at proposal creation
 }
 
 impl std::fmt::Display for GovernanceError {
@@ -37,6 +38,7 @@ impl std::fmt::Display for GovernanceError {
             Self::InvalidParameters(msg) => write!(f, "Invalid parameters: {}", msg),
             Self::DelegationLoop => write!(f, "Delegation would create a loop"),
             Self::DelegationToSelf => write!(f, "Cannot delegate to self"),
+            Self::NotEligibleToVote => write!(f, "Address not eligible to vote (not snapshotted at proposal creation)"),
         }
     }
 }

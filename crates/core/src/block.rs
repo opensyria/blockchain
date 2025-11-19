@@ -73,7 +73,7 @@ impl Block {
         let merkle_root = Self::calculate_merkle_root(&transactions);
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_else(|_| std::time::Duration::from_secs(0))
             .as_secs();
 
         let header = BlockHeader {
@@ -162,12 +162,13 @@ impl Block {
             .as_secs();
 
         // Check timestamp is not too far in the future (5 minutes tolerance)
+        // NOTE: Consider reducing MAX_FUTURE_DRIFT_SECS to 60s for better security
         if self.header.timestamp > now + MAX_FUTURE_DRIFT_SECS {
             return Err(BlockError::TimestampTooFarFuture);
         }
 
-        // Check timestamp is not before previous block (monotonic increase required)
-        if self.header.timestamp < previous_timestamp {
+        // SECURITY: Require STRICT monotonic increase (not equal) to prevent timestamp collision
+        if self.header.timestamp <= previous_timestamp {
             return Err(BlockError::TimestampDecreased);
         }
 
@@ -197,10 +198,12 @@ impl Block {
 
         // Calculate expected reward
         let block_reward = calculate_block_reward(block_height);
-        let total_fees: u64 = self.transactions.iter()
+        
+        // SECURITY: Use checked_add to prevent overflow in fee summation
+        let total_fees = self.transactions.iter()
             .skip(1) // Skip coinbase itself
-            .map(|tx| tx.fee)
-            .sum();
+            .try_fold(0u64, |acc, tx| acc.checked_add(tx.fee))
+            .ok_or(BlockError::InvalidCoinbaseAmount)?;
 
         let expected_reward = block_reward.checked_add(total_fees)
             .ok_or(BlockError::InvalidCoinbaseAmount)?;

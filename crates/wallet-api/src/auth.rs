@@ -1,6 +1,10 @@
 /// API Key authentication middleware
 /// مصادقة مفتاح API
 
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
+    Argon2, PasswordHash, PasswordVerifier,
+};
 use axum::{
     body::Body,
     extract::{Request, State},
@@ -81,15 +85,20 @@ impl ApiKeyManager {
         let key_bytes: [u8; 32] = rng.gen();
         let api_key = format!("osy_{}", hex::encode(key_bytes));
 
-        // Hash the key for storage (like password hashing)
-        let key_hash = Self::hash_key(&api_key);
+        // SECURITY: Hash the key with Argon2 (not SHA-256!) for storage
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        let key_hash = argon2
+            .hash_password(api_key.as_bytes(), &salt)
+            .expect("Failed to hash API key")
+            .to_string();
 
         // Generate unique ID
         let id = format!("key_{}", hex::encode(&key_bytes[..8]));
 
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_else(|_| std::time::Duration::from_secs(0))
             .as_secs();
 
         let api_key_entry = ApiKey {
@@ -111,35 +120,37 @@ impl ApiKeyManager {
     /// Verify an API key and return associated metadata
     /// التحقق من مفتاح API وإرجاع البيانات المرتبطة
     pub async fn verify_key(&self, api_key: &str) -> Option<ApiKey> {
-        let key_hash = Self::hash_key(api_key);
         let keys = self.keys.read().await;
 
+        // SECURITY: Use constant-time Argon2 verification (prevents timing attacks)
         for entry in keys.values() {
-            if entry.key_hash == key_hash && entry.active {
-                // Check expiration
-                if let Some(expires_at) = entry.expires_at {
-                    let now = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs();
+            if !entry.active {
+                continue;
+            }
 
-                    if now > expires_at {
-                        return None; // Key expired
+            if let Ok(parsed_hash) = PasswordHash::new(&entry.key_hash) {
+                if Argon2::default()
+                    .verify_password(api_key.as_bytes(), &parsed_hash)
+                    .is_ok()
+                {
+                    // Check expiration
+                    if let Some(expires_at) = entry.expires_at {
+                        let now = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_else(|_| std::time::Duration::from_secs(0))
+                            .as_secs();
+
+                        if now > expires_at {
+                            return None; // Key expired
+                        }
                     }
-                }
 
-                return Some(entry.clone());
+                    return Some(entry.clone());
+                }
             }
         }
 
         None
-    }
-
-    /// Hash an API key using SHA-256
-    fn hash_key(key: &str) -> String {
-        let mut hasher = Sha256::new();
-        hasher.update(key.as_bytes());
-        hex::encode(hasher.finalize())
     }
 
     /// Revoke an API key

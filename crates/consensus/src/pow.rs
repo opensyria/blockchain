@@ -64,8 +64,27 @@ impl ProofOfWork {
             }
         }
 
-        // Should never reach here unless difficulty is impossibly high
-        panic!("Exhausted nonce space without finding valid block");
+        // Nonce space exhausted - caller should increment timestamp and retry
+        // This is extremely rare (difficulty impossibly high or hash function broken)
+        tracing::warn!(
+            "Exhausted nonce space (2^64 attempts) without finding valid block at difficulty {}",
+            self.difficulty
+        );
+        
+        // Return the block with max nonce - caller should detect failure via meets_difficulty()
+        // and increment timestamp to get new hash space
+        block.header.nonce = u64::MAX;
+        let duration = start.elapsed();
+        let hash_rate = hashes as f64 / duration.as_secs_f64();
+        
+        let stats = MiningStats {
+            hashes_computed: hashes,
+            duration,
+            hash_rate,
+            nonce_found: u64::MAX, // Indicates exhaustion
+        };
+        
+        (block, stats)
     }
 
     /// Mine with callback for progress updates
@@ -105,7 +124,24 @@ impl ProofOfWork {
             }
         }
 
-        panic!("Exhausted nonce space without finding valid block");
+        // Nonce space exhausted
+        tracing::warn!(
+            "Exhausted nonce space (2^64 attempts) in mine_with_callback at difficulty {}",
+            self.difficulty
+        );
+        
+        block.header.nonce = u64::MAX;
+        let duration = start.elapsed();
+        let hash_rate = hashes as f64 / duration.as_secs_f64();
+        
+        let stats = MiningStats {
+            hashes_computed: hashes,
+            duration,
+            hash_rate,
+            nonce_found: u64::MAX,
+        };
+        
+        (block, stats)
     }
 
     /// Validate block meets difficulty requirement
@@ -155,18 +191,29 @@ impl DifficultyAdjuster {
         }
 
         let target_total = self.target_block_time.as_secs() * block_count as u64;
-        let actual_total = actual_time.as_secs().max(1); // Prevent division by zero
+        let actual_total = actual_time.as_secs();
+        
+        // SECURITY: Detect anomalous time values that could indicate attack
+        if actual_total == 0 {
+            tracing::warn!("Difficulty adjustment received zero actual_time - possible timewarp attack");
+            return current_difficulty; // No adjustment on anomaly
+        }
 
         // Integer-only calculation (Bitcoin-style) to avoid floating-point errors
         // Use u128 to prevent overflow during multiplication
         let new_difficulty = (current_difficulty as u128 * target_total as u128 
                              / actual_total as u128) as u32;
 
+        // SECURITY: Use integer-only clamping to avoid float precision issues
         // Clamp adjustment to ±25% (MAX_DIFFICULTY_ADJUSTMENT)
-        let min_diff = ((current_difficulty as f64 * (1.0 - MAX_DIFFICULTY_ADJUSTMENT)) as u32)
-            .max(MIN_DIFFICULTY);
-        let max_diff = ((current_difficulty as f64 * (1.0 + MAX_DIFFICULTY_ADJUSTMENT)) as u32)
-            .min(MAX_DIFFICULTY);
+        let adjustment_factor_num = (MAX_DIFFICULTY_ADJUSTMENT * 1000.0) as u32; // 250 for 25%
+        let adjustment_factor_den = 1000u32;
+        
+        let decrease_amount = (current_difficulty as u64 * adjustment_factor_num as u64) / adjustment_factor_den as u64;
+        let increase_amount = (current_difficulty as u64 * adjustment_factor_num as u64) / adjustment_factor_den as u64;
+        
+        let min_diff = (current_difficulty as u64).saturating_sub(decrease_amount).max(MIN_DIFFICULTY as u64) as u32;
+        let max_diff = (current_difficulty as u64).saturating_add(increase_amount).min(MAX_DIFFICULTY as u64) as u32;
 
         new_difficulty.clamp(min_diff, max_diff)
     }
