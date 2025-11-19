@@ -538,6 +538,38 @@ impl BlockchainStorage {
         // Return reverted blocks so state can be rolled back
         Ok(reverted_blocks)
     }
+
+    /// Cleanup indexes for reverted blocks (to be called by external indexer)
+    /// تنظيف الفهارس للكتل المرتدة
+    pub fn cleanup_indexes_for_reorg(
+        &self,
+        reverted_blocks: &[Block],
+        fork_height: u64,
+    ) -> Result<(), StorageError> {
+        // Note: This is a placeholder for integration with BlockchainIndexer
+        // The actual implementation should be done by the indexer module
+        Ok(())
+    }
+
+    /// Compact the database to reclaim disk space
+    /// ضغط قاعدة البيانات لاستعادة مساحة القرص
+    pub fn compact_database(&self) -> Result<(), StorageError> {
+        // Compact the default column family
+        self.db.compact_range::<&[u8], &[u8]>(None, None);
+        
+        // Compact secondary index column families
+        if let Some(cf) = self.db.cf_handle(CF_TX_INDEX) {
+            self.db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+        }
+        if let Some(cf) = self.db.cf_handle(CF_ADDRESS_INDEX) {
+            self.db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+        }
+        if let Some(cf) = self.db.cf_handle(CF_BLOCK_HASH_INDEX) {
+            self.db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+        }
+        
+        Ok(())
+    }
 }
 
 #[cfg(test)]

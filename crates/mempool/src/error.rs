@@ -30,4 +30,7 @@ pub enum MempoolError {
 
     #[error("Transaction not found in mempool")]
     NotFound,
+
+    #[error("Invalid transaction")]
+    InvalidTransaction,
 }

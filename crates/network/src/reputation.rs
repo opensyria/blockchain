@@ -9,6 +9,8 @@ pub struct PeerReputation {
     scores: HashMap<PeerId, PeerScore>,
     /// Banned peers with ban expiration time
     banned_peers: HashMap<PeerId, Instant>,
+    /// Last time decay was applied
+    last_decay: Instant,
 }
 
 /// Individual peer reputation score
@@ -34,6 +36,8 @@ pub struct PeerScore {
 pub const PEER_SCORE_THRESHOLD_BAN: i32 = -100;
 pub const PEER_SCORE_THRESHOLD_WARN: i32 = -50;
 pub const BAN_DURATION_SECS: u64 = 3600; // 1 hour
+pub const DECAY_INTERVAL_SECS: u64 = 300; // 5 minutes
+pub const DECAY_AMOUNT: i32 = 2; // Gradual forgiveness
 pub const PENALTY_INVALID_BLOCK: i32 = -10;
 pub const PENALTY_INVALID_TX: i32 = -2;
 pub const PENALTY_RATE_LIMIT: i32 = -5;
@@ -46,6 +50,7 @@ impl PeerReputation {
         Self {
             scores: HashMap::new(),
             banned_peers: HashMap::new(),
+            last_decay: Instant::now(),
         }
     }
 
@@ -64,16 +69,48 @@ impl PeerReputation {
 
     /// Check if peer is banned
     pub fn is_banned(&mut self, peer_id: &PeerId) -> bool {
+        // Apply decay if interval elapsed
+        self.maybe_apply_decay();
+
         if let Some(ban_expires) = self.banned_peers.get(peer_id) {
             if Instant::now() < *ban_expires {
                 return true; // Still banned
             } else {
-                // Ban expired, remove from banned list
+                // Ban expired, remove from banned list and restore some reputation
                 self.banned_peers.remove(peer_id);
+                if let Some(score) = self.scores.get_mut(peer_id) {
+                    // Give a fresh start but not full reset
+                    score.score = PEER_SCORE_THRESHOLD_WARN;
+                }
                 return false;
             }
         }
         false
+    }
+
+    /// Apply gradual reputation decay (move scores toward 0)
+    fn maybe_apply_decay(&mut self) {
+        if self.last_decay.elapsed() < Duration::from_secs(DECAY_INTERVAL_SECS) {
+            return; // Not time yet
+        }
+
+        for score in self.scores.values_mut() {
+            if score.score < 0 {
+                // Negative scores move up toward 0
+                score.score = (score.score + DECAY_AMOUNT).min(0);
+            } else if score.score > 0 {
+                // Positive scores decay slightly (prevent infinite accumulation)
+                score.score = (score.score - 1).max(0);
+            }
+        }
+
+        self.last_decay = Instant::now();
+    }
+
+    /// Manually trigger reputation decay (for testing)
+    pub fn apply_decay(&mut self) {
+        self.last_decay = Instant::now() - Duration::from_secs(DECAY_INTERVAL_SECS + 1);
+        self.maybe_apply_decay();
     }
 
     /// Apply penalty for invalid block
@@ -149,6 +186,25 @@ impl PeerReputation {
     /// Get peer score
     pub fn get_score(&self, peer_id: &PeerId) -> Option<&PeerScore> {
         self.scores.get(peer_id)
+    }
+
+    /// Get peers with high reputation (for prioritization)
+    pub fn get_high_reputation_peers(&self, min_score: i32, max_count: usize) -> Vec<PeerId> {
+        let mut peers: Vec<_> = self
+            .scores
+            .iter()
+            .filter(|(_, score)| score.score >= min_score)
+            .map(|(peer_id, score)| (*peer_id, score.score))
+            .collect();
+
+        // Sort by score descending
+        peers.sort_by_key(|(_, score)| std::cmp::Reverse(*score));
+
+        peers
+            .into_iter()
+            .take(max_count)
+            .map(|(peer_id, _)| peer_id)
+            .collect()
     }
 
     /// Remove peer from tracking

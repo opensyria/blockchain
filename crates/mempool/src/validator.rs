@@ -72,6 +72,14 @@ impl TransactionValidator {
         }
         results
     }
+
+    /// Get current nonce for an address (public for mempool)
+    pub async fn get_current_nonce(&self, address: &opensyria_core::crypto::PublicKey) -> Result<u64> {
+        let state = self.state.read().await;
+        state
+            .get_nonce(address)
+            .map_err(|e| MempoolError::Storage(e.to_string()))
+    }
 }
 
 #[cfg(test)]

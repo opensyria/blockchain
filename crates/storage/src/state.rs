@@ -12,6 +12,8 @@ pub struct StateStorage {
     db: DB,
 }
 
+const TOTAL_SUPPLY_KEY: &[u8] = b"total_supply";
+
 impl StateStorage {
     /// Open state storage at path
     pub fn open(path: PathBuf) -> Result<Self, StorageError> {
@@ -51,6 +53,57 @@ impl StateStorage {
             .checked_add(amount)
             .ok_or(StorageError::BalanceOverflow)?;
         self.set_balance(address, new_balance)
+    }
+
+    /// Get total supply across all accounts
+    pub fn get_total_supply(&self) -> Result<u64, StorageError> {
+        match self.db.get(TOTAL_SUPPLY_KEY)? {
+            Some(data) => {
+                let bytes: [u8; 8] = data.try_into().map_err(|_| StorageError::InvalidChain)?;
+                Ok(u64::from_le_bytes(bytes))
+            }
+            None => Ok(0),
+        }
+    }
+
+    /// Set total supply
+    fn set_total_supply(&self, supply: u64) -> Result<(), StorageError> {
+        self.db.put(TOTAL_SUPPLY_KEY, supply.to_le_bytes())?;
+        Ok(())
+    }
+
+    /// Increase total supply (for coinbase/minting)
+    pub fn increase_supply(&self, amount: u64) -> Result<(), StorageError> {
+        use opensyria_core::MAX_SUPPLY;
+        
+        let current = self.get_total_supply()?;
+        let new_supply = current
+            .checked_add(amount)
+            .ok_or(StorageError::BalanceOverflow)?;
+        
+        if new_supply > MAX_SUPPLY {
+            return Err(StorageError::InvalidChain); // Exceeds maximum supply
+        }
+        
+        self.set_total_supply(new_supply)
+    }
+
+    /// Decrease total supply (for coin burns)
+    pub fn decrease_supply(&self, amount: u64) -> Result<(), StorageError> {
+        let current = self.get_total_supply()?;
+        if current < amount {
+            return Err(StorageError::InsufficientBalance);
+        }
+        self.set_total_supply(current - amount)
+    }
+
+    /// Verify total supply matches sum of all balances (for validation)
+    pub fn verify_total_supply(&self) -> Result<bool, StorageError> {
+        let recorded_supply = self.get_total_supply()?;
+        let balances = self.get_all_balances()?;
+        let computed_supply: u64 = balances.values().sum();
+        
+        Ok(recorded_supply == computed_supply)
     }
 
     /// Subtract from account balance (returns error if insufficient)
@@ -202,12 +255,16 @@ impl StateStorage {
         // Track balance/nonce changes in memory before batching
         let mut balance_changes: HashMap<PublicKey, i128> = HashMap::new();
         let mut nonce_changes: HashMap<PublicKey, u64> = HashMap::new();
+        let mut supply_increase: u64 = 0;
 
         // Calculate all state changes
         for tx in transactions {
             // Skip coinbase transactions (miner rewards)
             if tx.is_coinbase() {
                 *balance_changes.entry(tx.to).or_insert(0) += tx.amount as i128;
+                supply_increase = supply_increase
+                    .checked_add(tx.amount)
+                    .ok_or(StorageError::BalanceOverflow)?;
                 continue;
             }
 
@@ -222,6 +279,18 @@ impl StateStorage {
             
             // Track nonce increment
             *nonce_changes.entry(tx.from).or_insert(0) += 1;
+        }
+
+        // Check total supply will not exceed MAX_SUPPLY
+        if supply_increase > 0 {
+            use opensyria_core::MAX_SUPPLY;
+            let current_supply = self.get_total_supply()?;
+            let new_supply = current_supply
+                .checked_add(supply_increase)
+                .ok_or(StorageError::BalanceOverflow)?;
+            if new_supply > MAX_SUPPLY {
+                return Err(StorageError::InvalidChain);
+            }
         }
 
         // Validate all balances are sufficient
@@ -250,6 +319,13 @@ impl StateStorage {
             
             let key = Self::nonce_key(&address);
             batch.put(&key, new_nonce.to_le_bytes());
+        }
+
+        // Update total supply if there were coinbase transactions
+        if supply_increase > 0 {
+            let current_supply = self.get_total_supply()?;
+            let new_supply = current_supply + supply_increase;
+            batch.put(TOTAL_SUPPLY_KEY, new_supply.to_le_bytes());
         }
 
         // Atomic commit - ALL or NOTHING
@@ -314,6 +390,35 @@ impl StateStorage {
         self.db.write(batch)?;
 
         Ok(())
+    }
+
+    /// Compact the database to reclaim disk space
+    /// ضغط قاعدة البيانات لاستعادة مساحة القرص
+    pub fn compact_database(&self) -> Result<(), StorageError> {
+        self.db.compact_range::<&[u8], &[u8]>(None, None);
+        Ok(())
+    }
+
+    /// Prune zero-balance accounts older than specified height
+    /// حذف الحسابات ذات الرصيد الصفري
+    pub fn prune_zero_balances(&self) -> Result<usize, StorageError> {
+        let mut batch = WriteBatch::default();
+        let mut pruned_count = 0;
+        
+        let balances = self.get_all_balances()?;
+        for (address, balance) in balances {
+            if balance == 0 {
+                let key = Self::balance_key(&address);
+                batch.delete(&key);
+                pruned_count += 1;
+            }
+        }
+        
+        if pruned_count > 0 {
+            self.db.write(batch)?;
+        }
+        
+        Ok(pruned_count)
     }
 }
 

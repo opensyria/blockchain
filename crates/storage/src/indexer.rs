@@ -175,6 +175,42 @@ impl BlockchainIndexer {
         }
     }
 
+    /// Get paginated transaction hashes for an address (prevents DoS)
+    /// الحصول على تجزئات المعاملات مع الترقيم
+    pub fn get_address_tx_hashes_paginated(
+        &self,
+        address: &PublicKey,
+        offset: usize,
+        limit: usize,
+    ) -> Result<(Vec<[u8; 32]>, usize), StorageError> {
+        let all_hashes = self.get_address_tx_hashes(address)?;
+        let total = all_hashes.len();
+        
+        let paginated: Vec<[u8; 32]> = all_hashes
+            .into_iter()
+            .skip(offset)
+            .take(limit)
+            .collect();
+        
+        Ok((paginated, total))
+    }
+
+    /// Get count of transactions for an address
+    /// الحصول على عدد المعاملات لعنوان
+    pub fn get_address_tx_count(&self, address: &PublicKey) -> Result<usize, StorageError> {
+        let cf = self
+            .db
+            .cf_handle(Self::CF_ADDRESS_INDEX)
+            .ok_or_else(|| StorageError::InvalidChain)?;
+
+        if let Some(data) = self.db.get_cf(&cf, address.0)? {
+            let tx_hashes: Vec<[u8; 32]> = bincode::deserialize(&data)?;
+            Ok(tx_hashes.len())
+        } else {
+            Ok(0)
+        }
+    }
+
     /// Cache blockchain stats
     pub fn cache_stats(&self, stats: &str) -> Result<(), StorageError> {
         let cf = self
@@ -200,6 +236,77 @@ impl BlockchainIndexer {
         }
     }
 
+    /// Remove block from indexes (for reorganization)
+    /// إزالة الكتلة من الفهارس (لإعادة التنظيم)
+    pub fn remove_block_from_index(&self, block: &Block, height: u64) -> Result<(), StorageError> {
+        let mut batch = WriteBatch::default();
+
+        let tx_cf = self
+            .db
+            .cf_handle(Self::CF_TX_INDEX)
+            .ok_or_else(|| StorageError::InvalidChain)?;
+        let addr_cf = self
+            .db
+            .cf_handle(Self::CF_ADDRESS_INDEX)
+            .ok_or_else(|| StorageError::InvalidChain)?;
+        let block_hash_cf = self
+            .db
+            .cf_handle(Self::CF_BLOCK_HASH_INDEX)
+            .ok_or_else(|| StorageError::InvalidChain)?;
+
+        // Remove block hash index
+        let block_hash = block.hash();
+        batch.delete_cf(&block_hash_cf, block_hash);
+
+        // Remove each transaction from indexes
+        for tx in &block.transactions {
+            let tx_hash = tx.hash();
+
+            // Remove from tx index
+            batch.delete_cf(&tx_cf, tx_hash);
+
+            // Remove from address indexes
+            self.remove_tx_from_address_index_internal(&mut batch, &self.db, &tx.from, &tx_hash)?;
+            self.remove_tx_from_address_index_internal(&mut batch, &self.db, &tx.to, &tx_hash)?;
+        }
+
+        self.db.write(batch)?;
+        Ok(())
+    }
+
+    /// Remove transaction hash from address index
+    fn remove_tx_from_address_index_internal(
+        &self,
+        batch: &mut WriteBatch,
+        db: &Arc<DB>,
+        address: &PublicKey,
+        tx_hash: &[u8; 32],
+    ) -> Result<(), StorageError> {
+        let address_key = address.0;
+
+        let cf = db
+            .cf_handle(Self::CF_ADDRESS_INDEX)
+            .ok_or_else(|| StorageError::InvalidChain)?;
+
+        // Get existing transaction hashes for this address
+        if let Some(data) = db.get_cf(&cf, address_key)? {
+            let mut tx_hashes: Vec<[u8; 32]> = bincode::deserialize(&data)?;
+
+            // Remove the transaction hash
+            tx_hashes.retain(|hash| hash != tx_hash);
+
+            if tx_hashes.is_empty() {
+                // Remove the address entry if no transactions left
+                batch.delete_cf(&cf, address_key);
+            } else {
+                // Update with remaining transactions
+                batch.put_cf(&cf, address_key, bincode::serialize(&tx_hashes)?);
+            }
+        }
+
+        Ok(())
+    }
+
     /// Rebuild indexes from scratch (for existing blockchains)
     /// إعادة بناء الفهارس من الصفر
     pub fn rebuild_indexes<F>(&self, get_block: F, chain_height: u64) -> Result<(), StorageError>
@@ -219,6 +326,24 @@ impl BlockchainIndexer {
         }
 
         tracing::info!("Index rebuild complete: {} blocks", chain_height + 1);
+        Ok(())
+    }
+
+    /// Compact all index column families
+    /// ضغط جميع الفهارس
+    pub fn compact_indexes(&self) -> Result<(), StorageError> {
+        if let Some(cf) = self.db.cf_handle(Self::CF_TX_INDEX) {
+            self.db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+        }
+        if let Some(cf) = self.db.cf_handle(Self::CF_ADDRESS_INDEX) {
+            self.db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+        }
+        if let Some(cf) = self.db.cf_handle(Self::CF_BLOCK_HASH_INDEX) {
+            self.db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+        }
+        if let Some(cf) = self.db.cf_handle(Self::CF_STATS_CACHE) {
+            self.db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+        }
         Ok(())
     }
 }

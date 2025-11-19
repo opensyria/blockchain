@@ -197,6 +197,12 @@ impl NetworkNode {
 
     /// Broadcast a new block
     pub async fn broadcast_block(&mut self, block: &Block) -> Result<()> {
+        // Validate block before broadcasting to prevent DoS attacks
+        if let Err(e) = self.validate_block_before_broadcast(block).await {
+            warn!("Block failed validation before broadcast: {}", e);
+            return Err(anyhow::anyhow!("Invalid block: {}", e));
+        }
+
         let msg = NetworkMessage::NewBlock {
             block: block.clone(),
         };
@@ -208,6 +214,46 @@ impl NetworkNode {
             .publish(OpenSyriaBehaviour::blocks_topic(), data)?;
 
         debug!("Broadcast new block");
+        Ok(())
+    }
+
+    /// Validate block before broadcasting (DoS protection)
+    async fn validate_block_before_broadcast(&self, block: &Block) -> Result<()> {
+        use opensyria_core::block::BlockError;
+
+        // Check proof of work
+        if !block.meets_difficulty_target() {
+            return Err(anyhow::anyhow!("Block does not meet difficulty target"));
+        }
+
+        // Verify merkle root
+        if let Err(e) = block.verify_merkle_root() {
+            return Err(anyhow::anyhow!("Invalid merkle root: {:?}", e));
+        }
+
+        // Verify all transaction signatures
+        for tx in &block.transactions {
+            if !tx.is_coinbase() {
+                if !tx.verify_signature() {
+                    return Err(anyhow::anyhow!("Invalid transaction signature"));
+                }
+            }
+        }
+
+        // Verify coinbase is first and only
+        let mut coinbase_count = 0;
+        for (i, tx) in block.transactions.iter().enumerate() {
+            if tx.is_coinbase() {
+                if i != 0 {
+                    return Err(anyhow::anyhow!("Coinbase must be first transaction"));
+                }
+                coinbase_count += 1;
+            }
+        }
+        if coinbase_count > 1 {
+            return Err(anyhow::anyhow!("Multiple coinbase transactions"));
+        }
+
         Ok(())
     }
 

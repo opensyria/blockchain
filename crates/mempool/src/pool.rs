@@ -28,6 +28,12 @@ pub struct MempoolConfig {
 
     /// Maximum transaction age in seconds
     pub max_age_secs: u64,
+
+    /// Maximum transactions per sender
+    pub max_per_sender: usize,
+
+    /// Maximum nonce gap allowed
+    pub max_nonce_gap: u64,
 }
 
 impl Default for MempoolConfig {
@@ -36,6 +42,8 @@ impl Default for MempoolConfig {
             max_size: 10_000,
             min_fee: 1_000,     // 0.001 SYL
             max_age_secs: 3600, // 1 hour
+            max_per_sender: 100, // Prevent spam
+            max_nonce_gap: 10,   // Prevent nonce gap attacks
         }
     }
 }
@@ -87,16 +95,39 @@ impl Mempool {
             return Err(MempoolError::DuplicateTransaction(hex::encode(tx_hash)));
         }
 
-        // Check mempool size
-        if self.transactions.len() >= self.config.max_size {
-            return Err(MempoolError::MempoolFull {
-                max: self.config.max_size,
-                current: self.transactions.len(),
+        // Validate transaction
+        self.validator.validate(&tx).await?;
+
+        // Check per-sender limit (DoS protection)
+        let sender_key = tx.from.0;
+        if let Some(sender_txs) = self.by_sender.get(&sender_key) {
+            if sender_txs.len() >= self.config.max_per_sender {
+                return Err(MempoolError::MempoolFull {
+                    max: self.config.max_per_sender,
+                    current: sender_txs.len(),
+                });
+            }
+        }
+
+        // Check nonce gap (prevent nonce gap attacks)
+        let current_nonce = self.validator.get_current_nonce(&tx.from).await?;
+        if tx.nonce > current_nonce + self.config.max_nonce_gap {
+            return Err(MempoolError::InvalidNonce {
+                expected: current_nonce,
+                got: tx.nonce,
             });
         }
 
-        // Validate transaction
-        self.validator.validate(&tx).await?;
+        // Check mempool size - evict if full
+        if self.transactions.len() >= self.config.max_size {
+            // Try to evict lowest fee transaction
+            if !self.evict_lowest_fee_transaction(&tx) {
+                return Err(MempoolError::MempoolFull {
+                    max: self.config.max_size,
+                    current: self.transactions.len(),
+                });
+            }
+        }
 
         info!(
             "Adding transaction to mempool: {} SYL from {}... to {}...",
@@ -105,13 +136,15 @@ impl Mempool {
             hex::encode(&tx.to.0[..8])
         );
 
-        // Add to priority queue (higher fee = higher priority)
-        // Use negative fee for descending order
-        let priority_key = (u64::MAX - tx.fee, tx_hash);
+        // Calculate fee density (fee per byte) for priority
+        let tx_size = bincode::serialize(&tx).map_err(|_| MempoolError::InvalidTransaction)?.len();
+        let fee_density = (tx.fee as f64 / tx_size as f64 * 1000.0) as u64; // fee per KB
+
+        // Add to priority queue (higher fee density = higher priority)
+        let priority_key = (u64::MAX - fee_density, tx_hash);
         self.priority_queue.insert(priority_key, ());
 
         // Add to sender index
-        let sender_key = tx.from.0;
         self.by_sender
             .entry(sender_key)
             .or_default()
@@ -132,11 +165,43 @@ impl Mempool {
         Ok(())
     }
 
+    /// Evict lowest fee transaction if new transaction has higher fee
+    /// Returns true if eviction successful, false if new tx has lower fee
+    fn evict_lowest_fee_transaction(&mut self, new_tx: &Transaction) -> bool {
+        // Get the lowest fee transaction
+        if let Some((lowest_key, _)) = self.priority_queue.iter().next_back() {
+            let lowest_hash = lowest_key.1;
+            
+            if let Some(lowest_tx) = self.transactions.get(&lowest_hash) {
+                // Calculate fee densities
+                let new_tx_size = bincode::serialize(new_tx).unwrap_or_default().len().max(1);
+                let lowest_tx_size = bincode::serialize(lowest_tx).unwrap_or_default().len().max(1);
+                
+                let new_fee_density = new_tx.fee as f64 / new_tx_size as f64;
+                let lowest_fee_density = lowest_tx.fee as f64 / lowest_tx_size as f64;
+
+                // Only evict if new transaction has higher fee density
+                if new_fee_density > lowest_fee_density {
+                    warn!("Evicting transaction {} (fee density: {:.2}) for higher fee transaction (fee density: {:.2})",
+                        hex::encode(&lowest_hash[..8]),
+                        lowest_fee_density,
+                        new_fee_density
+                    );
+                    self.remove_transaction(&lowest_hash);
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     /// Remove a transaction from the mempool
     pub fn remove_transaction(&mut self, tx_hash: &[u8; 32]) -> Option<Transaction> {
         if let Some(tx) = self.transactions.remove(tx_hash) {
             // Remove from priority queue
-            let priority_key = (u64::MAX - tx.fee, *tx_hash);
+            let tx_size = bincode::serialize(&tx).unwrap_or_default().len().max(1);
+            let fee_density = (tx.fee as f64 / tx_size as f64 * 1000.0) as u64;
+            let priority_key = (u64::MAX - fee_density, *tx_hash);
             self.priority_queue.remove(&priority_key);
 
             // Remove from sender index
@@ -158,7 +223,57 @@ impl Mempool {
         }
     }
 
-    /// Get transactions ordered by priority (highest fee first)
+    /// Replace a transaction with a higher fee version (RBF - Replace-by-Fee)
+    /// Returns Ok if replacement successful, Err if fee not higher or tx not found
+    pub async fn replace_transaction(&mut self, new_tx: Transaction) -> Result<()> {
+        let new_hash = new_tx.hash();
+        let sender_key = new_tx.from.0;
+
+        // Find existing transaction with same nonce from same sender
+        let existing_tx_hash = self
+            .by_sender
+            .get(&sender_key)
+            .and_then(|txs| {
+                txs.iter()
+                    .find(|(nonce, _)| *nonce == new_tx.nonce)
+                    .map(|(_, hash)| *hash)
+            });
+
+        if let Some(old_hash) = existing_tx_hash {
+            if let Some(old_tx) = self.transactions.get(&old_hash) {
+                // Calculate fee densities
+                let old_size = bincode::serialize(old_tx).unwrap_or_default().len().max(1);
+                let new_size = bincode::serialize(&new_tx).unwrap_or_default().len().max(1);
+                
+                let old_fee_density = old_tx.fee as f64 / old_size as f64;
+                let new_fee_density = new_tx.fee as f64 / new_size as f64;
+
+                // Require at least 10% higher fee density
+                if new_fee_density <= old_fee_density * 1.1 {
+                    return Err(MempoolError::FeeTooLow {
+                        min: (old_fee_density * 1.1) as u64,
+                        got: new_fee_density as u64,
+                    });
+                }
+
+                // Remove old transaction
+                self.remove_transaction(&old_hash);
+
+                info!(
+                    "Replaced transaction {} with {} (fee: {} -> {})",
+                    hex::encode(&old_hash[..8]),
+                    hex::encode(&new_hash[..8]),
+                    old_tx.fee,
+                    new_tx.fee
+                );
+            }
+        }
+
+        // Add new transaction
+        self.add_transaction(new_tx).await
+    }
+
+    /// Get priority transactions ordered by priority (highest fee first)
     pub fn get_priority_transactions(&self, max_count: usize) -> Vec<Transaction> {
         self.priority_queue
             .keys()

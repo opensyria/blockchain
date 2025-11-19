@@ -16,6 +16,8 @@ struct PeerRateLimit {
     blocks_received: u32,
     /// Transactions received in current window
     txs_received: u32,
+    /// Bytes received in current window
+    bytes_received: u64,
     /// Last window reset time
     last_reset: Instant,
 }
@@ -23,6 +25,7 @@ struct PeerRateLimit {
 /// Rate limit constants
 pub const MAX_BLOCKS_PER_SECOND: u32 = 10;
 pub const MAX_TXS_PER_SECOND: u32 = 100;
+pub const MAX_BYTES_PER_SECOND: u64 = 5_000_000; // 5 MB/sec
 pub const RATE_LIMIT_WINDOW_SECS: u64 = 1;
 
 /// Message type for rate limiting
@@ -45,6 +48,7 @@ impl RateLimiter {
         let limit = self.peer_limits.entry(*peer_id).or_insert(PeerRateLimit {
             blocks_received: 0,
             txs_received: 0,
+            bytes_received: 0,
             last_reset: Instant::now(),
         });
 
@@ -52,6 +56,7 @@ impl RateLimiter {
         if limit.last_reset.elapsed() > Duration::from_secs(RATE_LIMIT_WINDOW_SECS) {
             limit.blocks_received = 0;
             limit.txs_received = 0;
+            limit.bytes_received = 0;
             limit.last_reset = Instant::now();
         }
 
@@ -74,16 +79,64 @@ impl RateLimiter {
         true // Rate limit OK
     }
 
+    /// Check bandwidth limit for peer
+    /// Returns true if bandwidth is OK, false if exceeded
+    pub fn check_bandwidth_limit(&mut self, peer_id: &PeerId, message_size: u64) -> bool {
+        let limit = self.peer_limits.entry(*peer_id).or_insert(PeerRateLimit {
+            blocks_received: 0,
+            txs_received: 0,
+            bytes_received: 0,
+            last_reset: Instant::now(),
+        });
+
+        // Reset counters if window expired
+        if limit.last_reset.elapsed() > Duration::from_secs(RATE_LIMIT_WINDOW_SECS) {
+            limit.blocks_received = 0;
+            limit.txs_received = 0;
+            limit.bytes_received = 0;
+            limit.last_reset = Instant::now();
+        }
+
+        // Add message size to bytes received
+        limit.bytes_received += message_size;
+
+        // Check if bandwidth limit exceeded
+        if limit.bytes_received > MAX_BYTES_PER_SECOND {
+            return false; // Bandwidth limit exceeded
+        }
+
+        true // Bandwidth OK
+    }
+
+    /// Check both rate and bandwidth limits
+    /// Returns true if all limits are OK, false if any exceeded
+    pub fn check_all_limits(
+        &mut self,
+        peer_id: &PeerId,
+        msg_type: MessageType,
+        message_size: u64,
+    ) -> bool {
+        self.check_rate_limit(peer_id, msg_type) && self.check_bandwidth_limit(peer_id, message_size)
+    }
+
     /// Remove peer from rate limiting
     pub fn remove_peer(&mut self, peer_id: &PeerId) {
         self.peer_limits.remove(peer_id);
     }
 
-    /// Get current statistics for a peer
-    pub fn get_stats(&self, peer_id: &PeerId) -> Option<(u32, u32)> {
+    /// Get current statistics for a peer (blocks, txs, bytes)
+    pub fn get_stats(&self, peer_id: &PeerId) -> Option<(u32, u32, u64)> {
         self.peer_limits
             .get(peer_id)
-            .map(|limit| (limit.blocks_received, limit.txs_received))
+            .map(|limit| (limit.blocks_received, limit.txs_received, limit.bytes_received))
+    }
+
+    /// Cleanup stale peer limits (memory leak prevention)
+    pub fn cleanup_stale_peers(&mut self, max_age_secs: u64) {
+        let now = Instant::now();
+        self.peer_limits.retain(|_peer_id, limit| {
+            now.duration_since(limit.last_reset).as_secs() < max_age_secs
+        });
     }
 }
 
