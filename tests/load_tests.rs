@@ -222,7 +222,7 @@ fn test_state_balance_query_load() {
 
     let duration = start.elapsed();
     let queries_per_sec = num_queries as f64 / duration.as_secs_f64();
-    let avg_query_time_us = duration.as_micros() / num_queries;
+    let avg_query_time_us = duration.as_micros() / num_queries as u128;
 
     println!("\n=== State Balance Query Load Test Results ===");
     println!("Accounts in state: {}", num_accounts);

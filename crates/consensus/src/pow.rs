@@ -353,6 +353,13 @@ impl DifficultyAdjuster {
         let min_diff = (current_difficulty as u64).saturating_sub(decrease_amount).max(MIN_DIFFICULTY as u64) as u32;
         let max_diff = (current_difficulty as u64).saturating_add(increase_amount).min(MAX_DIFFICULTY as u64) as u32;
 
+        // Ensure min <= max before clamping (can happen with extreme values)
+        let (min_diff, max_diff) = if min_diff > max_diff {
+            (max_diff, max_diff) // If bounds are invalid, use max as both
+        } else {
+            (min_diff, max_diff)
+        };
+
         new_difficulty.clamp(min_diff, max_diff)
     }
 }

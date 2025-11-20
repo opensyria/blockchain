@@ -8,7 +8,6 @@
 //! Run with: cargo test --package opensyria-fuzz-tests
 
 use opensyria_core::{Block, BlockHeader, Transaction, crypto::KeyPair};
-use opensyria_consensus::ProofOfWork;
 use proptest::prelude::*;
 
 /// Strategy for generating valid transactions
@@ -97,14 +96,15 @@ fn prop_block_hash_changes_with_fields() {
         prop_assume!(nonce1 != nonce2);
 
         let mut header1 = BlockHeader {
-            prev_hash: [0u8; 32],
+            version: 1,
+            previous_hash: [0u8; 32],
             merkle_root: [0u8; 32],
             timestamp: 1000,
             difficulty: 16,
             nonce: nonce1,
         };
 
-        let mut header2 = header1;
+        let mut header2 = header1.clone();
         header2.nonce = nonce2;
 
         prop_assert_ne!(header1.hash(), header2.hash());
@@ -116,7 +116,8 @@ fn prop_block_hash_changes_with_fields() {
 fn prop_difficulty_check_consistent() {
     proptest!(|(nonce in any::<u64>(), difficulty in 1u32..32)| {
         let mut header = BlockHeader {
-            prev_hash: [0u8; 32],
+            version: 1,
+            previous_hash: [0u8; 32],
             merkle_root: [0u8; 32],
             timestamp: 1000,
             difficulty,
@@ -157,7 +158,7 @@ fn prop_transaction_amount_no_overflow() {
 fn prop_valid_signature_always_verifies() {
     proptest!(|((tx, sender) in transaction_strategy())| {
         let msg = tx.signing_hash();
-        prop_assert!(sender.public_key().verify(&msg, &tx.signature));
+        prop_assert!(sender.public_key().verify(&msg, &tx.signature).is_ok());
     });
 }
 
@@ -212,7 +213,7 @@ fn fuzz_transaction_parsing() {
             fee,
             nonce,
         );
-        tx.data = data;
+        tx.data = Some(data);
 
         // Should not panic
         let _hash = tx.hash();

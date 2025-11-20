@@ -819,7 +819,7 @@ mod tests {
 
         // Reorganize to fork at height 2
         let reverted = storage
-            .reorganize(2, vec![block3_fork.clone(), block4_fork.clone()])
+            .reorganize(2, vec![block3_fork.clone(), block4_fork.clone()], None)
             .unwrap();
 
         assert_eq!(reverted.len(), 1); // Only block3 was reverted

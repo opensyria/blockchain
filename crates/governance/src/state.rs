@@ -543,7 +543,7 @@ mod tests {
             delegated_from: None,
         };
 
-        state.record_vote(id, vote_record).unwrap();
+        state.record_vote_blocking(id, vote_record).unwrap();
 
         let retrieved_vote = state.get_vote(id, &voter.public_key());
         assert!(retrieved_vote.is_some());
@@ -584,7 +584,7 @@ mod tests {
             delegated_from: None,
         };
 
-        state.record_vote(id, vote1).unwrap();
+        state.record_vote_blocking(id, vote1).unwrap();
 
         let vote2 = VoteRecord {
             voter: voter.public_key(),
@@ -595,7 +595,7 @@ mod tests {
             delegated_from: None,
         };
 
-        let result = state.record_vote(id, vote2);
+        let result = state.record_vote_blocking(id, vote2);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), GovernanceError::AlreadyVoted));
     }
@@ -622,7 +622,7 @@ mod tests {
         // Add votes
         let voter1 = KeyPair::generate();
         state
-            .record_vote(
+            .record_vote_blocking(
                 id,
                 VoteRecord {
                     voter: voter1.public_key(),
@@ -637,7 +637,7 @@ mod tests {
 
         let voter2 = KeyPair::generate();
         state
-            .record_vote(
+            .record_vote_blocking(
                 id,
                 VoteRecord {
                     voter: voter2.public_key(),

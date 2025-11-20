@@ -383,7 +383,7 @@ mod tests {
             .unwrap();
 
         // Vote during active period
-        let result = manager.vote(proposal_id, voter.public_key(), Vote::Yes, &state, 150);
+        let result = manager.vote_blocking(proposal_id, voter.public_key(), Vote::Yes, &state, 150);
         assert!(result.is_ok());
 
         // Check vote was recorded
@@ -419,7 +419,7 @@ mod tests {
             .unwrap();
 
         // Try to vote before voting starts (at height 50, voting starts at 100)
-        let result = manager.vote(proposal_id, voter.public_key(), Vote::Yes, &state, 50);
+        let result = manager.vote_blocking(proposal_id, voter.public_key(), Vote::Yes, &state, 50);
         assert!(result.is_err());
     }
 
@@ -449,7 +449,7 @@ mod tests {
             .unwrap();
 
         // Try to vote after voting ends (voting ends at 100 + 10080 = 10180)
-        let result = manager.vote(proposal_id, voter.public_key(), Vote::Yes, &state, 20000);
+        let result = manager.vote_blocking(proposal_id, voter.public_key(), Vote::Yes, &state, 20000);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), GovernanceError::VotingEnded));
     }
@@ -482,12 +482,12 @@ mod tests {
             let voter_power = total_power / 10; // 10% each
             state.set_balance(&voter.public_key(), voter_power).unwrap();
             manager
-                .vote(
+                .vote_blocking(
                     proposal_id,
                     voter.public_key(),
                     Vote::Yes,
                     &state,
-                    150 + i,
+                    150,
                 )
                 .unwrap();
         }
@@ -524,7 +524,7 @@ mod tests {
         let voter = KeyPair::generate();
         state.set_balance(&voter.public_key(), 500_000).unwrap();
         manager
-            .vote(proposal_id, voter.public_key(), Vote::Yes, &state, 150)
+            .vote_blocking(proposal_id, voter.public_key(), Vote::Yes, &state, 150)
             .unwrap();
 
         // Create snapshot
@@ -598,12 +598,12 @@ mod tests {
         let current_balance = state.get_balance(&attacker.public_key()).unwrap();
         assert_eq!(current_balance, 10_100, "Current balance should be inflated by flash loan");
         
-        // Attacker tries to vote with inflated balance
-        let vote_result = manager.vote(
-            proposal_id, 
-            attacker.public_key(), 
-            Vote::Yes, 
-            &state, 
+        // Attacker attempts to vote with inflated balance
+        let vote_result = manager.vote_blocking(
+            proposal_id,
+            attacker.public_key(),
+            Vote::Yes,
+            &state,
             150
         );
         
@@ -619,7 +619,7 @@ mod tests {
         );
         
         // Victim votes with legitimate balance
-        let victim_vote = manager.vote(
+        let victim_vote = manager.vote_blocking(
             proposal_id,
             victim.public_key(),
             Vote::No,

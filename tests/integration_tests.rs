@@ -37,6 +37,9 @@ async fn create_test_node(
         bootstrap_peers: vec![],
         data_dir: temp_dir,
         enable_mdns: false, // Disable mDNS for controlled testing
+        max_inbound_peers: 50,
+        max_outbound_peers: 10,
+        max_peers_per_asn: 5,
     };
 
     NetworkNode::new(config)
