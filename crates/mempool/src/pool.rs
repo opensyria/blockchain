@@ -265,7 +265,7 @@ impl Mempool {
                 let new_fee = new_tx.fee;
 
                 // Drop immutable borrow before calling remove_transaction
-                drop(old_tx);
+                let _ = old_tx;
 
                 // Remove old transaction
                 self.remove_transaction(&old_hash);

@@ -37,7 +37,11 @@ impl ExplorerServer {
         let blockchain = BlockchainStorage::open(blockchain_dir)?;
         let state = StateStorage::open(state_dir)?;
         let indexer = BlockchainIndexer::open(index_dir)?;
-        let mempool = Mempool::new();
+        let state_arc = Arc::new(RwLock::new(state));
+        let mempool = Mempool::new(
+            opensyria_mempool::MempoolConfig::default(),
+            state_arc.clone(),
+        );
 
         // Build indexes if needed
         tracing::info!("Checking blockchain indexes...");
@@ -54,7 +58,7 @@ impl ExplorerServer {
 
         Ok(Self {
             blockchain: Arc::new(RwLock::new(blockchain)),
-            state: Arc::new(RwLock::new(state)),
+            state: state_arc,
             indexer: Arc::new(indexer),
             mempool: Arc::new(RwLock::new(mempool)),
             addr,

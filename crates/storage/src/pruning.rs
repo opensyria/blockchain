@@ -15,7 +15,6 @@
 
 use crate::StorageError;
 use rocksdb::{Direction, IteratorMode, WriteBatch, DB};
-use std::path::PathBuf;
 
 /// Node operation mode
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

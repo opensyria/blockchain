@@ -304,7 +304,7 @@ impl NetworkNode {
 
     /// Validate block before broadcasting (DoS protection)
     async fn validate_block_before_broadcast(&self, block: &Block) -> Result<()> {
-        use opensyria_core::block::BlockError;
+        
 
         // Check proof of work
         if !block.header.meets_difficulty() {

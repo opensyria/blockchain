@@ -67,7 +67,7 @@ pub struct DaemonConfig {
     pub log_file: String,
 
     /// Log rotation: max file size in MB
-    #[serde(default = "default_log_max_size")]
+    #[serde(default = "default_log_max_size_mb")]
     pub log_max_size_mb: u64,
 
     /// Log rotation: number of backup files to keep

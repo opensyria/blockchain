@@ -86,7 +86,7 @@ impl GovernanceManager {
         proposal_id: ProposalId,
         voter: PublicKey,
         vote: Vote,
-        state_storage: &StateStorage,
+        _state_storage: &StateStorage,
         current_height: u64,
     ) -> Result<(), GovernanceError> {
         let proposal = self

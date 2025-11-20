@@ -6,14 +6,12 @@ use argon2::{
     Argon2, PasswordHash, PasswordVerifier,
 };
 use axum::{
-    body::Body,
     extract::{Request, State},
     http::{HeaderMap, StatusCode},
     middleware::Next,
-    response::{IntoResponse, Json, Response},
+    response::{Json, Response},
 };
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;

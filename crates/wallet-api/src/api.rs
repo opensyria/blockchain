@@ -9,7 +9,7 @@ use axum::{
 use std::sync::Arc;
 
 use opensyria_core::{
-    crypto::{KeyPair, PublicKey},
+    crypto::PublicKey,
     transaction::Transaction,
 };
 

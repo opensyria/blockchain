@@ -15,7 +15,7 @@
 //! - Need for users to manually re-broadcast transactions
 //! - Poor UX from transaction chains failing
 
-use crate::{Mempool, MempoolError, Result};
+use crate::{Mempool, Result};
 use opensyria_core::Transaction;
 use std::collections::{HashMap, HashSet};
 use tracing::{debug, info, warn};
@@ -132,7 +132,7 @@ impl OrphanPool {
 
                             // Recursively check if this orphan's confirmation enables other orphans
                             promoted_count +=
-                                self.process_parent_confirmation(&orphan_hash, mempool).await;
+                                Box::pin(self.process_parent_confirmation(&orphan_hash, mempool)).await;
                         }
                         Err(e) => {
                             warn!(
@@ -187,7 +187,7 @@ impl OrphanPool {
 
     /// Remove orphan transaction
     fn remove_orphan(&mut self, tx_hash: &[u8; 32]) {
-        if let Some(tx) = self.orphans.remove(tx_hash) {
+        if let Some(_tx) = self.orphans.remove(tx_hash) {
             // Remove from parent index - need to find which parent(s) reference this orphan
             for (_, orphan_set) in self.by_parent.iter_mut() {
                 orphan_set.remove(tx_hash);

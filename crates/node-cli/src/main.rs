@@ -559,6 +559,9 @@ async fn handle_network_command(command: NetworkCommands, data_dir: PathBuf) -> 
                 bootstrap_peers: bootstrap_peers.clone(),
                 data_dir: network_dir,
                 enable_mdns: mdns,
+                max_inbound_peers: 50,
+                max_outbound_peers: 10,
+                max_peers_per_asn: 5,
             };
 
             println!("{}: {}", "Listen address".cyan(), listen);
@@ -895,7 +898,7 @@ async fn mine_block(node: &mut Node, difficulty: u32) -> Result<Option<opensyria
     let (mined_block, _stats) = pow.mine(block);
 
     // Append block
-    blockchain.append_block(&mined_block)?;
+    blockchain.append_block(&mined_block, None)?;
 
     // Update state for block transactions
     for tx in &mined_block.transactions {

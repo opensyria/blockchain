@@ -410,8 +410,6 @@ impl StateStorage {
         &self,
         multisig_tx: &opensyria_core::MultisigTransaction,
     ) -> Result<(), StorageError> {
-        use opensyria_core::MultisigError;
-
         let multisig_address = multisig_tx.account.address();
 
         // SECURITY FIX: Acquire per-address lock before any checks

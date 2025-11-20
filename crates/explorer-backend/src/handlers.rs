@@ -225,7 +225,7 @@ pub async fn get_recent_blocks(
 
     Ok(Json(PaginatedResponse::new(
         blocks,
-        total,
+        total as usize,
         pagination.page,
         per_page,
     )))
@@ -338,7 +338,7 @@ pub async fn search(
                 }
                 
                 // Check transactions in this block
-                for (tx_index, tx) in block.transactions.iter().enumerate() {
+                for (_tx_index, tx) in block.transactions.iter().enumerate() {
                     let tx_hash = hex::encode(tx.hash());
                     if tx_hash.starts_with(&prefix_lower) {
                         let info = TransactionInfo::from_transaction(tx)
@@ -420,7 +420,7 @@ pub async fn get_mempool(State(state): State<AppState>) -> ApiResult<MempoolInfo
     let transactions: Vec<TransactionInfo> = pending_txs
         .into_iter()
         .take(50) // Limit to 50 most recent
-        .map(TransactionInfo::from_transaction)
+        .map(|tx| TransactionInfo::from_transaction(&tx))
         .collect();
     
     Ok(Json(MempoolInfo {

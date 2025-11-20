@@ -19,3 +19,4 @@ clap.workspace = true
 colored.workspace = true
 tokio.workspace = true
 dashmap = "6.0"
+thiserror.workspace = true

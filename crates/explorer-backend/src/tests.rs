@@ -27,7 +27,7 @@ fn setup_test_blockchain() -> PathBuf {
     // Mine genesis
     let genesis = Block::genesis();
     let (mined_genesis, _) = pow.mine(genesis);
-    blockchain.append_block(&mined_genesis).unwrap();
+    blockchain.append_block(&mined_genesis, None).unwrap();
 
     // Mine a few more blocks
     for _ in 0..3 {
@@ -35,7 +35,7 @@ fn setup_test_blockchain() -> PathBuf {
         let prev_block = blockchain.get_block(&tip_hash).unwrap().unwrap();
         let new_block = Block::new(prev_block.hash(), vec![], 16);
         let (mined_block, _) = pow.mine(new_block);
-        blockchain.append_block(&mined_block).unwrap();
+        blockchain.append_block(&mined_block, None).unwrap();
     }
 
     drop(blockchain);
@@ -55,11 +55,17 @@ async fn test_explorer_stats() {
     let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
     let state = StateStorage::open(test_dir.join("state")).unwrap();
     let indexer = BlockchainIndexer::open(test_dir.join("index")).unwrap();
+    let state_arc = Arc::new(RwLock::new(state));
+    let mempool = opensyria_mempool::Mempool::new(
+        opensyria_mempool::MempoolConfig::default(),
+        state_arc.clone(),
+    );
 
     let app_state = AppState {
         blockchain: Arc::new(RwLock::new(blockchain)),
-        state: Arc::new(RwLock::new(state)),
+        state: state_arc,
         indexer: Arc::new(indexer),
+        mempool: Arc::new(RwLock::new(mempool)),
     };
 
     let result = get_chain_stats(State(app_state)).await;
@@ -85,11 +91,17 @@ async fn test_get_block_by_height() {
     let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
     let state = StateStorage::open(test_dir.join("state")).unwrap();
     let indexer = BlockchainIndexer::open(test_dir.join("index")).unwrap();
+    let state_arc = Arc::new(RwLock::new(state));
+    let mempool = opensyria_mempool::Mempool::new(
+        opensyria_mempool::MempoolConfig::default(),
+        state_arc.clone(),
+    );
 
     let app_state = AppState {
         blockchain: Arc::new(RwLock::new(blockchain)),
-        state: Arc::new(RwLock::new(state)),
+        state: state_arc,
         indexer: Arc::new(indexer),
+        mempool: Arc::new(RwLock::new(mempool)),
     };
 
     // Test genesis block (height 1)
@@ -120,11 +132,17 @@ async fn test_get_recent_blocks() {
     let blockchain = BlockchainStorage::open(test_dir.join("blocks")).unwrap();
     let state = StateStorage::open(test_dir.join("state")).unwrap();
     let indexer = BlockchainIndexer::open(test_dir.join("index")).unwrap();
+    let state_arc = Arc::new(RwLock::new(state));
+    let mempool = opensyria_mempool::Mempool::new(
+        opensyria_mempool::MempoolConfig::default(),
+        state_arc.clone(),
+    );
 
     let app_state = AppState {
         blockchain: Arc::new(RwLock::new(blockchain)),
-        state: Arc::new(RwLock::new(state)),
+        state: state_arc,
         indexer: Arc::new(indexer),
+        mempool: Arc::new(RwLock::new(mempool)),
     };
 
     let pagination = Pagination {

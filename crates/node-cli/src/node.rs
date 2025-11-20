@@ -20,8 +20,8 @@ pub struct Node {
 }
 
 impl Node {
-    /// Initialize a new blockchain with genesis block
-    pub fn init(data_dir: PathBuf, difficulty: u32) -> Result<Self> {
+    /// Initialize a new blockchain node with genesis block
+    pub fn init(data_dir: PathBuf, _difficulty: u32) -> Result<Self> {
         std::fs::create_dir_all(&data_dir).context("Failed to create data directory")?;
 
         let storage = Storage::open(data_dir.clone()).context("Failed to open storage")?;
@@ -43,7 +43,7 @@ impl Node {
         let genesis = Block::genesis();
         storage
             .blockchain
-            .append_block(&genesis)
+            .append_block(&genesis, None)
             .context("Failed to append genesis block")?;
 
         tracing::info!(
@@ -226,7 +226,7 @@ impl Node {
             .context("Failed to create coinbase transaction")?;
 
             // Create transactions vector with coinbase first
-            let mut transactions = vec![coinbase];
+            let transactions = vec![coinbase];
             // TODO: Add pending transactions from mempool
 
             // Create new block with coinbase
@@ -264,7 +264,7 @@ impl Node {
             // Append to blockchain
             self.storage
                 .blockchain
-                .append_block(&mined_block)
+                .append_block(&mined_block, None)
                 .context("Failed to append mined block")?;
 
             mined_count += 1;
@@ -365,12 +365,12 @@ impl Node {
         let mut manager = self.load_governance()?;
 
         // Get voter's voting power from their balance
-        let voting_power = self.storage.state.get_balance(&voter)?;
+        let _voting_power = self.storage.state.get_balance(&voter)?;
 
         // Get current block height
         let current_height = self.storage.blockchain.get_chain_height()?;
 
-        manager.vote(proposal_id, voter, vote, voting_power, current_height)?;
+        manager.vote_blocking(proposal_id, voter, vote, &self.storage.state, current_height)?;
 
         self.save_governance(&manager)?;
 
@@ -442,7 +442,8 @@ impl Node {
             }
         }
 
-        manager.mark_proposal_executed(proposal_id)?;
+        let current_height = self.storage.blockchain.get_chain_height()?;
+        manager.mark_proposal_executed(proposal_id, current_height)?;
 
         Ok(())
     }

@@ -162,6 +162,7 @@ impl BlockchainStorage {
     }
 
     /// Set blockchain height
+    #[allow(dead_code)]
     fn set_chain_height(&self, height: u64) -> Result<(), StorageError> {
         self.db.put(b"chain_height", height.to_le_bytes())?;
         Ok(())
@@ -169,6 +170,7 @@ impl BlockchainStorage {
 
     /// Index transaction in secondary index (tx_hash → (block_height, tx_index))
     /// فهرسة المعاملة في الفهرس الثانوي
+    #[allow(dead_code)]
     fn index_transaction(&self, tx: &Transaction, block_height: u64, tx_index: usize) -> Result<(), StorageError> {
         let tx_hash = tx.hash();
         let tx_cf = self.db.cf_handle(CF_TX_INDEX)
@@ -183,6 +185,7 @@ impl BlockchainStorage {
 
     /// Index address transactions (address → Vec<tx_hash>)
     /// فهرسة معاملات العنوان
+    #[allow(dead_code)]
     fn index_address(&self, address: &[u8; 32], tx_hash: &[u8; 32]) -> Result<(), StorageError> {
         let addr_cf = self.db.cf_handle(CF_ADDRESS_INDEX)
             .ok_or(StorageError::ColumnFamilyNotFound)?;
@@ -206,6 +209,7 @@ impl BlockchainStorage {
 
     /// Index block hash (block_hash → block_height)
     /// فهرسة تجزئة الكتلة
+    #[allow(dead_code)]
     fn index_block_hash(&self, block_hash: &[u8; 32], height: u64) -> Result<(), StorageError> {
         let block_cf = self.db.cf_handle(CF_BLOCK_HASH_INDEX)
             .ok_or(StorageError::ColumnFamilyNotFound)?;
@@ -609,8 +613,8 @@ impl BlockchainStorage {
     /// تنظيف الفهارس للكتل المرتدة
     pub fn cleanup_indexes_for_reorg(
         &self,
-        reverted_blocks: &[Block],
-        fork_height: u64,
+        _reverted_blocks: &[Block],
+        _fork_height: u64,
     ) -> Result<(), StorageError> {
         // Note: This is a placeholder for integration with BlockchainIndexer
         // The actual implementation should be done by the indexer module

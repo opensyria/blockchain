@@ -1,7 +1,6 @@
 use crate::token::IdentityToken;
 use opensyria_core::crypto::PublicKey;
 use rocksdb::{DB, Options, BlockBasedOptions};
-use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -256,10 +255,11 @@ mod tests {
         let storage = IdentityStorage::open(temp_dir.path()).unwrap();
 
         let owner = PublicKey([1u8; 32]);
-        let metadata = HeritageMetadata::builder()
-            .name_en("Test Site".to_string())
-            .name_ar("موقع تجريبي".to_string())
-            .build();
+        let metadata = HeritageMetadata::new(
+            "Test Site".to_string(),
+            "Test Description".to_string(),
+            Some("موقع تجريبي".to_string()),
+        );
 
         let token = IdentityToken::new(
             "test-token-1".to_string(),
@@ -285,10 +285,11 @@ mod tests {
         let storage = IdentityStorage::open(temp_dir.path()).unwrap();
 
         let owner = PublicKey([1u8; 32]);
-        let metadata = HeritageMetadata::builder()
-            .name_en("Test".to_string())
-            .name_ar("تجريبي".to_string())
-            .build();
+        let metadata = HeritageMetadata::new(
+            "Test".to_string(),
+            "Test Description".to_string(),
+            Some("تجريبي".to_string()),
+        );
 
         for i in 0..3 {
             let token = IdentityToken::new(
@@ -313,10 +314,11 @@ mod tests {
         let storage = IdentityStorage::open(temp_dir.path()).unwrap();
 
         let owner = PublicKey([1u8; 32]);
-        let metadata = HeritageMetadata::builder()
-            .name_en("Test".to_string())
-            .name_ar("تجريبي".to_string())
-            .build();
+        let metadata = HeritageMetadata::new(
+            "Test".to_string(),
+            "Test Description".to_string(),
+            Some("تجريبي".to_string()),
+        );
 
         let token = IdentityToken::new(
             "delete-me".to_string(),

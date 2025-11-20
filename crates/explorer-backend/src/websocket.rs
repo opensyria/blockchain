@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tokio::time::{interval, timeout, Duration};
+use tokio::time::{interval, Duration};
 
 /// Maximum concurrent WebSocket connections
 const MAX_WS_CONNECTIONS: usize = 1000;
@@ -99,7 +99,7 @@ async fn handle_socket(socket: WebSocket, state: WsState) {
     }
 
     // Idle timeout: 5 minutes
-    const IDLE_TIMEOUT: Duration = Duration::from_secs(300);
+    const _IDLE_TIMEOUT: Duration = Duration::from_secs(300);
     let mut idle_ticks = 0;
     const MAX_IDLE_TICKS: u32 = 30; // 30 ticks * 10 sec = 5 min
 

@@ -11,7 +11,6 @@
 
 use libp2p::Multiaddr;
 use std::net::{IpAddr, ToSocketAddrs};
-use std::time::Duration;
 
 /// Network type selection
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

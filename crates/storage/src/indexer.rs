@@ -2,7 +2,7 @@
 /// فهارس ثانوية لاستعلامات سريعة على سلسلة الكتل
 
 use opensyria_core::{block::Block, crypto::PublicKey};
-use rocksdb::{BoundColumnFamily, ColumnFamilyDescriptor, Options, WriteBatch, DB};
+use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -63,7 +63,7 @@ impl BlockchainIndexer {
             .ok_or_else(|| {
                 StorageError::InvalidChain // Repurpose existing error
             })?;
-        let addr_cf = self
+        let _addr_cf = self
             .db
             .cf_handle(Self::CF_ADDRESS_INDEX)
             .ok_or_else(|| StorageError::InvalidChain)?;
@@ -239,14 +239,14 @@ impl BlockchainIndexer {
 
     /// Remove block from indexes (for reorganization)
     /// إزالة الكتلة من الفهارس (لإعادة التنظيم)
-    pub fn remove_block_from_index(&self, block: &Block, height: u64) -> Result<(), StorageError> {
+    pub fn remove_block_from_index(&self, block: &Block, _height: u64) -> Result<(), StorageError> {
         let mut batch = WriteBatch::default();
 
         let tx_cf = self
             .db
             .cf_handle(Self::CF_TX_INDEX)
             .ok_or_else(|| StorageError::InvalidChain)?;
-        let addr_cf = self
+        let _addr_cf = self
             .db
             .cf_handle(Self::CF_ADDRESS_INDEX)
             .ok_or_else(|| StorageError::InvalidChain)?;

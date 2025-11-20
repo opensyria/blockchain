@@ -64,7 +64,7 @@ mod tests {
     async fn test_handle_metrics_request() {
         let req = Request::builder()
             .uri("/metrics")
-            .body(hyper::body::Incoming::default())
+            .body(http_body_util::Empty::<hyper::body::Bytes>::new())
             .unwrap();
 
         // Note: Can't easily test without full hyper setup

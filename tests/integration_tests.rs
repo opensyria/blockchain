@@ -56,10 +56,10 @@ async fn initialize_node_storage(data_dir: &std::path::Path, difficulty: u32) {
 
         // Create and mine genesis block
         let pow = ProofOfWork::new(difficulty);
-        let genesis = Block::genesis(difficulty);
+        let genesis = Block::genesis();
         let (mined_genesis, _stats) = pow.mine(genesis);
 
-        blockchain.append_block(&mined_genesis).unwrap();
+        blockchain.append_block(&mined_genesis, None).unwrap();
     } // Close databases before nodes open them
 }
 
@@ -126,7 +126,7 @@ async fn test_block_propagation() {
 
     // Create a test block to broadcast
     let pow = ProofOfWork::new(16);
-    let genesis = Block::genesis(16);
+    let genesis = Block::genesis();
     let (test_block, _stats) = pow.mine(genesis);
 
     // Broadcast block

@@ -8,8 +8,8 @@ pub mod server;
 
 use lazy_static::lazy_static;
 use prometheus::{
-    register_gauge, register_gauge_vec, register_histogram_vec, register_int_counter_vec,
-    register_int_gauge, register_int_gauge_vec, Encoder, Gauge, GaugeVec, HistogramVec,
+    register_gauge, register_histogram_vec, register_int_counter_vec,
+    register_int_gauge, register_int_gauge_vec, Encoder, Gauge, HistogramVec,
     IntCounterVec, IntGauge, IntGaugeVec, TextEncoder,
 };
 

@@ -185,7 +185,7 @@ impl ProofOfWork {
                 block.header.difficulty = self.difficulty;
                 let found = Arc::clone(&found);
                 let total_hashes = Arc::clone(&total_hashes);
-                let difficulty = self.difficulty;
+                let _difficulty = self.difficulty;
 
                 thread::spawn(move || {
                     let start_nonce = thread_id as u64 * nonce_range_per_thread;
