@@ -1,5 +1,5 @@
 # 🔧 AUDIT REMEDIATION LOG
-## Open Syria Blockchain: Digital Lira (الليرة الرقمية)
+## OpenSyria Blockchain: Digital Lira (الليرة الرقمية)
 
 **Purpose:** Living tracker of security audit remediation progress  
 **Initial Audit Date:** November 1-18, 2025  
@@ -4183,7 +4183,7 @@ Added:  110 new keys
 ```
 Arabic User Experience:
 ┌─────────────────────────────┐
-│ Open Syria Explorer  [العربية] │
+│ OpenSyria Explorer  [العربية] │
 ├─────────────────────────────┤
 │ الرئيسية | الكتل | Governance   │  ← Mixed!
 │ Loading...                    │  ← English!
@@ -4416,7 +4416,7 @@ F3 had **0 critical security vulnerabilities** but identified systematic brandin
    - **Impact:** User confusion, SEO fragmentation, unprofessional appearance
 
 2. **[BRAND-CRIT-002] Arabic-English Naming Asymmetry** (CVSS 4.2 - MEDIUM)
-   - **Finding:** English mentions "Open Syria", Arabic doesn't (wallet CLI)
+   - **Finding:** English mentions "OpenSyria", Arabic doesn't (wallet CLI)
    - **Impact:** Different brand identity in each language
 
 3. **[BRAND-CRIT-003] Currency Code Ambiguity** (CVSS 3.8 - LOW)
@@ -4424,7 +4424,7 @@ F3 had **0 critical security vulnerabilities** but identified systematic brandin
    - **Impact:** Exchange listing confusion
 
 4. **[BRAND-CRIT-004] Inconsistent Capitalization** (CVSS 2.1 - LOW)
-   - **Finding:** "Open Syria" vs "opensyria" vs mixed usage
+   - **Finding:** "OpenSyria" vs "opensyria" vs mixed usage
    - **Impact:** Search fragmentation
 
 5. **[CULTURE-001] Geopolitical Terminology Risk** (CVSS 5.3 - MEDIUM)
@@ -4444,7 +4444,7 @@ Adopted consistent dual branding across all materials:
 
 ```
 Platform: OpenSyria Blockchain
-Currency: Syrian Digital Lira (الليرة الرقمية السورية) - SYL
+Currency: Syrian Digital Lira (الليرة السورية الرقمية) - SYL
 Full Name: "OpenSyria: Digital Lira Blockchain"
 Tagline: "For ALL Syrians, wherever they are"
 ```
@@ -4493,7 +4493,7 @@ OpenSyria (Platform/Umbrella Brand)
 
 **Before (Inconsistent):**
 ```markdown
-# Open Syria Blockchain | بلوكتشين سوريا المفتوحة
+# OpenSyria Blockchain | بلوكتشين سوريا المفتوحة
 
 A sovereign, Rust-based blockchain for the Digital Lira (الليرة الرقمية).
 ```
@@ -4501,7 +4501,7 @@ A sovereign, Rust-based blockchain for the Digital Lira (الليرة الرقم
 **After (Consistent):**
 ```markdown
 # OpenSyria: Digital Lira Blockchain
-## أوبن سيريا: بلوكتشين الليرة الرقمية السورية
+## أوبن سيريا: بلوكتشين الليرة السورية الرقمية
 
 **For ALL Syrians, wherever they are.**
 
@@ -4526,7 +4526,7 @@ OpenSyria is a decentralized blockchain platform powering the Syrian Digital Lir
 ```json
 // en.json
 "app": {
-  "title": "Open Syria Block Explorer",
+  "title": "OpenSyria Block Explorer",
   "subtitle": "Digital Lira Blockchain"
 }
 
@@ -4548,7 +4548,7 @@ OpenSyria is a decentralized blockchain platform powering the Syrian Digital Lir
 // ar.json
 "app": {
   "title": "مستكشف أوبن سيريا",
-  "subtitle": "بلوكتشين الليرة الرقمية السورية (ل.س.ر)"
+  "subtitle": "بلوكتشين الليرة السورية الرقمية (ل.س.ر)"
 }
 ```
 
@@ -4564,13 +4564,13 @@ OpenSyria is a decentralized blockchain platform powering the Syrian Digital Lir
 
 **Before (Asymmetric):**
 ```rust
-#[command(about = "Open Syria Digital Lira Wallet | محفظة الليرة الرقمية السورية")]
+#[command(about = "OpenSyria Digital Lira Wallet | محفظة الليرة السورية الرقمية")]
 ```
-*Problem: English has "Open Syria", Arabic doesn't!*
+*Problem: English has "OpenSyria", Arabic doesn't!*
 
 **After (Parallel):**
 ```rust
-#[command(about = "Syrian Digital Lira Wallet (OpenSyria) | محفظة الليرة الرقمية السورية (أوبن سيريا)")]
+#[command(about = "Syrian Digital Lira Wallet (OpenSyria) | محفظة الليرة السورية الرقمية (أوبن سيريا)")]
 ```
 *✅ Both languages mention platform name*
 
@@ -4578,7 +4578,7 @@ OpenSyria is a decentralized blockchain platform powering the Syrian Digital Lir
 
 **Before:**
 ```rust
-#[command(about = "Open Syria Blockchain Node | عقدة بلوكتشين سوريا المفتوحة")]
+#[command(about = "OpenSyria Blockchain Node | عقدة بلوكتشين سوريا المفتوحة")]
 ```
 
 **After:**
@@ -4656,10 +4656,10 @@ $ cd crates/explorer-backend/frontend && npm run build
 **Before Remediation:**
 ```
 User Journey:
-1. GitHub: "opensyria/blockchain" → "Oh, it's called Open Syria"
+1. GitHub: "opensyria/blockchain" → "Oh, it's called OpenSyria"
 2. README: "Digital Lira" → "Wait, it's called Digital Lira?"
 3. Frontend: Both names → "Which one is it?!"
-4. Wallet: "Open Syria Digital Lira Wallet" → "Are these two products?"
+4. Wallet: "OpenSyria Digital Lira Wallet" → "Are these two products?"
 
 Result: Confused users, fragmented community discussions
 ```
@@ -4676,7 +4676,7 @@ Result: Clear brand hierarchy, confident user understanding
 ```
 
 **SEO Benefits:**
-- Unified search term: "OpenSyria" (vs fragmented "Open Syria" / "Digital Lira")
+- Unified search term: "OpenSyria" (vs fragmented "OpenSyria" / "Digital Lira")
 - Clear currency search: "Syrian Digital Lira" or "SYL"
 - Hashtag consolidation: #OpenSyria (instead of multiple variations)
 
@@ -4713,7 +4713,7 @@ Result: Clear brand hierarchy, confident user understanding
 
 **Brand Strategy:**
 - Dual branding works when hierarchy is clear (platform > product)
-- One-word names easier to remember ("OpenSyria" vs "Open Syria")
+- One-word names easier to remember ("OpenSyria" vs "OpenSyria")
 - Currency needs full descriptive name ("Syrian Digital Lira" not just "Lira")
 - Currency codes should be clear (SYL immediately understandable)
 

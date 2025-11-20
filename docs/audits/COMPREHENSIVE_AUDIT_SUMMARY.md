@@ -1,5 +1,5 @@
 # 🔒 COMPREHENSIVE BLOCKCHAIN SECURITY AUDIT
-## Open Syria: Digital Lira Blockchain (الليرة الرقمية)
+## OpenSyria: Digital Lira Blockchain (الليرة الرقمية)
 
 **Final Report**  
 **Audit Period:** November 1-18, 2025  
@@ -213,7 +213,7 @@ This comprehensive security audit evaluated **12 Rust crates** comprising Syria'
 - **Issues Found:** 8 (0 critical, 2 high, 4 medium, 2 low)
 - **Findings:**
   - Inconsistent naming (3 competing names)
-  - Mixed "Open Syria" / "Digital Lira" terminology
+  - Mixed "OpenSyria" / "Digital Lira" terminology
   - Cultural sensitivity considerations
   - No brand guidelines document
 - **Audit Date:** November 18, 2025
@@ -456,7 +456,7 @@ Despite the critical vulnerabilities, the project demonstrates:
 - Bilingual support (Arabic/English)
 - Cultural heritage NFT system
 - Syrian identity preservation focus
-- Inclusive "Open Syria" positioning
+- Inclusive "OpenSyria" positioning
 
 ### ✅ **Modern Tooling**
 - React 18 + TypeScript frontend

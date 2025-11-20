@@ -7,7 +7,7 @@ use rpassword::read_password;
 
 #[derive(Parser)]
 #[command(name = "wallet")]
-#[command(about = "Syrian Digital Lira Wallet (OpenSyria) | محفظة الليرة الرقمية السورية (أوبن سيريا)", long_about = None)]
+#[command(about = "Syrian Digital Lira Wallet (OpenSyria) | محفظة الليرة السورية الرقمية (أوبن سيريا)", long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,

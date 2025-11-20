@@ -360,7 +360,7 @@ fn vote_on_proposal(data_dir: &PathBuf, proposal_id: u64, choice: String) {
     let state_storage = opensyria_storage::StateStorage::open(state_dir)
         .expect("Failed to open state storage");
 
-    match manager.vote(
+    match manager.vote_blocking(
         proposal_id,
         voter.public_key(),
         vote,

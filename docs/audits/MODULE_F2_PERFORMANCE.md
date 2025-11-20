@@ -1,5 +1,5 @@
 # Module F2: Performance & Scalability Audit
-**Open Syria Blockchain - Digital Lira (الليرة الرقمية)**
+**OpenSyria Blockchain - Digital Lira (الليرة الرقمية)**
 
 **Audit Date:** November 18, 2025  
 **Module:** System-Wide Performance & Scalability Analysis  
@@ -76,7 +76,7 @@ The blockchain has **CATASTROPHIC PERFORMANCE ISSUES** that make it **COMPLETELY
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Open Syria Blockchain                      │
+│                    OpenSyria Blockchain                      │
 └─────────────────────────────────────────────────────────────┘
 
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐

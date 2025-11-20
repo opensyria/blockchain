@@ -18,9 +18,9 @@
 
 ### Arabic Names
 
-**Full Name:** أوبن سيريا: بلوكتشين الليرة الرقمية السورية  
+**Full Name:** أوبن سيريا: بلوكتشين الليرة السورية الرقمية  
 **Platform:** أوبن سيريا (OpenSyria)  
-**Currency:** الليرة الرقمية السورية  
+**Currency:** الليرة السورية الرقمية  
 **Currency Code:** ل.س.ر  
 
 ---
@@ -49,7 +49,7 @@ OpenSyria (Platform)
 **In Documents:**
 Always use full name on first mention:
 - ✅ "OpenSyria: Digital Lira blockchain"
-- ✅ "أوبن سيريا: بلوكتشين الليرة الرقمية السورية"
+- ✅ "أوبن سيريا: بلوكتشين الليرة السورية الرقمية"
 
 **Subsequent Mentions:**
 Use context-appropriate short name:
@@ -80,7 +80,7 @@ When discussing payments, wallets, or economic features:
 - ✅ "Digital Lira balance"
 
 **Arabic:**
-- ✅ "إرسال الليرة الرقمية السورية"
+- ✅ "إرسال الليرة السورية الرقمية"
 - ✅ "١٬٠٠٠ ل.س.ر"
 - ✅ "محفظة ل.س.ر"
 
@@ -114,7 +114,7 @@ use opensyria_wallet::Wallet;
 
 **Arabic:**
 - "أوبن سيريا" (Latin letters in Arabic text)
-- "الليرة الرقمية السورية" (standard Arabic)
+- "الليرة السورية الرقمية" (standard Arabic)
 
 ### URLs & Domains
 
@@ -144,7 +144,7 @@ use opensyria_wallet::Wallet;
 **Full Name:** Syrian Digital Lira  
 **Short Name:** Digital Lira (when context is clear)  
 **Currency Code:** SYL  
-**Arabic Full:** الليرة الرقمية السورية  
+**Arabic Full:** الليرة السورية الرقمية  
 **Arabic Code:** ل.س.ر
 
 ### Currency Code Breakdown
@@ -184,7 +184,7 @@ Large: 1,000,000 SYL (or 1M SYL)
 - English: "OpenSyria Explorer"
 - Subtitle: "Syrian Digital Lira (SYL) Blockchain"
 - Arabic: "مستكشف أوبن سيريا"
-- Subtitle AR: "بلوكتشين الليرة الرقمية السورية"
+- Subtitle AR: "بلوكتشين الليرة السورية الرقمية"
 
 **Page Titles (HTML):**
 ```html
@@ -195,7 +195,7 @@ Large: 1,000,000 SYL (or 1M SYL)
 
 **Wallet CLI:**
 ```rust
-#[command(about = "Syrian Digital Lira Wallet (OpenSyria) | محفظة الليرة الرقمية السورية (أوبن سيريا)")]
+#[command(about = "Syrian Digital Lira Wallet (OpenSyria) | محفظة الليرة السورية الرقمية (أوبن سيريا)")]
 ```
 
 **Node CLI:**
@@ -231,7 +231,7 @@ Both mention platform name ✅
 **❌ INCORRECT:**
 ```
 EN: "OpenSyria Digital Lira Wallet"
-AR: "محفظة الليرة الرقمية السورية"
+AR: "محفظة الليرة السورية الرقمية"
 English has OpenSyria, Arabic doesn't ❌
 ```
 
@@ -247,7 +247,7 @@ Both languages must include:
 
 For ALL user-facing text:
 - [ ] English mentions "OpenSyria" → Arabic mentions "أوبن سيريا"
-- [ ] English mentions "Syrian Digital Lira" → Arabic mentions "الليرة الرقمية السورية"
+- [ ] English mentions "Syrian Digital Lira" → Arabic mentions "الليرة السورية الرقمية"
 - [ ] Word count approximately matches (±20%)
 - [ ] Concepts are identical (not just similar)
 - [ ] Formality matches (both formal or both casual)
@@ -340,7 +340,7 @@ For ALL user-facing text:
 > "OpenSyria is a blockchain platform powering the Syrian Digital Lira (SYL) - a decentralized cryptocurrency for ALL Syrians, whether in Damascus or diaspora. Built on Rust, it combines secure digital payments with Syrian cultural heritage preservation through NFTs and community governance."
 
 **Arabic:**
-> "أوبن سيريا منصة بلوكتشين تشغّل الليرة الرقمية السورية - عملة مشفرة لامركزية لجميع السوريين، في دمشق أو المهجر. مبنية على Rust، تجمع بين المدفوعات الرقمية الآمنة والحفاظ على التراث الثقافي السوري من خلال NFTs والحوكمة المجتمعية."
+> "أوبن سيريا منصة بلوكتشين تشغّل الليرة السورية الرقمية - عملة مشفرة لامركزية لجميع السوريين، في دمشق أو المهجر. مبنية على Rust، تجمع بين المدفوعات الرقمية الآمنة والحفاظ على التراث الثقافي السوري من خلال NFTs والحوكمة المجتمعية."
 
 ### Key Messages
 
@@ -394,7 +394,7 @@ For ALL user-facing text:
 
 **Arabic:**
 - أوبن سيريا
-- الليرة الرقمية السورية
+- الليرة السورية الرقمية
 - ل.س.ر
 - بلوكتشين سوري
 
@@ -407,7 +407,7 @@ For ALL user-facing text:
 
 **Arabic:**
 ```html
-<meta name="description" content="أوبن سيريا: بلوكتشين الليرة الرقمية السورية. عملة مشفرة لامركزية ومنصة تراث ثقافي لجميع السوريين. مستقل، مفتوح المصدر، ثنائي اللغة.">
+<meta name="description" content="أوبن سيريا: بلوكتشين الليرة السورية الرقمية. عملة مشفرة لامركزية ومنصة تراث ثقافي لجميع السوريين. مستقل، مفتوح المصدر، ثنائي اللغة.">
 ```
 
 ---

@@ -1,6 +1,6 @@
 # Module B3: Node Sync & Validation Audit
 
-**Open Syria Blockchain - Initial Block Download & Block Validation**
+**OpenSyria Blockchain - Initial Block Download & Block Validation**
 
 **Module:** B3 - Node Synchronization & Block Validation  
 **Date:** November 18, 2025  
@@ -1002,7 +1002,7 @@ mod sync_tests {
 
 ## Comparison with Other Blockchains
 
-| Feature | Open Syria | Bitcoin | Ethereum | Polkadot |
+| Feature | OpenSyria | Bitcoin | Ethereum | Polkadot |
 |---------|------------|---------|----------|----------|
 | **IBD** | ❌ None | ✅ Full | ✅ Full | ✅ Full |
 | **Headers-First** | ❌ None | ✅ Yes | ✅ Yes | ✅ Yes |
@@ -1012,7 +1012,7 @@ mod sync_tests {
 | **Fast Sync** | ❌ None | ⚠️ AssumeUTXO | ✅ Yes | ✅ Warp |
 | **Parallel DL** | ❌ None | ✅ Yes | ✅ Yes | ✅ Yes |
 
-**Gap:** Open Syria has **ZERO** sync functionality that production blockchains have.
+**Gap:** OpenSyria has **ZERO** sync functionality that production blockchains have.
 
 ---
 
@@ -1034,7 +1034,7 @@ mod sync_tests {
 **Verdict:**  
 The sync/validation module is **completely non-functional**. The codebase has the *scaffolding* (network messages, validation methods) but **zero integration**. A new node literally **cannot sync** from the network. This is a **P0 blocker** for any deployment.
 
-Without sync, Open Syria is **not a blockchain network** - it's isolated nodes mining independently.
+Without sync, OpenSyria is **not a blockchain network** - it's isolated nodes mining independently.
 
 **Estimated Fix Time:** 6-8 weeks for P0 issues (sync + validation)
 

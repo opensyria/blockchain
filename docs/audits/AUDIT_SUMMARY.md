@@ -1,6 +1,6 @@
 # Audit Summary - Quick Reference
 
-**Open Syria Blockchain | November 18, 2025**
+**OpenSyria Blockchain | November 18, 2025**
 
 ---
 
@@ -240,7 +240,7 @@
 
 ## ⚖️ Audit Conclusion
 
-The Open Syria blockchain has **excellent technical foundations** but **critical gaps in protocol specification and security validation** that prevent production deployment.
+The OpenSyria blockchain has **excellent technical foundations** but **critical gaps in protocol specification and security validation** that prevent production deployment.
 
 **The good news:** All issues are fixable with focused engineering effort. The codebase is clean, modern, and well-architected. With 8-10 weeks of dedicated remediation work, the system can reach testnet-ready status.
 

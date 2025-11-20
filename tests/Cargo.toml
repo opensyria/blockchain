@@ -10,7 +10,19 @@ opensyria-network = { path = "../crates/network" }
 opensyria-storage = { path = "../crates/storage" }
 opensyria-mempool = { path = "../crates/mempool" }
 tokio = { version = "1.40", features = ["full"] }
+proptest = "1.4"
+tempfile = "3.8"
+bincode = "2.0.0-rc.3"
+tracing = "0.1"
 
 [[test]]
 name = "integration_tests"
 path = "integration_tests.rs"
+
+[[test]]
+name = "load_tests"
+path = "load_tests.rs"
+
+[[test]]
+name = "fuzz_tests"
+path = "fuzz_tests.rs"

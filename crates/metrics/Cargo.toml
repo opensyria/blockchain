@@ -1,0 +1,14 @@
+[package]
+name = "opensyria-metrics"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+prometheus = "0.13"
+lazy_static = "1.4"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net"] }
+hyper = { version = "1.0", features = ["full"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"

@@ -1,6 +1,6 @@
 # Module B1: P2P Networking Layer Audit
 
-**Open Syria Blockchain - Network Protocol Review**
+**OpenSyria Blockchain - Network Protocol Review**
 
 **Module:** B1 - P2P Networking & Node Communication  
 **Date:** November 18, 2025  
@@ -928,7 +928,7 @@ validate_transaction_batch(txs).await;
 
 ## Comparison with Other Blockchains
 
-| Feature | Open Syria | Bitcoin | Ethereum | Polkadot |
+| Feature | OpenSyria | Bitcoin | Ethereum | Polkadot |
 |---------|------------|---------|----------|----------|
 | **Discovery** | mDNS + DHT | DNS seeds | Discovery v4 | mDNS + Kademlia |
 | **Propagation** | Gossipsub | Inv/GetData | DevP2P | Gossipsub |
@@ -937,7 +937,7 @@ validate_transaction_batch(txs).await;
 | **Rate Limiting** | ❌ None | ✅ Per-peer | ✅ Per-peer | ✅ Per-peer |
 | **NAT Traversal** | ❌ None | ⚠️ UPnP | ✅ Full | ✅ Relay |
 
-**Gap:** Open Syria lacks peer reputation and rate limiting that Bitcoin/Ethereum have had for years.
+**Gap:** OpenSyria lacks peer reputation and rate limiting that Bitcoin/Ethereum have had for years.
 
 ---
 

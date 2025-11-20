@@ -1,6 +1,6 @@
 use crate::manager::GovernanceSnapshot;
 use bincode;
-use rocksdb::{Options, DB};
+use rocksdb::{Options, DB, BlockBasedOptions};
 use std::path::Path;
 
 /// Storage errors
@@ -48,9 +48,17 @@ pub struct GovernanceStorage {
 
 impl GovernanceStorage {
     /// Open governance storage at specified path
+    /// 
+    /// ✅  PERFORMANCE FIX (P1-002): Bloom filters enabled
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, StorageError> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
+        
+        // PERFORMANCE FIX: Enable bloom filters
+        let mut block_opts = BlockBasedOptions::default();
+        block_opts.set_bloom_filter(10.0, false);
+        opts.set_block_based_table_factory(&block_opts);
+        opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
 
         let db = DB::open(&opts, path)?;
 

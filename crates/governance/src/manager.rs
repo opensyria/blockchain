@@ -77,7 +77,11 @@ impl GovernanceManager {
     }
 
     /// Cast a vote on a proposal
-    pub fn vote(
+    /// 
+    /// ✅  SECURITY FIX (CRITICAL-006): Now uses async atomic vote recording
+    /// This prevents double-voting race conditions by ensuring check-and-insert
+    /// operations are serialized per proposal using mutex locks.
+    pub async fn vote(
         &mut self,
         proposal_id: ProposalId,
         voter: PublicKey,
@@ -113,8 +117,25 @@ impl GovernanceManager {
             delegated_from: None, // Direct vote, not delegated
         };
 
-        self.state.record_vote(proposal_id, vote_record)?;
+        // SECURITY: Use atomic vote recording to prevent double-voting race
+        self.state.record_vote(proposal_id, vote_record).await?;
         Ok(())
+    }
+    
+    /// Cast a vote synchronously (blocking wrapper for non-async contexts)
+    /// 
+    /// ⚠️  WARNING: This blocks the current thread. Prefer using vote() in async contexts.
+    pub fn vote_blocking(
+        &mut self,
+        proposal_id: ProposalId,
+        voter: PublicKey,
+        vote: Vote,
+        state_storage: &StateStorage,
+        current_height: u64,
+    ) -> Result<(), GovernanceError> {
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(self.vote(proposal_id, voter, vote, state_storage, current_height))
     }
 
     /// Process proposals at current block height (finalize ended proposals)
@@ -251,9 +272,9 @@ impl GovernanceManager {
             manager.state.add_proposal(proposal);
         }
 
-        // Restore votes
+        // Restore votes (use blocking version since this is initialization)
         for (proposal_id, _voter, vote_record) in snapshot.votes {
-            let _ = manager.state.record_vote(proposal_id, vote_record);
+            let _ = manager.state.record_vote_blocking(proposal_id, vote_record);
         }
 
         // Restore balance snapshots

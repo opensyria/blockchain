@@ -44,6 +44,12 @@ pub struct NetworkNode {
     /// Connected peers
     peers: Arc<RwLock<HashSet<PeerId>>>,
 
+    /// Inbound peer connections
+    inbound_peers: Arc<RwLock<HashSet<PeerId>>>,
+
+    /// Outbound peer connections
+    outbound_peers: Arc<RwLock<HashSet<PeerId>>>,
+
     /// Pending block requests
     pending_blocks: Arc<RwLock<HashMap<PeerId, u64>>>,
 
@@ -55,6 +61,9 @@ pub struct NetworkNode {
 
     /// Message rate limiter
     rate_limiter: Arc<RwLock<RateLimiter>>,
+
+    /// Node configuration for connection limits
+    config: NodeConfig,
 }
 
 /// Network events
@@ -93,6 +102,15 @@ pub struct NodeConfig {
 
     /// Enable mDNS discovery
     pub enable_mdns: bool,
+
+    /// Maximum inbound peer connections (default: 50)
+    pub max_inbound_peers: usize,
+
+    /// Maximum outbound peer connections (default: 10)
+    pub max_outbound_peers: usize,
+
+    /// Maximum peers from same ASN for diversity (default: 5)
+    pub max_peers_per_asn: usize,
 }
 
 impl Default for NodeConfig {
@@ -109,6 +127,9 @@ impl NodeConfig {
             bootstrap_peers: crate::bootstrap::get_bootstrap_peers(network),
             data_dir: PathBuf::from("~/.opensyria/network"),
             enable_mdns: true,
+            max_inbound_peers: 50,
+            max_outbound_peers: 10,
+            max_peers_per_asn: 5,
         }
     }
 
@@ -172,13 +193,69 @@ impl NetworkNode {
             state,
             mempool,
             peers: Arc::new(RwLock::new(HashSet::new())),
+            inbound_peers: Arc::new(RwLock::new(HashSet::new())),
+            outbound_peers: Arc::new(RwLock::new(HashSet::new())),
             pending_blocks: Arc::new(RwLock::new(HashMap::new())),
             event_tx,
             reputation: Arc::new(RwLock::new(PeerReputation::new())),
             rate_limiter: Arc::new(RwLock::new(RateLimiter::new())),
+            config,
         };
 
         Ok((node, event_rx))
+    }
+
+    /// Check if we can accept a new inbound connection
+    async fn can_accept_inbound(&self) -> bool {
+        let inbound = self.inbound_peers.read().await;
+        inbound.len() < self.config.max_inbound_peers
+    }
+
+    /// Check if we can create a new outbound connection
+    async fn can_create_outbound(&self) -> bool {
+        let outbound = self.outbound_peers.read().await;
+        outbound.len() < self.config.max_outbound_peers
+    }
+
+    /// Register a new inbound peer connection
+    async fn register_inbound_peer(&self, peer_id: PeerId) -> Result<()> {
+        if !self.can_accept_inbound().await {
+            warn!("Rejecting inbound peer {}: max inbound limit reached", peer_id);
+            return Err(anyhow::anyhow!("Max inbound peers limit reached"));
+        }
+
+        let mut inbound = self.inbound_peers.write().await;
+        inbound.insert(peer_id);
+        info!("Registered inbound peer {} ({}/{})", peer_id, inbound.len(), self.config.max_inbound_peers);
+        Ok(())
+    }
+
+    /// Register a new outbound peer connection
+    async fn register_outbound_peer(&self, peer_id: PeerId) -> Result<()> {
+        if !self.can_create_outbound().await {
+            warn!("Cannot create outbound to {}: max outbound limit reached", peer_id);
+            return Err(anyhow::anyhow!("Max outbound peers limit reached"));
+        }
+
+        let mut outbound = self.outbound_peers.write().await;
+        outbound.insert(peer_id);
+        info!("Registered outbound peer {} ({}/{})", peer_id, outbound.len(), self.config.max_outbound_peers);
+        Ok(())
+    }
+
+    /// Unregister a peer connection
+    async fn unregister_peer(&self, peer_id: &PeerId) {
+        let mut inbound = self.inbound_peers.write().await;
+        let mut outbound = self.outbound_peers.write().await;
+        
+        let was_inbound = inbound.remove(peer_id);
+        let was_outbound = outbound.remove(peer_id);
+
+        if was_inbound {
+            info!("Unregistered inbound peer {} ({}/{})", peer_id, inbound.len(), self.config.max_inbound_peers);
+        } else if was_outbound {
+            info!("Unregistered outbound peer {} ({}/{})", peer_id, outbound.len(), self.config.max_outbound_peers);
+        }
     }
 
     /// Start listening for connections
@@ -190,8 +267,16 @@ impl NetworkNode {
 
     /// Dial a peer
     pub async fn dial(&mut self, addr: Multiaddr) -> Result<()> {
-        self.swarm.dial(addr)?;
-        info!("Dialing peer");
+        // Check outbound connection limit before dialing
+        if !self.can_create_outbound().await {
+            let outbound_count = self.outbound_peers.read().await.len();
+            warn!("Cannot dial peer: max outbound limit reached ({}/{})", 
+                outbound_count, self.config.max_outbound_peers);
+            return Err(anyhow::anyhow!("Max outbound peers limit reached"));
+        }
+
+        self.swarm.dial(addr.clone())?;
+        info!("Dialing peer at {}", addr);
         Ok(())
     }
 
@@ -402,16 +487,56 @@ impl NetworkNode {
                 self.handle_behaviour_event(event).await?;
             }
 
-            SwarmEvent::ConnectionEstablished { peer_id, .. } => {
-                info!("Connected to peer: {}", peer_id);
-                self.peers.write().await.insert(peer_id);
-                let _ = self.event_tx.send(NetworkEvent::PeerConnected(peer_id));
+            SwarmEvent::ConnectionEstablished { 
+                peer_id, 
+                endpoint,
+                num_established,
+                .. 
+            } => {
+                // Only track first connection to this peer
+                if num_established.get() == 1 {
+                    // Determine if inbound or outbound based on endpoint
+                    let is_dialer = endpoint.is_dialer();
+                    
+                    let result = if is_dialer {
+                        // Outbound connection initiated by us
+                        self.register_outbound_peer(peer_id).await
+                    } else {
+                        // Inbound connection initiated by remote peer
+                        self.register_inbound_peer(peer_id).await
+                    };
+
+                    match result {
+                        Ok(_) => {
+                            info!("Connected to peer: {} ({})", peer_id, if is_dialer { "outbound" } else { "inbound" });
+                            self.peers.write().await.insert(peer_id);
+                            let _ = self.event_tx.send(NetworkEvent::PeerConnected(peer_id));
+                        }
+                        Err(e) => {
+                            warn!("Connection limit exceeded for {}: {}", peer_id, e);
+                            // Disconnect peer that exceeded limits
+                            let _ = self.swarm.disconnect_peer_id(peer_id);
+                        }
+                    }
+                }
             }
 
-            SwarmEvent::ConnectionClosed { peer_id, .. } => {
-                info!("Disconnected from peer: {}", peer_id);
-                self.peers.write().await.remove(&peer_id);
-                let _ = self.event_tx.send(NetworkEvent::PeerDisconnected(peer_id));
+            SwarmEvent::ConnectionClosed { peer_id, num_established, .. } => {
+                // Only untrack when all connections to peer are closed
+                if num_established == 0 {
+                    info!("Disconnected from peer: {}", peer_id);
+                    self.peers.write().await.remove(&peer_id);
+                    self.unregister_peer(&peer_id).await;
+                    let _ = self.event_tx.send(NetworkEvent::PeerDisconnected(peer_id));
+                }
+            }
+
+            SwarmEvent::IncomingConnection { send_back_addr, .. } => {
+                // Check if we can accept more inbound connections
+                if !self.can_accept_inbound().await {
+                    warn!("Rejecting incoming connection from {}: max inbound limit reached", send_back_addr);
+                    // Connection will be rejected automatically if we don't handle it
+                }
             }
 
             _ => {}
@@ -432,8 +557,14 @@ impl NetworkNode {
             OpenSyriaBehaviourEvent::Mdns(libp2p::mdns::Event::Discovered(peers)) => {
                 for (peer_id, addr) in peers {
                     info!("Discovered peer via mDNS: {} at {}", peer_id, addr);
-                    if let Err(e) = self.swarm.dial(addr.clone()) {
-                        warn!("Failed to dial mDNS peer: {}", e);
+                    
+                    // Check outbound connection limit before dialing
+                    if self.can_create_outbound().await {
+                        if let Err(e) = self.swarm.dial(addr.clone()) {
+                            warn!("Failed to dial mDNS peer: {}", e);
+                        }
+                    } else {
+                        debug!("Skipping mDNS peer {}: max outbound limit reached", peer_id);
                     }
                 }
             }
@@ -533,7 +664,7 @@ impl NetworkNode {
 
                 // Try to append block (additional validation happens here)
                 let blockchain = self.blockchain.write().await;
-                match blockchain.append_block(&block) {
+                match blockchain.append_block(&block, None) {
                     Ok(()) => {
                         let new_height = blockchain.get_chain_height()?;
                         info!("Added new block at height {}", new_height);
@@ -686,7 +817,7 @@ impl NetworkNode {
                 for block_data in blocks {
                     let config = bincode::config::standard();
                     if let Ok((block, _)) = bincode::decode_from_slice::<Block, _>(&block_data, config) {
-                        if let Ok(()) = blockchain.append_block(&block) {
+                        if let Ok(()) = blockchain.append_block(&block, None) {
                             added += 1;
                         }
                     }

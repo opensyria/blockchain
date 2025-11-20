@@ -13,6 +13,7 @@ opensyria-network = { path = "../network" }
 opensyria-governance = { path = "../governance" }
 opensyria-mempool = { path = "../mempool" }
 opensyria-mining-pool = { path = "../mining-pool" }
+opensyria-metrics = { path = "../metrics" }
 clap.workspace = true
 tokio.workspace = true
 tracing.workspace = true

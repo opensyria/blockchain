@@ -1,5 +1,5 @@
 # Module F3: Branding & Naming Coherence Audit
-**Open Syria Blockchain - Digital Lira (الليرة الرقمية)**
+**OpenSyria Blockchain - Digital Lira (الليرة الرقمية)**
 
 **Audit Date:** November 18, 2025  
 **Module:** Brand Identity, Naming Consistency, Cultural Sensitivity  
@@ -47,7 +47,7 @@
 
 The project exhibits **systematic branding inconsistencies** across different layers with **THREE competing brand identities** used interchangeably:
 
-1. **"Open Syria"** - Git repo, crate names, URLs, CLI tools
+1. **"OpenSyria"** - Git repo, crate names, URLs, CLI tools
 2. **"Digital Lira"** - Currency name, economic references, frontend subtitle
 3. **"الليرة الرقمية"** - Arabic brand name (not always parallel to English)
 
@@ -64,7 +64,7 @@ Additionally, **cultural sensitivity concerns** exist around:
 **Impact Assessment:**
 - **User Confusion:** New users cannot identify the project name
 - **Marketing Difficulty:** Inconsistent messaging across channels
-- **Search Engine Fragmentation:** "Open Syria" vs "Digital Lira" dilutes SEO
+- **Search Engine Fragmentation:** "OpenSyria" vs "Digital Lira" dilutes SEO
 - **Community Recognition:** Unclear how to refer to the project
 - **Professionalism:** Appears unpolished and uncoordinated
 
@@ -80,31 +80,31 @@ Additionally, **cultural sensitivity concerns** exist around:
 └─────────────────────────────────────────────────────────┘
 
 Layer 1: Repository/Code
-├── GitHub Repo: "opensyria/blockchain"  ← "Open Syria"
+├── GitHub Repo: "opensyria/blockchain"  ← "OpenSyria"
 ├── Crate Prefix: "opensyria_*"          ← "opensyria" (no space)
 └── Import Paths: "use opensyria_core"   ← Snake case
 
 Layer 2: User-Facing Names
-├── README Title: "Open Syria Blockchain | بلوكتشين سوريا المفتوحة"
+├── README Title: "OpenSyria Blockchain | بلوكتشين سوريا المفتوحة"
 ├── Subtitle: "Digital Lira (الليرة الرقمية)"
-└── Wallet CLI: "Open Syria Digital Lira Wallet | محفظة الليرة الرقمية السورية"
+└── Wallet CLI: "OpenSyria Digital Lira Wallet | محفظة الليرة السورية الرقمية"
     ❌ Uses THREE names in one string!
 
 Layer 3: Frontend Branding
-├── English Title: "Open Syria Block Explorer"   ← "Open Syria"
+├── English Title: "OpenSyria Block Explorer"   ← "OpenSyria"
 ├── English Subtitle: "Digital Lira Blockchain"  ← "Digital Lira"
 ├── Arabic Title: "مستكشف بلوكتشين سوريا المفتوحة" ← "سوريا المفتوحة"
 └── Arabic Subtitle: "بلوكتشين الليرة الرقمية"  ← "الليرة الرقمية"
 
 Layer 4: Currency Branding
 ├── Currency Name (EN): "Digital Lira"
-├── Currency Name (AR): "الليرة الرقمية السورية" (includes "Syrian")
+├── Currency Name (AR): "الليرة السورية الرقمية" (includes "Syrian")
 ├── Currency Unit (EN): "SYL" ← What does this stand for?
 ├── Currency Unit (AR): "ل.س.ر" ← ليرة سورية رقمية
 └── Amount Formatting: "1,000 SYL" vs "١٬٠٠٠ ل.س.ر"
 
 ❌ PROBLEM: No clear parent brand!
-Is "Open Syria" the platform and "Digital Lira" the currency?
+Is "OpenSyria" the platform and "Digital Lira" the currency?
 Or is "Digital Lira" the project name?
 ```
 
@@ -114,19 +114,19 @@ Or is "Digital Lira" the project name?
 
 | # | Variation | Location | Count |
 |---|-----------|----------|-------|
-| 1 | "Open Syria Blockchain" | README.md | 4 |
-| 2 | "Open Syria" | README.md, docs/ | 23 |
+| 1 | "OpenSyria Blockchain" | README.md | 4 |
+| 2 | "OpenSyria" | README.md, docs/ | 23 |
 | 3 | "opensyria" (lowercase, no space) | Crate names | 12 |
 | 4 | "opensyria/blockchain" (repo) | GitHub, Cargo.toml | 13 |
 | 5 | "Digital Lira" | README.md, frontend | 15 |
 | 6 | "Digital Lira Blockchain" | Frontend subtitle | 1 |
-| 7 | "Open Syria Digital Lira Wallet" | wallet CLI | 1 |
-| 8 | "Open Syria Block Explorer" | Frontend title | 1 |
+| 7 | "OpenSyria Digital Lira Wallet" | wallet CLI | 1 |
+| 8 | "OpenSyria Block Explorer" | Frontend title | 1 |
 | 9 | "بلوكتشين سوريا المفتوحة" | README, frontend | 3 |
 | 10 | "سوريا المفتوحة" | Frontend | 1 |
 | 11 | "الليرة الرقمية" | Multiple | 8 |
-| 12 | "الليرة الرقمية السورية" | Wallet CLI | 1 |
-| 13 | "محفظة الليرة الرقمية السورية" | Wallet CLI | 1 |
+| 12 | "الليرة السورية الرقمية" | Wallet CLI | 1 |
+| 13 | "محفظة الليرة السورية الرقمية" | Wallet CLI | 1 |
 | 14 | "مستكشف بلوكتشين سوريا المفتوحة" | Frontend | 1 |
 | 15 | "بلوكتشين الليرة الرقمية" | Frontend subtitle | 1 |
 
@@ -141,9 +141,9 @@ Or is "Digital Lira" the project name?
 **Evidence from `README.md`:**
 
 ```markdown
-# Open Syria Blockchain | بلوكتشين سوريا المفتوحة
+# OpenSyria Blockchain | بلوكتشين سوريا المفتوحة
                          ↑                      ↑
-                    "Open Syria"      "Open Syria" in Arabic
+                    "OpenSyria"      "OpenSyria" in Arabic
 
 [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)]()
 
@@ -154,26 +154,26 @@ A sovereign, Rust-based blockchain for the Digital Lira (الليرة الرقم
 🚀 [Getting Started](docs/GETTING_STARTED.md) | 📚 [Documentation](docs/README.md)
 ```
 
-**Question:** Is this project called "Open Syria" or "Digital Lira"?
+**Question:** Is this project called "OpenSyria" or "Digital Lira"?
 
 **Answer:** **UNCLEAR!** The README treats them as:
-- Title = "Open Syria Blockchain"
+- Title = "OpenSyria Blockchain"
 - Purpose = "blockchain **for** the Digital Lira"
 
 This suggests:
-- Platform name: "Open Syria"
+- Platform name: "OpenSyria"
 - Currency name: "Digital Lira"
 
 **But then contradicted by:**
 
 ```rust
 // crates/wallet/src/main.rs:9
-#[command(about = "Open Syria Digital Lira Wallet | محفظة الليرة الرقمية السورية")]
+#[command(about = "OpenSyria Digital Lira Wallet | محفظة الليرة السورية الرقمية")]
                     ↑           ↑
               Project name? Currency name?
 ```
 
-Is the wallet for "Open Syria" or for "Digital Lira"? **Both names merged!**
+Is the wallet for "OpenSyria" or for "Digital Lira"? **Both names merged!**
 
 ---
 
@@ -185,7 +185,7 @@ Is the wallet for "Open Syria" or for "Digital Lira"? **Both names merged!**
 // en.json
 {
   "app": {
-    "title": "Open Syria Block Explorer",        ← "Open Syria"
+    "title": "OpenSyria Block Explorer",        ← "OpenSyria"
     "subtitle": "Digital Lira Blockchain"         ← "Digital Lira"
   }
 }
@@ -193,27 +193,27 @@ Is the wallet for "Open Syria" or for "Digital Lira"? **Both names merged!**
 // ar.json
 {
   "app": {
-    "title": "مستكشف بلوكتشين سوريا المفتوحة",   ← "Open Syria" explorer
+    "title": "مستكشف بلوكتشين سوريا المفتوحة",   ← "OpenSyria" explorer
     "subtitle": "بلوكتشين الليرة الرقمية"         ← "Digital Lira" blockchain
   }
 }
 ```
 
 **Analysis:**
-- English title emphasizes "Open Syria"
+- English title emphasizes "OpenSyria"
 - English subtitle mentions "Digital Lira"
 - Arabic mirrors this structure
 
 **Problem:** User sees BOTH names simultaneously:
 ```
 ┌────────────────────────────────┐
-│  Open Syria Block Explorer     │ ← What's the project?
+│  OpenSyria Block Explorer     │ ← What's the project?
 │  Digital Lira Blockchain       │ ← Wait, this?
 └────────────────────────────────┘
 ```
 
 **User Mental Model:**
-- Confused! Is this "Open Syria" or "Digital Lira"?
+- Confused! Is this "OpenSyria" or "Digital Lira"?
 - Which name should I Google?
 - Which name should I tweet about?
 
@@ -283,17 +283,17 @@ opensyria_wallet_api
 
 **Problem:** "opensyria" is **ONE WORD** (no space, lowercase).
 
-But everywhere else, it's **TWO WORDS**: "Open Syria" (capitalized, spaced).
+But everywhere else, it's **TWO WORDS**: "OpenSyria" (capitalized, spaced).
 
 **User Impact:**
-- Searching GitHub for "Open Syria" might not find "opensyria" repos
+- Searching GitHub for "OpenSyria" might not find "opensyria" repos
 - Import statements look unrelated:
   ```rust
-  use opensyria_core;  // Where's "Open Syria"?
+  use opensyria_core;  // Where's "OpenSyria"?
   ```
 
 **Better Approach:**
-- If project is "Open Syria" → use `open_syria_*` (snake case with underscore)
+- If project is "OpenSyria" → use `open_syria_*` (snake case with underscore)
 - If project is "OpenSyria" (one word) → use `opensyria_*` (current)
 - Choose ONE and stick to it!
 
@@ -305,7 +305,7 @@ But everywhere else, it's **TWO WORDS**: "Open Syria" (capitalized, spaced).
 
 ```rust
 // crates/wallet/src/main.rs:9
-#[command(about = "Open Syria Digital Lira Wallet | محفظة الليرة الرقمية السورية")]
+#[command(about = "OpenSyria Digital Lira Wallet | محفظة الليرة السورية الرقمية")]
                     ↑         ↑         ↑           ↑
                 Platform  Currency  English     Arabic (different!)
                                                 "Syrian Digital Lira Wallet"
@@ -313,19 +313,19 @@ But everywhere else, it's **TWO WORDS**: "Open Syria" (capitalized, spaced).
 
 **This string contains THREE distinct brand elements:**
 
-1. **"Open Syria"** - Platform name
+1. **"OpenSyria"** - Platform name
 2. **"Digital Lira"** - Currency name
 3. **"Wallet"** - Tool type
 
-**English:** "Open Syria Digital Lira Wallet" (8 words!)
-**Arabic:** "محفظة الليرة الرقمية السورية" (Syrian Digital Lira Wallet)
+**English:** "OpenSyria Digital Lira Wallet" (8 words!)
+**Arabic:** "محفظة الليرة السورية الرقمية" (Syrian Digital Lira Wallet)
 
 **Asymmetry:** Arabic includes "السورية" (Syrian), but English doesn't say "Syrian"!
 
 **Correct Parallel Translation:**
-- English: "Open Syria Digital Lira Wallet"
+- English: "OpenSyria Digital Lira Wallet"
 - Arabic: "محفظة الليرة الرقمية لسوريا المفتوحة"
-  (Digital Lira Wallet for Open Syria)
+  (Digital Lira Wallet for OpenSyria)
 
 Or simplify both:
 - English: "Digital Lira Wallet"
@@ -338,21 +338,21 @@ Or simplify both:
 **README.md name usage analysis:**
 
 ```markdown
-Line 1:  "Open Syria Blockchain | بلوكتشين سوريا المفتوحة"  ← "Open Syria"
+Line 1:  "OpenSyria Blockchain | بلوكتشين سوريا المفتوحة"  ← "OpenSyria"
 Line 9:  "blockchain for the Digital Lira"                 ← "Digital Lira"
-Line 45: "Open Syria sovereign blockchain"                 ← "Open Syria"
+Line 45: "OpenSyria sovereign blockchain"                 ← "OpenSyria"
 Line 102: "Digital Lira (الليرة الرقمية)"                 ← "Digital Lira"
 Line 234: "opensyria_core crate"                           ← "opensyria"
-Line 401: "Open Syria testnet"                             ← "Open Syria"
+Line 401: "OpenSyria testnet"                             ← "OpenSyria"
 Line 523: "Digital Lira economics"                         ← "Digital Lira"
 ```
 
 **Pattern:** Names used interchangeably without clear hierarchy!
 
 **Reader Experience:**
-- First mention: "Open Syria Blockchain"
+- First mention: "OpenSyria Blockchain"
 - Second mention: "Digital Lira"
-- Third mention: "Open Syria"
+- Third mention: "OpenSyria"
 - Fourth mention: "Digital Lira"
 
 **Confusion Factor:** 10/10! Which name is primary?
@@ -370,22 +370,22 @@ Line 523: "Digital Lira economics"                         ← "Digital Lira"
 **CWE:** N/A (UX/Marketing issue, not security)
 
 **Description:**  
-The project has **NO documented brand hierarchy** defining whether "Open Syria" or "Digital Lira" is the primary brand name. This creates systematic confusion across all user touchpoints.
+The project has **NO documented brand hierarchy** defining whether "OpenSyria" or "Digital Lira" is the primary brand name. This creates systematic confusion across all user touchpoints.
 
 **Evidence - User Journey Confusion:**
 
 ```
 New User Experience:
 1. Finds GitHub repo: "opensyria/blockchain"
-   → User thinks: "Oh, it's called Open Syria"
+   → User thinks: "Oh, it's called OpenSyria"
 
 2. Reads README: "blockchain for the Digital Lira"
    → User thinks: "Wait, it's called Digital Lira?"
 
-3. Opens frontend: "Open Syria Block Explorer - Digital Lira Blockchain"
+3. Opens frontend: "OpenSyria Block Explorer - Digital Lira Blockchain"
    → User thinks: "Which one is it?!"
 
-4. Runs wallet: "Open Syria Digital Lira Wallet"
+4. Runs wallet: "OpenSyria Digital Lira Wallet"
    → User thinks: "Are these two products?"
 
 5. Searches Twitter: #OpenSyria vs #DigitalLira
@@ -397,9 +397,9 @@ New User Experience:
 **Marketing Scenario:**
 ```
 Journalist: "What's your blockchain called?"
-Developer A: "Open Syria"
+Developer A: "OpenSyria"
 Developer B: "Well, it's the Digital Lira blockchain"
-Developer C: "Open Syria is the platform, Digital Lira is the currency"
+Developer C: "OpenSyria is the platform, Digital Lira is the currency"
 
 Journalist: [confused] "So which name goes in my headline?"
 
@@ -408,7 +408,7 @@ Result: Article titled "Syrian Blockchain Project" (uses neither name!)
 
 **Community Confusion:**
 ```
-Reddit Post 1: "I'm excited about Open Syria!"
+Reddit Post 1: "I'm excited about OpenSyria!"
 Reddit Post 2: "Check out Digital Lira blockchain"
 Reddit Post 3: "Anyone using opensyria_wallet?"
 
@@ -420,7 +420,7 @@ Reddit Post 3: "Anyone using opensyria_wallet?"
 
 ```
 Google Search Volume (estimated):
-- "Open Syria blockchain": 0 monthly searches
+- "OpenSyria blockchain": 0 monthly searches
 - "Digital Lira": 120 monthly searches (but conflicts with Turkish Lira discussions)
 - "Syrian blockchain": 40 monthly searches
 
@@ -443,27 +443,27 @@ Other Blockchain Brands (for comparison):
 - "Bitcoin Cash" vs "BCash" (community split over name)
 - "Binance Chain" vs "Binance Smart Chain" vs "BNB Chain" (rebranded 3 times)
 
-Open Syria is currently in the "BAD" category! ❌
+OpenSyria is currently in the "BAD" category! ❌
 ```
 
 **Remediation - Three Strategic Options:**
 
 **Option A: Platform-First Branding**
 ```
-Primary Brand: "Open Syria"
-Currency: "Lira" (OSYL - Open Syria Lira)
+Primary Brand: "OpenSyria"
+Currency: "Lira" (OSYL - OpenSyria Lira)
 Tagline: "Sovereign blockchain for Syria's digital economy"
 
 Branding Hierarchy:
-├── Open Syria (Platform)
+├── OpenSyria (Platform)
 │   ├── Lira (Currency)
 │   ├── Heritage NFTs (Feature)
 │   └── Governance (Feature)
 
 All UI Text:
-- "Open Syria Blockchain"
-- "Lira currency on Open Syria"
-- "Powered by Open Syria"
+- "OpenSyria Blockchain"
+- "Lira currency on OpenSyria"
+- "Powered by OpenSyria"
 
 Advantages:
 ✅ Emphasizes open-source, permissionless nature
@@ -480,7 +480,7 @@ Disadvantages:
 **Option B: Currency-First Branding**
 ```
 Primary Brand: "Digital Lira"
-Platform: Powered by Open Syria protocol
+Platform: Powered by OpenSyria protocol
 Abbreviation: DSYL (Digital Syrian Lira)
 
 Branding Hierarchy:
@@ -508,26 +508,26 @@ Disadvantages:
 
 **Option C: Dual Branding (RECOMMENDED)**
 ```
-Full Official Name: "Open Syria: Digital Lira"
-Short Platform Name: "Open Syria"
+Full Official Name: "OpenSyria: Digital Lira"
+Short Platform Name: "OpenSyria"
 Short Currency Name: "Digital Lira" or "Lira"
 Currency Code: DSYL (Digital Syrian Lira)
 
 Branding Hierarchy:
-├── Open Syria (Umbrella Brand)
+├── OpenSyria (Umbrella Brand)
 │   ├── Digital Lira (Primary Product - Currency)
 │   ├── Heritage NFTs (Secondary Product)
 │   └── Governance (Secondary Product)
 
 All UI Text:
-- First mention: "Open Syria: Digital Lira Blockchain"
-- Subsequent: "Open Syria" or "Digital Lira" depending on context
-- Wallet: "Digital Lira Wallet (Open Syria)"
-- Explorer: "Open Syria Explorer"
+- First mention: "OpenSyria: Digital Lira Blockchain"
+- Subsequent: "OpenSyria" or "Digital Lira" depending on context
+- Wallet: "Digital Lira Wallet (OpenSyria)"
+- Explorer: "OpenSyria Explorer"
 
 Advantages:
 ✅ Accommodates both names
-✅ Clear hierarchy (Open Syria > Digital Lira)
+✅ Clear hierarchy (OpenSyria > Digital Lira)
 ✅ Flexibility in marketing (use whichever fits context)
 ✅ Parallel structure in Arabic: "سوريا المفتوحة: الليرة الرقمية"
 
@@ -543,8 +543,8 @@ Disadvantages:
 
 ## Official Names
 
-**Full Name:** Open Syria: Digital Lira  
-**Short Name (Platform):** Open Syria  
+**Full Name:** OpenSyria: Digital Lira  
+**Short Name (Platform):** OpenSyria  
 **Short Name (Currency):** Digital Lira  
 **Currency Code:** DSYL  
 
@@ -557,13 +557,13 @@ Disadvantages:
 ## Usage Rules
 
 1. **First Mention (Documents):**
-   - "Open Syria: Digital Lira blockchain"
+   - "OpenSyria: Digital Lira blockchain"
    - "سوريا المفتوحة: الليرة الرقمية"
 
 2. **Platform Context:**
-   - "Open Syria blockchain"
-   - "Open Syria governance"
-   - "Built on Open Syria"
+   - "OpenSyria blockchain"
+   - "OpenSyria governance"
+   - "Built on OpenSyria"
 
 3. **Currency Context:**
    - "Send Digital Lira"
@@ -575,7 +575,7 @@ Disadvantages:
    - Update README to clarify: "OpenSyria (one word) in code"
 
 5. **Frontend:**
-   - Title: "Open Syria Explorer"
+   - Title: "OpenSyria Explorer"
    - Subtitle: "Digital Lira (DSYL) Blockchain"
 ```
 
@@ -598,18 +598,18 @@ Arabic and English brand names are **NOT parallel translations**, leading to dif
 
 ```rust
 // crates/wallet/src/main.rs:9
-#[command(about = "Open Syria Digital Lira Wallet | محفظة الليرة الرقمية السورية")]
+#[command(about = "OpenSyria Digital Lira Wallet | محفظة الليرة السورية الرقمية")]
 
-English: "Open Syria Digital Lira Wallet"
+English: "OpenSyria Digital Lira Wallet"
          ↓         ↓         ↓      ↓
          Platform  Currency  Type   -
 
-Arabic: "محفظة الليرة الرقمية السورية"
+Arabic: "محفظة الليرة السورية الرقمية"
          ↓      ↓       ↓        ↓
          Wallet Lira   Digital  Syrian
 
 Asymmetry:
-- English mentions "Open Syria" → Arabic does NOT
+- English mentions "OpenSyria" → Arabic does NOT
 - Arabic mentions "Syrian" (السورية) → English does NOT!
 ```
 
@@ -617,25 +617,25 @@ Asymmetry:
 
 ```rust
 // Option 1: Both mention platform
-#[command(about = "Open Syria Digital Lira Wallet | محفظة الليرة الرقمية لسوريا المفتوحة")]
+#[command(about = "OpenSyria Digital Lira Wallet | محفظة الليرة الرقمية لسوريا المفتوحة")]
 
 // Option 2: Both omit platform
 #[command(about = "Digital Lira Wallet | محفظة الليرة الرقمية")]
 
 // Option 3: Both include "Syrian"
-#[command(about = "Open Syria Syrian Digital Lira Wallet | محفظة الليرة الرقمية السورية لسوريا المفتوحة")]
+#[command(about = "OpenSyria Syrian Digital Lira Wallet | محفظة الليرة السورية الرقمية لسوريا المفتوحة")]
 ```
 
 **Evidence - Frontend Titles:**
 
 ```json
 // en.json
-"title": "Open Syria Block Explorer"
+"title": "OpenSyria Block Explorer"
 
 // ar.json
 "title": "مستكشف بلوكتشين سوريا المفتوحة"
          ↓         ↓          ↓
-         Explorer  Blockchain Open Syria
+         Explorer  Blockchain OpenSyria
 
 ✅ These ARE parallel! Good example.
 ```
@@ -660,14 +660,14 @@ Wallet CLI is the ONLY location with asymmetric translation. Other components (f
 
 ```
 Arabic Speaker Experience:
-1. Sees wallet: "محفظة الليرة الرقمية السورية" (Syrian Digital Lira Wallet)
+1. Sees wallet: "محفظة الليرة السورية الرقمية" (Syrian Digital Lira Wallet)
    → Thinks: "This is a Syrian national project"
 
-2. Opens frontend: "مستكشف بلوكتشين سوريا المفتوحة" (Open Syria Explorer)
-   → Thinks: "Oh, it's called Open Syria"
+2. Opens frontend: "مستكشف بلوكتشين سوريا المفتوحة" (OpenSyria Explorer)
+   → Thinks: "Oh, it's called OpenSyria"
 
-3. Reads CLI: No mention of "Open Syria" in Arabic
-   → Thinks: "Where did 'Open Syria' go?"
+3. Reads CLI: No mention of "OpenSyria" in Arabic
+   → Thinks: "Where did 'OpenSyria' go?"
 
 Result: Arabic speakers have DIFFERENT mental model than English speakers!
 ```
@@ -678,8 +678,8 @@ Result: Arabic speakers have DIFFERENT mental model than English speakers!
 // crates/wallet/src/main.rs:9
 // ✅ FIXED - Parallel translation
 #[command(
-    about = "Digital Lira Wallet (Open Syria) | محفظة الليرة الرقمية (سوريا المفتوحة)",
-    long_about = "Manage your Digital Lira cryptocurrency on the Open Syria blockchain.\n\
+    about = "Digital Lira Wallet (OpenSyria) | محفظة الليرة الرقمية (سوريا المفتوحة)",
+    long_about = "Manage your Digital Lira cryptocurrency on the OpenSyria blockchain.\n\
                   إدارة عملة الليرة الرقمية على بلوكتشين سوريا المفتوحة."
 )]
 ```
@@ -693,7 +693,7 @@ For ALL user-facing text:
    ✅ English: 5 words → Arabic: 5 words (approximately)
    
 2. Concept Match
-   ✅ English mentions "Open Syria" → Arabic mentions "سوريا المفتوحة"
+   ✅ English mentions "OpenSyria" → Arabic mentions "سوريا المفتوحة"
    ✅ English mentions "Digital Lira" → Arabic mentions "الليرة الرقمية"
 
 3. Cultural Appropriateness
@@ -701,7 +701,7 @@ For ALL user-facing text:
    
 4. Brand Consistency
    ✅ Always use same translation for same term
-   ✅ "Open Syria" ALWAYS = "سوريا المفتوحة" (never vary)
+   ✅ "OpenSyria" ALWAYS = "سوريا المفتوحة" (never vary)
 ```
 
 **CVSS v3.1 Score:** 4.2 (MEDIUM)
@@ -760,7 +760,7 @@ Examples:
 
 For Digital Lira:
 - DSYL: Digital Syrian Lira (4 letters, unofficial)
-- OSYL: Open Syria Lira (4 letters, unofficial)
+- OSYL: OpenSyria Lira (4 letters, unofficial)
 - DLSY: Digital Lira Syria (4 letters, unofficial)
 ```
 
@@ -819,7 +819,7 @@ Binance Listing Form:
 - Token Name: Digital Lira
 - Token Symbol: DSYL  ← Must be unique!
 - Total Supply: 21,000,000 DSYL
-- Blockchain: Open Syria (custom chain)
+- Blockchain: OpenSyria (custom chain)
 
 Search Result:
 DSYL/USDT trading pair
@@ -861,13 +861,13 @@ Project name capitalized differently across locations.
 
 ```
 Variations Found:
-1. "Open Syria" (title case) - README, docs
+1. "OpenSyria" (title case) - README, docs
 2. "opensyria" (lowercase) - crate names
 3. "OpenSyria" (camel case) - NOT USED currently
 4. "OPENSYRIA" (uppercase) - NOT USED currently
 
 Current Standard: INCONSISTENT
-- User-facing: "Open Syria" (two words, title case)
+- User-facing: "OpenSyria" (two words, title case)
 - Code: "opensyria" (one word, lowercase)
 ```
 
@@ -877,7 +877,7 @@ Current Standard: INCONSISTENT
 ## Capitalization Rules
 
 ### User-Facing Text (UI, docs, marketing)
-- "Open Syria" (two words, title case)
+- "OpenSyria" (two words, title case)
 - "Digital Lira" (title case)
 
 ### Code (Rust crates, imports)
@@ -901,19 +901,19 @@ Current Standard: INCONSISTENT
 **Evidence:**
 ```rust
 // crates/wallet/src/main.rs:9
-#[command(about = "Open Syria Digital Lira Wallet | محفظة الليرة الرقمية السورية")]
+#[command(about = "OpenSyria Digital Lira Wallet | محفظة الليرة السورية الرقمية")]
 
 // Uses THREE names in one line:
-// 1. "Open Syria"
+// 1. "OpenSyria"
 // 2. "Digital Lira"
-// 3. "الليرة الرقمية السورية"
+// 3. "الليرة السورية الرقمية"
 ```
 
 ```typescript
 // frontend/src/locales/en.json
 {
   "app": {
-    "title": "Open Syria Block Explorer",  // "Open Syria"
+    "title": "OpenSyria Block Explorer",  // "OpenSyria"
     "subtitle": "Digital Lira Blockchain"   // "Digital Lira"
   }
 }
@@ -929,19 +929,19 @@ Currency Unit: Lira (SYL)
 Positioning: "Sovereign digital currency for Syria"
 ```
 
-**Option B: "Open Syria" (Platform-Focused)**
+**Option B: "OpenSyria" (Platform-Focused)**
 ```
-Project: Open Syria Blockchain
-Currency: Digital Lira (on Open Syria chain)
+Project: OpenSyria Blockchain
+Currency: Digital Lira (on OpenSyria chain)
 Arabic: بلوكتشين سوريا المفتوحة
 Positioning: "Open blockchain platform, currency is one feature"
 ```
 
 **Option C: Dual Branding (Recommended)**
 ```
-Platform: Open Syria Blockchain
+Platform: OpenSyria Blockchain
 Currency: Digital Lira (الليرة الرقمية)
-Full Name: "Open Syria: Digital Lira Blockchain"
+Full Name: "OpenSyria: Digital Lira Blockchain"
 Tagline: "Sovereign blockchain for Syrian Digital Lira"
 ```
 
@@ -970,7 +970,7 @@ Tagline: "Sovereign blockchain for Syrian Digital Lira"
 **Recommendation:**
 ```
 Primary: DSYL (Digital Syrian Lira)
-Alternative: OSYL (Open Syria Lira)
+Alternative: OSYL (OpenSyria Lira)
 Arabic: ل.س.ر (ليرة سورية رقمية)
 ```
 
@@ -981,7 +981,7 @@ Arabic: ل.س.ر (ليرة سورية رقمية)
 **Evidence:**
 ```markdown
 # README.md (lines vary)
-"Open Syria sovereign blockchain"  ← "Open Syria"
+"OpenSyria sovereign blockchain"  ← "OpenSyria"
 "Digital Lira (الليرة الرقمية)" ← "Digital Lira"
 "blockchain node" ← generic
 "cultural heritage tokens" ← feature, not brand
@@ -990,13 +990,13 @@ Arabic: ل.س.ر (ليرة سورية رقمية)
 **Recommendation:** Standardize all documentation:
 
 ```markdown
-# Open Syria Blockchain
+# OpenSyria Blockchain
 
 **Digital Lira (الليرة الرقمية)** - Sovereign blockchain for Syria.
 
-## What is Open Syria?
+## What is OpenSyria?
 
-Open Syria is a Layer-1 blockchain platform designed to power Syria's digital economy through the Digital Lira (الليرة الرقمية) cryptocurrency and cultural heritage preservation via NFTs.
+OpenSyria is a Layer-1 blockchain platform designed to power Syria's digital economy through the Digital Lira (الليرة الرقمية) cryptocurrency and cultural heritage preservation via NFTs.
 
 ### Key Features:
 - **Digital Lira**: National digital currency
@@ -1040,11 +1040,11 @@ Political Landscape:
 
 **Risk 1: Government Association**
 ```
-Scenario: User in opposition-controlled area sees "Open Syria"
+Scenario: User in opposition-controlled area sees "OpenSyria"
 Reaction: "Is this a government project? Will I be tracked?"
 Impact: Lost users due to trust concerns
 
-Mitigation: Clear messaging - "Open Syria is independent, non-governmental"
+Mitigation: Clear messaging - "OpenSyria is independent, non-governmental"
 ```
 
 **Risk 2: Sanctions Compliance**
@@ -1059,14 +1059,14 @@ Answer: DEPENDS on whether it's classified as:
   ✅ Decentralized protocol (like Bitcoin) → Generally OK
   ❌ Syrian government project → Violates sanctions
 
-Critical: Must clarify "Open Syria ≠ Syrian government"
+Critical: Must clarify "OpenSyria ≠ Syrian government"
 ```
 
 **Risk 3: Banking Restrictions**
 ```
 Scenario: Developer tries to open company bank account
 Bank: "What does your blockchain do?"
-Developer: "It's called Open Syria..."
+Developer: "It's called OpenSyria..."
 Bank: "Sorry, we cannot serve Syrian-related entities"
 Developer: "But it's not affiliated with Syria!"
 Bank: "Too risky, application denied"
@@ -1099,7 +1099,7 @@ This phrasing suggests official government backing!
 ```
 General Public Perception:
 
-"Open Syria Blockchain" could be interpreted as:
+"OpenSyria Blockchain" could be interpreted as:
 1. ✅ "Blockchain for Syrian people" (intended)
 2. ❌ "Syrian government blockchain" (misunderstood)
 3. ❌ "Blockchain governed by Syria" (misunderstood)
@@ -1113,7 +1113,7 @@ General Public Perception:
 
 ## ⚠️ Important Notice
 
-**Open Syria is an independent, non-governmental project.**
+**OpenSyria is an independent, non-governmental project.**
 
 - NOT affiliated with any Syrian government entity
 - NOT subject to political control
@@ -1121,7 +1121,7 @@ General Public Perception:
 - For ALL Syrians, regardless of location or political affiliation
 - Complies with international sanctions (not a government project)
 
-**Who Can Use Open Syria:**
+**Who Can Use OpenSyria:**
 ✅ Syrian diaspora worldwide
 ✅ Syrian citizens inside Syria
 ✅ International users
@@ -1134,7 +1134,7 @@ General Public Perception:
 
 ```
 Option 1: Keep "Syria" but add "Open"
-Current: "Open Syria"
+Current: "OpenSyria"
 Message: "Open" = permissionless, inclusive, not government
 
 Option 2: Use "Levant" (broader region)
@@ -1143,7 +1143,7 @@ Advantage: Includes Syria, Lebanon, Jordan, Palestine (less politically charged)
 Disadvantage: Loses Syrian cultural identity
 
 Option 3: Use Arabic name primarily
-Current: "بلوكتشين سوريا المفتوحة" (Open Syria Blockchain)
+Current: "بلوكتشين سوريا المفتوحة" (OpenSyria Blockchain)
 Alternative: Lead with "الليرة الرقمية" (Digital Lira)
 Advantage: Focuses on currency, not country
 Disadvantage: Loses cultural heritage focus
@@ -1156,19 +1156,19 @@ Disadvantage: Loses identity, requires full rebrand
 
 **Recommended Action:**
 
-**Keep "Open Syria" BUT add prominent disclaimer:**
+**Keep "OpenSyria" BUT add prominent disclaimer:**
 
 ```markdown
-# Open Syria Blockchain
+# OpenSyria Blockchain
 ## Independent · Decentralized · For All Syrians
 
-**Open Syria is:**
+**OpenSyria is:**
 ✅ A community-driven project
 ✅ Not controlled by any government
 ✅ Permissionless and open-source
 ✅ Focused on Syrian cultural heritage
 
-**Open Syria is NOT:**
+**OpenSyria is NOT:**
 ❌ Affiliated with Syrian government
 ❌ Subject to political control
 ❌ An official national currency
@@ -1560,10 +1560,10 @@ Diaspora: 27% of all Syrians!
 **Current Branding Analysis:**
 
 ```
-"Open Syria" Interpretation:
+"OpenSyria" Interpretation:
 
 Ambiguous:
-- "Open Syria" could mean "Open to all Syrians"
+- "OpenSyria" could mean "Open to all Syrians"
 - OR "Open-source Syria-based project"
 - OR "Syria open to the world"
 
@@ -1589,12 +1589,12 @@ Question: Sovereign to whom?
 
 ```
 Scenario 1: Syrian refugee in Germany
-Sees: "Open Syria Blockchain"
+Sees: "OpenSyria Blockchain"
 Thinks: "Is this for Syrians in Syria only?"
 Result: Doesn't explore further
 
 Scenario 2: Second-generation Syrian-American
-Sees: "Open Syria"
+Sees: "OpenSyria"
 Thinks: "I've never been to Syria, is this for me?"
 Result: Feels excluded
 
@@ -1609,11 +1609,11 @@ Result: Unsure about eligibility
 ```markdown
 # README.md
 
-## Open Syria: Digital Lira Blockchain
+## OpenSyria: Digital Lira Blockchain
 
 **For ALL Syrians, wherever they are.**
 
-Open Syria is a borderless, permissionless blockchain serving:
+OpenSyria is a borderless, permissionless blockchain serving:
 ✅ Syrians inside Syria
 ✅ Syrian diaspora worldwide (6.6 million in 100+ countries)
 ✅ Anyone interested in Syrian culture and economy
@@ -1660,7 +1660,7 @@ Options:
 2. "Borderless Syrian digital economy"
 3. "From Damascus to diaspora"
 4. "Connecting Syrians worldwide"
-5. "Open Syria: No borders, no barriers"
+5. "OpenSyria: No borders, no barriers"
 
 Recommended: "For ALL Syrians, wherever they are"
 ```
@@ -1679,8 +1679,8 @@ Despite inconsistencies, the project has several STRONG brand foundations:
 ✅ GOOD: Consistent Arabic/English presence
 
 Examples:
-- README: "Open Syria Blockchain | بلوكتشين سوريا المفتوحة"
-- Wallet: "محفظة الليرة الرقمية السورية"
+- README: "OpenSyria Blockchain | بلوكتشين سوريا المفتوحة"
+- Wallet: "محفظة الليرة السورية الرقمية"
 - Frontend: Full Arabic localization
 
 Strength: Shows cultural authenticity, not just English-first with Arabic translation
@@ -1703,7 +1703,7 @@ Strength: Differentiates from generic "crypto" projects
 ### **3. "Open" Positioning**
 
 ```
-✅ GOOD: "Open Syria" signals:
+✅ GOOD: "OpenSyria" signals:
 - Permissionless
 - Inclusive
 - Not government-controlled
@@ -1748,7 +1748,7 @@ Strength: Positions as serious, sustainable project
 ### Phase 1: Immediate Fixes (Week 1) - CRITICAL
 
 **Priority 1A: Define Official Brand Name**
-- [ ] Choose: "Open Syria: Digital Lira" (dual branding)
+- [ ] Choose: "OpenSyria: Digital Lira" (dual branding)
 - [ ] Update README.md with authoritative naming
 - [ ] Create `docs/BRAND_GUIDE.md`
 - [ ] Document usage rules
@@ -1771,12 +1771,12 @@ Strength: Positions as serious, sustainable project
 **Create `docs/BRAND_GUIDE.md`:**
 
 ```markdown
-# Open Syria Brand Guidelines
+# OpenSyria Brand Guidelines
 
 ## Official Names
 
-**Full Name:** Open Syria: Digital Lira  
-**Platform Name:** Open Syria  
+**Full Name:** OpenSyria: Digital Lira  
+**Platform Name:** OpenSyria  
 **Currency Name:** Digital Lira  
 **Currency Code:** DSYL  
 **Tagline:** "For ALL Syrians, wherever they are"
@@ -1791,14 +1791,14 @@ Strength: Positions as serious, sustainable project
 
 ### First Mention Rule
 Always use full name on first mention in any document:
-- ✅ "Open Syria: Digital Lira blockchain"
+- ✅ "OpenSyria: Digital Lira blockchain"
 - ✅ "سوريا المفتوحة: بلوكتشين الليرة الرقمية"
 
 ### Platform Context
 When discussing blockchain features:
-- ✅ "Open Syria blockchain"
-- ✅ "Open Syria governance"
-- ✅ "Built on Open Syria"
+- ✅ "OpenSyria blockchain"
+- ✅ "OpenSyria governance"
+- ✅ "Built on OpenSyria"
 
 ### Currency Context
 When discussing payments/economics:
@@ -1814,7 +1814,7 @@ When discussing payments/economics:
 ## Capitalization
 
 ### User-Facing
-- "Open Syria" (two words, title case)
+- "OpenSyria" (two words, title case)
 - "Digital Lira" (title case)
 
 ### URLs
@@ -1849,7 +1849,7 @@ Option 2: Neutral tech colors
 ### Required Disclaimers
 All official materials must include:
 
-"Open Syria is an independent, non-governmental project. Not affiliated with any Syrian government entity."
+"OpenSyria is an independent, non-governmental project. Not affiliated with any Syrian government entity."
 
 ### Inclusive Language
 - ✅ "For ALL Syrians"
@@ -1867,13 +1867,13 @@ All official materials must include:
 ### Phase 3: Trademark & Legal (Week 3-4) - STRATEGIC
 
 **Legal Due Diligence:**
-- [ ] Trademark search: "Open Syria", "Digital Lira"
+- [ ] Trademark search: "OpenSyria", "Digital Lira"
 - [ ] Domain registration: opensyria.io, digitallira.org, opensyria.org
 - [ ] Social media handles: @opensyria, @digitallira (Twitter, GitHub, Discord)
 - [ ] Check conflicts with existing projects
 
 **Potential Conflicts:**
-- "Open Syria" may conflict with NGOs/activist groups
+- "OpenSyria" may conflict with NGOs/activist groups
 - "Digital Lira" may face Turkish government objection
 - "SYL" might conflict with future tokens
 
@@ -1912,7 +1912,7 @@ All official materials must include:
 
 ## 🏁 CONCLUSION
 
-The Open Syria: Digital Lira blockchain has **strong cultural foundations** (bilingual, heritage-focused, community-driven) but suffers from **systematic naming inconsistencies** that will confuse users, fragment marketing efforts, and hinder mainstream adoption.
+The OpenSyria: Digital Lira blockchain has **strong cultural foundations** (bilingual, heritage-focused, community-driven) but suffers from **systematic naming inconsistencies** that will confuse users, fragment marketing efforts, and hinder mainstream adoption.
 
 **Key Findings:**
 
@@ -1934,7 +1934,7 @@ The Open Syria: Digital Lira blockchain has **strong cultural foundations** (bil
 
 🔴 **High Impact (UX/Marketing):**
 - User confusion about project name
-- SEO fragmentation (searches for "Open Syria" vs "Digital Lira" don't converge)
+- SEO fragmentation (searches for "OpenSyria" vs "Digital Lira" don't converge)
 - Difficulty explaining project to investors/press
 - Community fragmentation (different names in different channels)
 
@@ -1951,7 +1951,7 @@ The Open Syria: Digital Lira blockchain has **strong cultural foundations** (bil
 **Recommended Action Plan:**
 
 **Immediate (Week 1):**
-1. ✅ Adopt "Open Syria: Digital Lira" dual branding
+1. ✅ Adopt "OpenSyria: Digital Lira" dual branding
 2. ✅ Change "SYL" → "DSYL"
 3. ✅ Fix wallet CLI translation asymmetry
 4. ✅ Add diaspora inclusivity messaging
@@ -1981,7 +1981,7 @@ The Open Syria: Digital Lira blockchain has **strong cultural foundations** (bil
 ```
 3 Months Post-Fix:
 - 95%+ brand name consistency across all materials ✅
-- Clear "Open Syria: Digital Lira" recognition in community ✅
+- Clear "OpenSyria: Digital Lira" recognition in community ✅
 - Unified hashtags (#OpenSyria) with >80% usage ✅
 - Zero trademark conflicts ✅
 - Positive cultural sensitivity feedback from diverse Syrians ✅

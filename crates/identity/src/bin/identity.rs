@@ -181,7 +181,8 @@ async fn async_main() -> Result<()> {
                 metadata,
                 0, // No royalty for demo
                 0, // Block height 0
-            )?;
+            )
+            .map_err(|e| anyhow::anyhow!("{}", e))?;
 
             // Display result
             println!(

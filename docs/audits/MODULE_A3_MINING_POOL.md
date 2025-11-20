@@ -1,6 +1,6 @@
 # Module A3: Mining Pool Implementation Audit
 
-**Open Syria Blockchain - Collaborative Mining & Reward Distribution**
+**OpenSyria Blockchain - Collaborative Mining & Reward Distribution**
 
 **Module:** A3 - Mining Pool  
 **Date:** November 18, 2025  
@@ -854,7 +854,7 @@ impl MiningPool {
 
 ## Comparison with Other Pools
 
-| Feature | Open Syria | Bitcoin Core | Ethereum Pool | Features |
+| Feature | OpenSyria | Bitcoin Core | Ethereum Pool | Features |
 |---------|------------|--------------|---------------|----------|
 | **Share Verification** | ❌ None | ✅ Full PoW | ✅ Full PoW | CRITICAL |
 | **Persistence** | ❌ None | ✅ DB | ✅ DB | HIGH |

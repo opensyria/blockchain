@@ -1,8 +1,8 @@
 # Security & Protocol Audit Documentation
 
-**Open Syria Blockchain - November 18, 2025**
+**OpenSyria Blockchain - November 18, 2025**
 
-This directory contains the comprehensive security audit, protocol verification, and economic analysis conducted on the Open Syria blockchain implementation.
+This directory contains the comprehensive security audit, protocol verification, and economic analysis conducted on the OpenSyria blockchain implementation.
 
 ---
 
@@ -202,7 +202,7 @@ Canonical protocol rules:
 **Distribution:** Open Source (public repository)  
 **Responsible Disclosure:** security@opensyria.org (create before mainnet)
 
-**Disclaimer:** This audit does not constitute investment advice. The Open Syria blockchain is experimental software under active development. Use at your own risk.
+**Disclaimer:** This audit does not constitute investment advice. The OpenSyria blockchain is experimental software under active development. Use at your own risk.
 
 ---
 

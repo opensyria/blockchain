@@ -229,6 +229,7 @@ pub async fn get_recent_blocks(
         pagination.page,
         per_page,
     )))
+}
 
 /// GET /api/transactions/:hash - Get transaction by hash
 pub async fn get_transaction(
@@ -426,3 +427,4 @@ pub async fn get_mempool(State(state): State<AppState>) -> ApiResult<MempoolInfo
         transaction_count,
         transactions,
     }))
+}

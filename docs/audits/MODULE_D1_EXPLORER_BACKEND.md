@@ -1,6 +1,6 @@
 # Module D1: Explorer Backend Security Audit
 
-**Open Syria Blockchain - Block Explorer API Security Assessment**
+**OpenSyria Blockchain - Block Explorer API Security Assessment**
 
 **Module:** D1 - Explorer Backend  
 **Date:** November 18, 2025  
@@ -902,7 +902,7 @@ Client → HTTPS → Load Balancer
 
 ## Comparison with Production Block Explorers
 
-| Feature | Open Syria | Etherscan | Blockchain.com | Blockchair |
+| Feature | OpenSyria | Etherscan | Blockchain.com | Blockchair |
 |---------|------------|-----------|----------------|------------|
 | **Indexing** | ❌ None | ✅ PostgreSQL | ✅ Custom DB | ✅ ClickHouse |
 | **Performance** | 🔴 O(n) scans | ✅ Sub-second | ✅ Sub-second | ✅ Sub-second |
@@ -912,7 +912,7 @@ Client → HTTPS → Load Balancer
 | **Monitoring** | ❌ None | ✅ Full stack | ✅ DataDog | ✅ Custom |
 | **WebSocket** | ⚠️ Basic | ✅ Production | ✅ Production | ✅ Production |
 
-**Gap:** Open Syria explorer has **ZERO** production-readiness features.
+**Gap:** OpenSyria explorer has **ZERO** production-readiness features.
 
 ---
 

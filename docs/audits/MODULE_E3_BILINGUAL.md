@@ -1,5 +1,5 @@
 # Module E3: Bilingual Support (i18n) Audit
-**Open Syria Blockchain - Digital Lira (الليرة الرقمية)**
+**OpenSyria Blockchain - Digital Lira (الليرة الرقمية)**
 
 **Audit Date:** November 18, 2025  
 **Module:** Arabic/English Internationalization  
@@ -93,8 +93,8 @@ interface LanguageState {
 ```rust
 // All CLI tools use dual-language help text
 #[command(about = "
-  Open Syria Digital Lira Wallet
-  محفظة الليرة الرقمية السورية
+  OpenSyria Digital Lira Wallet
+  محفظة الليرة السورية الرقمية
 ")]
 ```
 
@@ -109,7 +109,7 @@ All command-line tools are **100% bilingual**:
 **Wallet CLI:**
 ```rust
 // crates/wallet/src/main.rs:9
-#[command(about = "Open Syria Digital Lira Wallet | محفظة الليرة الرقمية السورية")]
+#[command(about = "OpenSyria Digital Lira Wallet | محفظة الليرة السورية الرقمية")]
 
 Commands:
   create-account    إنشاء حساب جديد
@@ -122,7 +122,7 @@ Commands:
 **Node CLI:**
 ```rust
 // crates/node-cli/src/main.rs
-#[command(about = "Open Syria Blockchain Node | عقدة بلوكتشين سوريا المفتوحة")]
+#[command(about = "OpenSyria Blockchain Node | عقدة بلوكتشين سوريا المفتوحة")]
 
 Commands:
   start    بدء العقدة
@@ -239,7 +239,7 @@ Missing:                ~60 keys (40%)
 ```
 Arabic User Navigates to Governance Page:
 ┌─────────────────────────────────────────────┐
-│ Open Syria Block Explorer  [العربية]       │ ← Translated
+│ OpenSyria Block Explorer  [العربية]       │ ← Translated
 ├─────────────────────────────────────────────┤
 │ الرئيسية | الكتل | Governance              │ ← Mixed!
 ├─────────────────────────────────────────────┤

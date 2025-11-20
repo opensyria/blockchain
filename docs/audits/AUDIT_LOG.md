@@ -1,4 +1,4 @@
-# Open Syria Blockchain - Audit Log
+# OpenSyria Blockchain - Audit Log
 **Digital Lira (الليرة الرقمية) - Security & Protocol Audit**
 
 **Audit Date:** November 18, 2025  
@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-This audit evaluates the Open Syria blockchain implementation across three critical dimensions: consensus mechanism correctness, security posture, and economic model completeness. The system demonstrates **strong foundational architecture** with modern Rust cryptography, but exhibits **critical gaps** in protocol specification, economic parameters, and security hardening that must be addressed before mainnet launch.
+This audit evaluates the OpenSyria blockchain implementation across three critical dimensions: consensus mechanism correctness, security posture, and economic model completeness. The system demonstrates **strong foundational architecture** with modern Rust cryptography, but exhibits **critical gaps** in protocol specification, economic parameters, and security hardening that must be addressed before mainnet launch.
 
 ### Audit Scope Confirmation
 
@@ -952,7 +952,7 @@ The networking layer uses modern libp2p with comprehensive protocols (Gossipsub,
 
 ## Audit Conclusion
 
-The Open Syria blockchain demonstrates **strong technical foundations** with modern Rust architecture, sound cryptographic primitives, and industry-standard networking (libp2p). However, **critical gaps in protocol specification, economic design, security validation, and network defense mechanisms** prevent production deployment.
+The OpenSyria blockchain demonstrates **strong technical foundations** with modern Rust architecture, sound cryptographic primitives, and industry-standard networking (libp2p). However, **critical gaps in protocol specification, economic design, security validation, and network defense mechanisms** prevent production deployment.
 
 **Overall Grade: C+ (Functional Prototype, Not Production-Ready)**
 
@@ -1079,7 +1079,7 @@ $ cat ~/.opensyria/wallet/alice.json
 **Comparison with Modern Wallets:**
 - MetaMask: ✅ AES-256, ✅ Password, ✅ BIP39, ✅ HD Wallet
 - Bitcoin Core: ✅ AES-256, ✅ Password, ✅ BIP39, ✅ Permissions
-- Open Syria: ❌ NO encryption, ❌ NO password, ❌ NO mnemonic, ❌ DEFAULT permissions
+- OpenSyria: ❌ NO encryption, ❌ NO password, ❌ NO mnemonic, ❌ DEFAULT permissions
 
 ### Regulatory Compliance
 
@@ -1177,7 +1177,7 @@ ANY website (CORS) → HTTP (plaintext) → API (no auth) → Drain all wallets
 **Comparison with Production APIs:**
 - Coinbase API: ✅ HTTPS, ✅ OAuth, ✅ Rate limits, ✅ Never sees private keys
 - Binance API: ✅ HTTPS, ✅ HMAC auth, ✅ Strict limits, ✅ Server-side keys only
-- Open Syria: ❌ HTTP, ❌ No auth, ❌ No limits, 🚨 **PRIVATE KEYS IN REQUESTS!**
+- OpenSyria: ❌ HTTP, ❌ No auth, ❌ No limits, 🚨 **PRIVATE KEYS IN REQUESTS!**
 
 ### Architectural Failure
 
@@ -1289,7 +1289,7 @@ for h in 0..=height {  // ❌ O(n * m) transaction lookup!
 **Comparison with Production Explorers:**
 - Etherscan: ✅ PostgreSQL indexes, ✅ Sub-second queries, ✅ Redis cache
 - Blockchain.com: ✅ Custom DB, ✅ Memcached, ✅ Load balancing
-- Open Syria: ❌ No indexes, ❌ O(n) scans, ❌ No cache
+- OpenSyria: ❌ No indexes, ❌ O(n) scans, ❌ No cache
 
 **Root Cause:**  
 RocksDB is a key-value store optimized for sequential reads (blocks by height). It has **NO secondary indexes** for lookups by transaction hash, block hash, or address. Every non-sequential query requires scanning the entire blockchain.

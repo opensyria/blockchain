@@ -1,5 +1,5 @@
 # Module D2: Explorer Frontend Security Audit
-**Open Syria Blockchain - Digital Lira (الليرة الرقمية)**
+**OpenSyria Blockchain - Digital Lira (الليرة الرقمية)**
 
 **Audit Date:** November 18, 2025  
 **Module:** Explorer Frontend (React SPA)  
@@ -1425,7 +1425,7 @@ Cultural assets may lack accessibility attributes.
 **Recommendation:**
 ```typescript
 // Ensure all images have alt text
-<img src="/logo.svg" alt="Open Syria Blockchain Logo" />
+<img src="/logo.svg" alt="OpenSyria Blockchain Logo" />
 
 // Decorative images should have empty alt
 <img src="/pattern.svg" alt="" role="presentation" />

@@ -1,6 +1,6 @@
 # Module C1: Wallet Security Audit
 
-**Open Syria Blockchain - Private Key Management & Wallet Security**
+**OpenSyria Blockchain - Private Key Management & Wallet Security**
 
 **Module:** C1 - Wallet Security  
 **Date:** November 18, 2025  
@@ -167,7 +167,7 @@ find ~ -name "*.json" -path "*/.opensyria/wallet/*"
 - **TOTAL LOSS OF FUNDS** - Anyone with file access can drain wallets
 - **No recovery** - Stolen funds are gone forever
 - **Regulatory non-compliance** - Violates data protection laws
-- **Reputation damage** - "Open Syria wallet" synonymous with insecurity
+- **Reputation damage** - "OpenSyria wallet" synonymous with insecurity
 
 **Remediation:**
 ```rust
@@ -295,7 +295,7 @@ Child Keys (BIP44):
   m/44'/0'/0'/0/0  (Bitcoin)
 ```
 
-**Current Open Syria:**
+**Current OpenSyria:**
 ```
 No mnemonic → User loses JSON file → Funds lost forever
 ```
@@ -340,7 +340,7 @@ impl HDWallet {
     }
     
     /// Derive account key at path m/44'/5963'/0'/0/{index}
-    /// (5963 = Open Syria coin type)
+    /// (5963 = OpenSyria coin type)
     pub fn derive_account(&self, index: u32) -> Result<KeyPair> {
         let path = format!("m/44'/5963'/0'/0/{}", index);
         let child_key = self.master_key.derive(&path)?;
@@ -792,7 +792,7 @@ mod wallet_tests {
 
 ## Comparison with Other Wallets
 
-| Feature | Open Syria | MetaMask | Bitcoin Core | Hardware Wallet |
+| Feature | OpenSyria | MetaMask | Bitcoin Core | Hardware Wallet |
 |---------|------------|----------|--------------|-----------------|
 | **Encryption** | ❌ None | ✅ AES-256 | ✅ AES-256 | ✅ Hardware |
 | **Password** | ❌ None | ✅ Yes | ✅ Yes | ✅ PIN |
@@ -801,7 +801,7 @@ mod wallet_tests {
 | **File Permissions** | ❌ Default | ✅ 0600 | ✅ 0600 | N/A |
 | **Secure Memory** | ❌ None | ⚠️ Partial | ✅ Yes | ✅ Hardware |
 
-**Gap:** Open Syria has **ZERO** security features that modern wallets have.
+**Gap:** OpenSyria has **ZERO** security features that modern wallets have.
 
 ---
 
@@ -839,7 +839,7 @@ mod wallet_tests {
 - **NO ENCRYPTION** → Regulatory violations
 
 **Verdict:**  
-The Open Syria wallet is **dangerously insecure** and **must not be used** with real funds. It's worse than no wallet at all because it gives a false sense of security. Private keys stored in plaintext JSON files is a **catastrophic vulnerability** that violates every security best practice and regulatory requirement.
+The OpenSyria wallet is **dangerously insecure** and **must not be used** with real funds. It's worse than no wallet at all because it gives a false sense of security. Private keys stored in plaintext JSON files is a **catastrophic vulnerability** that violates every security best practice and regulatory requirement.
 
 **This is the WORST security finding in the entire audit.**
 

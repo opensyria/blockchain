@@ -1,6 +1,6 @@
 # Module B2: Storage & Indexing Audit
 
-**Open Syria Blockchain - Data Persistence & State Management**
+**OpenSyria Blockchain - Data Persistence & State Management**
 
 **Module:** B2 - Storage & Indexing  
 **Date:** November 18, 2025  
@@ -393,7 +393,7 @@ Bitcoin doesn't need state root because:
 - All UTXOs provable from blockchain history
 - Can reconstruct state by replaying all blocks
 
-Open Syria needs state root because:
+OpenSyria needs state root because:
 - Account model (state = balance map)
 - Balances NOT provable from blockchain alone
 - Fast sync requires trusted state snapshot
@@ -409,7 +409,7 @@ pub struct BlockHeader {
     // ...
 }
 
-// Open Syria has NONE of these!
+// OpenSyria has NONE of these!
 ```
 
 **Remediation:**
@@ -1006,7 +1006,7 @@ mod storage_tests {
 
 ## Comparison with Other Blockchains
 
-| Feature | Open Syria | Bitcoin | Ethereum | Polkadot |
+| Feature | OpenSyria | Bitcoin | Ethereum | Polkadot |
 |---------|------------|---------|----------|----------|
 | **Database** | RocksDB | LevelDB | LevelDB | RocksDB |
 | **Reorg Support** | ❌ None | ✅ Full | ✅ Full | ✅ Full |
@@ -1016,7 +1016,7 @@ mod storage_tests {
 | **Column Families** | ❌ None | ❌ No | ⚠️ Some | ✅ Full |
 | **Snapshots** | ❌ None | ✅ Yes | ✅ Yes | ✅ Yes |
 
-**Gap:** Open Syria missing ALL advanced storage features that production blockchains have.
+**Gap:** OpenSyria missing ALL advanced storage features that production blockchains have.
 
 ---
 

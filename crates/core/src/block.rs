@@ -239,8 +239,12 @@ impl Block {
 
     /// Validate coinbase transaction (block reward)
     /// التحقق من معاملة الكوين بيس (مكافأة الكتلة)
-    pub fn validate_coinbase(&self, block_height: u64) -> Result<(), BlockError> {
-        use crate::constants::calculate_block_reward;
+    /// 
+    /// ✅  SECURITY FIX (CRITICAL-004): Total supply enforcement in coinbase validation
+    /// This method now accepts current_supply parameter to verify that minting new coins
+    /// will not exceed MAX_SUPPLY (100M SYL). Prevents inflation attacks.
+    pub fn validate_coinbase(&self, block_height: u64, current_supply: u64) -> Result<(), BlockError> {
+        use crate::constants::{calculate_block_reward, MAX_SUPPLY};
 
         // Genesis block has no coinbase
         if block_height == 0 {
@@ -275,6 +279,19 @@ impl Block {
             return Err(BlockError::InvalidCoinbaseAmount);
         }
 
+        // SECURITY FIX (CRITICAL-004): Enforce MAX_SUPPLY to prevent inflation
+        // Check that minting this coinbase will not exceed maximum supply
+        let new_supply = current_supply.checked_add(coinbase.amount)
+            .ok_or(BlockError::SupplyOverflow)?;
+        
+        if new_supply > MAX_SUPPLY {
+            return Err(BlockError::MaxSupplyExceeded {
+                current: current_supply,
+                attempted: coinbase.amount,
+                max: MAX_SUPPLY,
+            });
+        }
+
         // Ensure no other coinbase transactions
         for tx in self.transactions.iter().skip(1) {
             if tx.is_coinbase() {
@@ -300,6 +317,8 @@ pub enum BlockError {
     MissingCoinbase,
     InvalidCoinbaseAmount,
     MultipleCoinbase,
+    SupplyOverflow,
+    MaxSupplyExceeded { current: u64, attempted: u64, max: u64 },
 }
 
 impl std::fmt::Display for BlockError {
@@ -317,6 +336,14 @@ impl std::fmt::Display for BlockError {
             BlockError::MissingCoinbase => write!(f, "Block missing coinbase transaction"),
             BlockError::InvalidCoinbaseAmount => write!(f, "Coinbase amount incorrect"),
             BlockError::MultipleCoinbase => write!(f, "Block contains multiple coinbase transactions"),
+            BlockError::SupplyOverflow => write!(f, "Supply calculation overflow"),
+            BlockError::MaxSupplyExceeded { current, attempted, max } => {
+                write!(
+                    f,
+                    "Maximum supply exceeded: current={}, attempted to mint={}, max={}",
+                    current, attempted, max
+                )
+            }
         }
     }
 }

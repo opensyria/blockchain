@@ -1,5 +1,5 @@
 # Module E2: Identity Token System Audit
-**Open Syria Blockchain - Digital Lira (الليرة الرقمية)**
+**OpenSyria Blockchain - Digital Lira (الليرة الرقمية)**
 
 **Audit Date:** November 18, 2025  
 **Module:** Cultural Heritage Identity Tokens (NFTs)  

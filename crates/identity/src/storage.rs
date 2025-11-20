@@ -1,6 +1,6 @@
 use crate::token::IdentityToken;
 use opensyria_core::crypto::PublicKey;
-use rocksdb::{DB, Options};
+use rocksdb::{DB, Options, BlockBasedOptions};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Arc;
@@ -33,10 +33,18 @@ impl std::error::Error for StorageError {}
 
 impl IdentityStorage {
     /// Open or create identity token storage
+    /// 
+    /// ✅  PERFORMANCE FIX (P1-002): Bloom filters enabled
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, StorageError> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
+        
+        // PERFORMANCE FIX: Enable bloom filters for faster lookups
+        let mut block_opts = BlockBasedOptions::default();
+        block_opts.set_bloom_filter(10.0, false);
+        opts.set_block_based_table_factory(&block_opts);
+        opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
 
         let db = DB::open(&opts, path)
             .map_err(|e| StorageError::DatabaseError(e.to_string()))?;

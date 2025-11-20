@@ -1,6 +1,6 @@
 # Module C2: Wallet API Security Audit
 
-**Open Syria Blockchain - HTTP API Security Assessment**
+**OpenSyria Blockchain - HTTP API Security Assessment**
 
 **Module:** C2 - Wallet API  
 **Date:** November 18, 2025  
@@ -885,7 +885,7 @@ Network Layer:      ⚠️ Localhost only (default, but overridable)
 
 ## Comparison with Industry Standards
 
-| Feature | Open Syria API | Coinbase API | Binance API | Alchemy API |
+| Feature | OpenSyria API | Coinbase API | Binance API | Alchemy API |
 |---------|---------------|--------------|-------------|-------------|
 | **HTTPS/TLS** | ❌ HTTP only | ✅ HTTPS | ✅ HTTPS | ✅ HTTPS |
 | **Authentication** | ❌ None | ✅ API Key + OAuth | ✅ HMAC Signature | ✅ API Key |
@@ -896,7 +896,7 @@ Network Layer:      ⚠️ Localhost only (default, but overridable)
 | **Audit Logging** | ❌ None | ✅ Full audit trail | ✅ Complete logs | ✅ Analytics |
 | **Input Validation** | ⚠️ Basic | ✅ Comprehensive | ✅ Strict | ✅ Schema validation |
 
-**Gap:** Open Syria API has **ZERO** security features that production APIs have.
+**Gap:** OpenSyria API has **ZERO** security features that production APIs have.
 
 ---
 

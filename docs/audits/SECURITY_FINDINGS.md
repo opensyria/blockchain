@@ -1,6 +1,6 @@
 # Security Findings Report | تقرير النتائج الأمنية
 
-**Open Syria Blockchain - Vulnerability Assessment**
+**OpenSyria Blockchain - Vulnerability Assessment**
 
 **Report Date:** November 18, 2025  
 **Assessment Type:** Static Code Analysis & Architectural Review  
@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-This security assessment identifies **10 CRITICAL** and **3 HIGH** severity vulnerabilities in the Open Syria blockchain implementation. Despite the codebase being marked "Production Ready," **multiple attack vectors remain unmitigated**, including replay attacks, signature verification bypass, and integer overflow exploits.
+This security assessment identifies **10 CRITICAL** and **3 HIGH** severity vulnerabilities in the OpenSyria blockchain implementation. Despite the codebase being marked "Production Ready," **multiple attack vectors remain unmitigated**, including replay attacks, signature verification bypass, and integer overflow exploits.
 
 **Immediate Action Required:** All CRITICAL issues must be resolved before any public deployment (testnet or mainnet).
 

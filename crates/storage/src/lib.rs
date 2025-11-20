@@ -1,10 +1,12 @@
 pub mod blockchain;
 pub mod indexer;
 pub mod state;
+pub mod pruning;
 
 pub use blockchain::BlockchainStorage;
 pub use indexer::BlockchainIndexer;
 pub use state::StateStorage;
+pub use pruning::{PruningMode, StatePruner};
 
 use std::path::PathBuf;
 
@@ -48,9 +50,12 @@ impl Storage {
     /// what BlockchainStorage.append_block() does. It verifies that all transactions
     /// are economically valid (sufficient balances, correct nonces) before applying
     /// state changes. This prevents invalid states from corrupted storage.
+    /// 
+    /// ✅  SECURITY FIX (CRITICAL-004): Now passes state storage to append_block
+    /// for total supply enforcement in coinbase validation.
     pub fn validate_and_apply_block(&self, block: &opensyria_core::Block) -> Result<(), StorageError> {
-        // First, validate block structure (PoW, merkle root, etc.)
-        self.blockchain.append_block(block)?;
+        // First, validate block structure (PoW, merkle root, coinbase with supply check, etc.)
+        self.blockchain.append_block(block, Some(&self.state))?;
 
         // Then, validate and apply state transitions atomically
         // This catches any inconsistencies if blockchain storage was corrupted
